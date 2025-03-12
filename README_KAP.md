@@ -33,9 +33,10 @@ A modern web application that automatically generates engaging podcast conversat
   (.venv) > git config --global --add safe.directory /workspaces/<new-repo>
 
 - To check in code to repo: 
+
   (.venv) > git add .
   (.venv) > git commit -m "Describe code change"
-  (.venv) > git push origin master
+  (.venv) > git push origin main
 
 
 ### Prerequisites
