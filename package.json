@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"python app.py\" \"vite\"",
+    "dev": "concurrently \"py app.py\" \"vite\"",
     "dev:frontend": "vite",
-    "dev:backend": "python app.py",
+    "dev:backend": "py app.py",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -54,6 +54,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.4.14"
   }
 }

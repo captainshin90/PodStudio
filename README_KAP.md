@@ -2,13 +2,41 @@
 
 A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Powered by [podcastfy.ai](http://podcastfy.ai).
 
-### Features
 
-- Custom podcast generation from multiple URLs
-- Real-time progress updates using WebSocket
-- Beautiful UI with shadcn/ui components
-- API key management for various AI services
-- Support for multiple text-to-speech providers
+### Key Info 
+
+- Frontend is vite - React/Tailwind/shadcn/WebSocket
+- Backend is app.py - Flask/Python/NodeJs/Bun
+
+- This project is running in local .venv with Python 3.13.2
+  > .\.venv\Scripts\activate  # On Windows
+
+- To install the customized podcastfy package:
+  (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
+
+- To build the development frontend and backend:
+  (.venv) > C:\SRC\openpod> bun dev  
+
+- Open browser: 
+  http://localhost:5173
+
+- To debug backend, open App.py:
+  - open package.json, choose >Debug 
+  -- or Run Debug and pick Python Debugger Flask script
+
+- To debug frontend, open App.tsx:
+  - Run Debug with Launch Chrome against localhost script  
+
+- To create a new GitHub repo: https://github.com/captainshin90/<new-repo>
+  (.venv) > git init
+  (.venv) > git remote add origin https://github.com/captainshin90/<new-repo>.git
+  (.venv) > git config --global --add safe.directory /workspaces/<new-repo>
+
+- To check in code to repo: 
+  (.venv) > git add .
+  (.venv) > git commit -m "Describe code change"
+  (.venv) > git push origin master
+
 
 ### Prerequisites
 
@@ -20,85 +48,100 @@ A modern web application that automatically generates engaging podcast conversat
 - Poetry (optional but recommended)
 - Fly.io CLI
 
+
 ### Development Setup
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/giulioco/openpod
-cd openpod
+(done) git clone https://github.com/giulioco/openpod
+(done) cd openpod
 ```
 
 2. Set up Python environment:
 
-```bash
+# Running in local venv, not Dev Container. Buy my local machine has python 3.13.2.
+# Need pyenv to run python 3.11.7
+
 ## Already running in a dev.container, so skip pyenv and venv
+
 # Install Python 3.11.7 with shared libraries enabled
+```bash
 # env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.7
-## pyenv local 3.11.7
+# pyenv local 3.11.7
 
 # Create and activate virtual environment
 # (done) python -m venv .venv
-## source .venv/bin/activate  # On Unix/MacOS
+# source .venv/bin/activate  # On Unix/MacOS
 # or
 # (done) .\.venv\Scripts\activate  # On Windows
 
 # Upgrade pip
-#x pip install --upgrade pip
-# (done) py -m pip install --upgrade pip
+(done) pip install --upgrade pip
 ```
 
-3. Install dependencies:
-
+3. Install backend dependencies:
 ```bash
-# Install backend dependencies
-# (done) pip install -r requirements.txt
+(done) pip install -r requirements.txt
+```
 
-# Install bun in venv
-npm install -g bun
-bun upgrade
+4.5 Install bun:
+```bash
+(done) npm install -g bun
+(done) bun upgrade
 
 # Install frontend dependencies
-bun install
+(done) bun install
+
+# when running with Python 3.12+ build fails due to deprecated audioop. 
+# Need to run: 
+(done) pip install audioop-lts
+
+# install Vite
+(done) npm install -D vite
+
+# install Concurrently
+(done) pip install concurrently
 ```
 
 4. Set up environment variables:
 
 ```bash
-cp .env.example .env
+(done) cp .env.example .env
 # Edit .env with your configuration
 ```
 
-5. Start the development servers:
+5. For Windows, need to edit package.json to change "python app.py" to "py app.py"
 
+6. Start the development servers:
 ```bash
 bun dev
 ```
 
+
 The application will be available at `http://localhost:5173`
+
+## With Google Cloud Shell, select Web Preview link but change the port to 5173.
+
 
 ### Deployment with Fly.io
 
 1. Install the Fly CLI:
-
 ```bash
 curl -L https://fly.io/install.sh | sh
 ```
 
 2. Login to Fly:
-
 ```bash
 fly auth login
 ```
 
 3. Create a new app:
-
 ```bash
 fly launch
 ```
 
 4. Set up environment variables:
-
 ```bash
 # Generate a secure API token
 openssl rand -hex 32
@@ -108,20 +151,17 @@ fly secrets set API_TOKEN=your_generated_token
 ```
 
 5. Create a volume for audio files:
-
 ```bash
 fly volumes create audio_data --size 1
 ```
 
 6. Deploy the application:
-
 ```bash
 # Deploy to Fly.io (this will automatically build both frontend and backend)
 fly deploy
 ```
 
 Your API will be available at:
-
 - Web UI: `https://your-app.fly.dev`
 - API Endpoint: `https://your-app.fly.dev/api/generate-from-transcript`
 
@@ -169,7 +209,6 @@ A secure endpoint that generates podcasts from existing transcripts. Requires AP
 ##### Authentication
 
 1. Generate a secure API token and add it to your `.env` file:
-
 ```bash
 # Generate a secure token
 openssl rand -hex 32
@@ -190,7 +229,6 @@ API_TOKEN=your_generated_token
   ```
 
 ##### Request Body
-
 ```json
 {
   "transcript": "Your conversation transcript here",
@@ -211,7 +249,6 @@ API_TOKEN=your_generated_token
 ```
 
 ##### Response
-
 Success Response:
 
 ```json
@@ -223,7 +260,6 @@ Success Response:
 ```
 
 Error Response:
-
 ```json
 {
   "error": "Error message here"
