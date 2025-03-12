@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 export default function App() {
   const [activeTab, setActiveTab] = useState("custom");
 
-  useEffect(() => {
+  useEffect(() => { 
     const script = document.createElement("script");
     script.src = "https://buttons.github.io/buttons.js";
     script.async = true;

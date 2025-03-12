@@ -28,15 +28,15 @@ A modern web application that automatically generates engaging podcast conversat
   - Run Debug with Launch Chrome against localhost script  
 
 - To create a new GitHub repo: https://github.com/captainshin90/<new-repo>
+  (.venv) > git remote remove origin
   (.venv) > git init
-  (.venv) > git remote add origin https://github.com/captainshin90/<new-repo>.git
-  (.venv) > git config --global --add safe.directory /workspaces/<new-repo>
+  (.venv) > git remote add origin https://github.com/captainshin90/PodGenerator.git
+  (.venv) > git config --global --add safe.directory /workspaces/<new-repo>  # when working with .devcontainer
 
 - To check in code to repo: 
-
   (.venv) > git add .
   (.venv) > git commit -m "Describe code change"
-  (.venv) > git push origin main
+  (.venv) > git push -U origin main
 
 
 ### Prerequisites
