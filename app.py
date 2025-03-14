@@ -11,26 +11,36 @@ from functools import wraps
 import jwt
 from datetime import datetime, timedelta
 from pathlib import Path
+from werkzeug.utils import secure_filename
 
 # Load environment variables with explicit path and override
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path, override=True)
 
 # Create required directories
-TEMP_DIR = '/tmp/audio'
+# they should be relative to the current working directory (in dev is C:/SRC/PodStudio)
+# why does it use a "static" folder. why not just use "data" folder?
+# use forward /, rather than \\ for file paths.
+# if need to use \ slash: use a r prefix: r"C:\path\to\file"
+TEMP_DIR = './tmp/audio'
 STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
 TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
+UPLOAD_FOLDER = './public/uploads'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
 
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__,
     static_folder='static',
     static_url_path='/static'
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24))
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Load API token after ensuring .env is loaded
 API_TOKEN = os.getenv('API_TOKEN')
@@ -39,7 +49,7 @@ if not API_TOKEN:
 
 # Enable CORS in development
 if app.debug:
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
     # Serve index.html from root directory in development
     @app.route('/')
     def index():
@@ -140,6 +150,7 @@ def handle_generate_podcast(data):
             os.environ['GEMINI_API_KEY'] = api_key
             api_key_label = 'GEMINI_API_KEY'
 
+        # Add support for voice types
         conversation_config = {
             'creativity': float(data.get('creativity', 0.7)),
             'conversation_style': data.get('conversation_style', []),
@@ -167,6 +178,7 @@ def handle_generate_podcast(data):
 
         result = generate_podcast(
             urls=data.get('urls', []),
+            text=data.get('text', ''),    # Kap: added support for text input
             conversation_config=conversation_config,
             tts_model=tts_model,
             longform=bool(data.get('is_long_form', False)),
@@ -184,7 +196,7 @@ def handle_generate_podcast(data):
             shutil.copy2(result, output_path)
             emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
             emit('complete', {
-                'audioUrl': f'/audio/{filename}',
+                'audioUrl': f'{TEMP_DIR}/{filename}',
                 'transcript': None
             }, room=request.sid)
         elif hasattr(result, 'audio_path'):
@@ -279,11 +291,13 @@ def handle_generate_news_podcast(data):
         print(f"Traceback: {traceback.format_exc()}")
         emit('error', {'message': str(e)}, room=request.sid)
 
+### service audio file requests
 @app.route('/audio/<path:filename>')
 def serve_audio(filename):
     """Serve generated audio files"""
     # Check all possible audio paths
     possible_paths = [
+        os.path.join(TEMP_DIR, filename),
         os.path.join('data/audio', filename),
         os.path.join(AUDIO_DIR, filename),
         # Add any additional mounted volume paths here
@@ -399,10 +413,32 @@ def test_env():
         'api_token_length': len(API_TOKEN) if API_TOKEN else 0,
     })
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/upload', methods=['POST'])
+def upload_files():
+    if 'files' not in request.files:
+        return jsonify({'error': 'No files provided'}), 400
+    
+    files = request.files.getlist('files')
+    file_paths = []
+
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            file_paths.append(f'./public/uploads/{filename}')
+            #file_paths.append({filepath})
+            print(f"Uploaded: {filepath}")
+
+    return jsonify({'file_paths': file_paths})
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8080))
     socketio.run(app,
                  host='0.0.0.0',
                  port=port,
-                 debug=False,  # Set to False in production
+                 debug=True,  # Set to False in production
                  allow_unsafe_werkzeug=True)

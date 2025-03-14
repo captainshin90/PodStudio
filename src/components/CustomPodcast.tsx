@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Play, Download, X, ImagePlus } from "lucide-react";
+import { Loader2, Play, Download, X, ImagePlus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/FileUpload";
 
 type ConversationStyle =
   | "Engaging"
@@ -56,9 +57,10 @@ type EngagementTechnique =
   | "Anecdotes"
   | "Analogies"
   | "Humor";
-type TTSModel = "geminimulti" | "edge" | "openai" | "elevenlabs";
+type TTSModel = "gemini" |"geminimulti" | "edge" | "openai" | "elevenlabs";
 
 interface PodcastPayload {
+  text: string;    // just text, no urls
   urls: string[];
   name: string;
   tagline: string;
@@ -78,7 +80,8 @@ interface PodcastPayload {
 }
 
 const formSchema = z.object({
-  urls: z.string(),
+  text: z.string().default(""),
+  urls: z.string().default(""),
   podcastName: z.string(),
   podcastTagline: z.string(),
   instructions: z.string(),
@@ -90,7 +93,7 @@ const formSchema = z.object({
   dialogueStructure: z.array(z.string()),
   engagementTechniques: z.array(z.string()),
   ttsModel: z.string(),
-  imageUrls: z.string(),
+  imageUrls: z.string().default(""),
 });
 
 const extractUrls = (text: string): string[] => {
@@ -186,6 +189,7 @@ const AddCustomValue = ({
 };
 
 export function CustomPodcast() {
+  const [parsedText, setParsedText] = useState("");
   const [parsedUrls, setParsedUrls] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -194,11 +198,12 @@ export function CustomPodcast() {
   const [transcript, setTranscript] = useState("");
   const { toast } = useToast();
   const [parsedImageUrls, setParsedImageUrls] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      urls: "",
+      text: "",
       podcastName: "",
       podcastTagline: "",
       instructions: "",
@@ -209,13 +214,14 @@ export function CustomPodcast() {
       conversationStyles: ["Engaging", "Fast-paced", "Enthusiastic"],
       dialogueStructure: ["Discussions"],
       engagementTechniques: ["Questions"],
-      ttsModel: "geminimulti",
+      ttsModel: "gemini",
       imageUrls: "",
     },
   });
 
   useEffect(() => {
     const savedData = localStorage.getItem("podcast_form");
+    const savedText = localStorage.getItem("podcast_text");
     const savedUrls = localStorage.getItem("podcast_urls");
     const savedImageUrls = localStorage.getItem("podcast_image_urls");
 
@@ -226,6 +232,11 @@ export function CustomPodcast() {
       });
     }
 
+    if (savedText) {
+      setParsedText(savedText);
+    }
+
+    // if no URLs, use the text
     if (savedUrls) {
       setParsedUrls(JSON.parse(savedUrls));
     }
@@ -241,6 +252,10 @@ export function CustomPodcast() {
   }, [form.watch()]);
 
   useEffect(() => {
+    localStorage.setItem("podcast_text", parsedText);
+  }, [parsedText]);
+
+  useEffect(() => {
     localStorage.setItem("podcast_urls", JSON.stringify(parsedUrls));
   }, [parsedUrls]);
 
@@ -248,14 +263,23 @@ export function CustomPodcast() {
     localStorage.setItem("podcast_image_urls", JSON.stringify(parsedImageUrls));
   }, [parsedImageUrls]);
 
+
   const handleUrlInput = (text: string) => {
     const urls = extractUrls(text);
     if (urls.length > 0) {
       setParsedUrls((prev) => [...new Set([...prev, ...urls])]);
-      form.setValue("urls", "", { shouldValidate: true });
+      form.setValue("text", "", { shouldValidate: true });
       toast({
         title: "URLs Extracted",
         description: `Successfully extracted ${urls.length} URLs`,
+      });
+    }
+    else { // no urls, so we need to use the text as the text input
+      setParsedText(text);
+      form.setValue("text", text, { shouldValidate: false }); // no need to validate?
+      toast({
+        title: "No URLs Extracted",
+        description: "Using text as the text input to generate the podcast",
       });
     }
   };
@@ -296,8 +320,10 @@ export function CustomPodcast() {
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      const inputText = form.getValues("urls");
-      handleUrlInput(inputText);
+      const inputText = form.getValues("text");
+      if (inputText) {
+        handleUrlInput(inputText);
+      }
     }
   };
 
@@ -313,6 +339,8 @@ export function CustomPodcast() {
     switch (model) {
       case "geminimulti":
         return { key: sessionStorage.getItem("google_key"), name: "Google" };
+      case "gemini":
+        return { key: sessionStorage.getItem("google_key"), name: "Google" };
       case "openai":
         return { key: sessionStorage.getItem("openai_key"), name: "OpenAI" };
       case "elevenlabs":
@@ -326,12 +354,13 @@ export function CustomPodcast() {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("Form submitted", values);
     try {
-      // Validate URLs first
-      if (parsedUrls.length === 0) {
+      // Validate test, URLs or uploaded files
+      if (parsedText.length === 0 && parsedUrls.length === 0 && uploadedFiles.length === 0) {
         toast({
-          title: "No URLs",
-          description: "Please add at least one URL to generate the podcast",
+          title: "No Content",
+          description: "Please add text, URLs or upload files to generate the podcast",
           variant: "destructive",
         });
         return;
@@ -362,8 +391,10 @@ export function CustomPodcast() {
         console.log("Socket connected successfully");
         setStatusMessage("Connected to server");
 
+        // add text, voice types
         const payload: PodcastPayload = {
-          urls: parsedUrls,
+          text: values.text,
+          urls: [...parsedUrls, ...uploadedFiles],
           name: values.podcastName,
           tagline: values.podcastTagline,
           is_long_form: values.isLongForm,
@@ -382,6 +413,9 @@ export function CustomPodcast() {
         const requiredApiKey = getRequiredApiKey(values.ttsModel as TTSModel);
         if (requiredApiKey) {
           switch (values.ttsModel) {
+            case "gemini":
+              payload.google_key = requiredApiKey.key || undefined;
+              break;
             case "geminimulti":
               payload.google_key = requiredApiKey.key || undefined;
               break;
@@ -423,7 +457,7 @@ export function CustomPodcast() {
       socket.on(
         "complete",
         (data: { audioUrl: string; transcript: string }) => {
-          console.log("Podcast generation complete:", data);
+          console.log("Podcast generation complete:", data.audioUrl);
           setAudioUrl(data.audioUrl);
           setTranscript(data.transcript);
           cleanup();
@@ -441,6 +475,13 @@ export function CustomPodcast() {
         variant: "destructive",
       });
     }
+  };
+
+  // Add this separate handler for the form submit event
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submission attempted");
+    form.handleSubmit(onSubmit)(e);
   };
 
   const conversationStyles: ConversationStyle[] = [
@@ -471,8 +512,10 @@ export function CustomPodcast() {
   const clearSavedData = () => {
     localStorage.removeItem("podcast_form");
     localStorage.removeItem("podcast_urls");
+    localStorage.removeItem("podcast_text");
     localStorage.removeItem("podcast_image_urls");
     form.reset();
+    setParsedText("");
     setParsedUrls([]);
     setParsedImageUrls([]);
     toast({
@@ -499,7 +542,9 @@ export function CustomPodcast() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       const inputText = form.getValues("imageUrls");
-      handleImageUrlInput(inputText);
+      if (inputText) {
+        handleImageUrlInput(inputText);
+      }
     }
   };
 
@@ -509,8 +554,21 @@ export function CustomPodcast() {
     setParsedImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleFileUpload = (filePaths: string[]) => {
+    setUploadedFiles((prev) => [...new Set([...prev, ...filePaths])]);
+    toast({
+      title: "Files Uploaded",
+      description: `Successfully uploaded ${filePaths.length} files`,
+    });
+  };
+
+  // RETURN PAGE HTML
+  //
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form 
+      onSubmit={handleFormSubmit}
+      className="space-y-6"
+    >
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Custom Podcast</h2>
@@ -526,11 +584,11 @@ export function CustomPodcast() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="urls">Enter URLs</Label>
+            <Label htmlFor="text">Enter Text or URLs</Label>
             <Textarea
-              id="urls"
-              placeholder="Paste content containing URLs or type and press Enter to extract"
-              {...form.register("urls")}
+              id="text"
+              placeholder="Paste content containing text or URLs"
+              {...form.register("text")}
               onPaste={onPaste}
               onKeyDown={onKeyDown}
               className="min-h-[100px] font-mono text-sm"
@@ -636,6 +694,45 @@ export function CustomPodcast() {
             )}
           </div>
 
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Upload Files</Label>
+              <FileUpload onUpload={handleFileUpload} />
+            </div>
+
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Uploaded Files</Label>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {uploadedFiles.map((filePath, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
+                    >
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <Upload className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate font-mono">{filePath.split('/').pop()}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setUploadedFiles((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="podcastName">Podcast Name</Label>
@@ -650,7 +747,7 @@ export function CustomPodcast() {
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="advanced">
-              <AccordionTrigger>Advanced Settings</AccordionTrigger>
+              <AccordionTrigger><h2 className="text-xl font-semibold">Advanced Settings</h2></AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -953,8 +1050,11 @@ export function CustomPodcast() {
                           <SelectValue placeholder="Select TTS model" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="gemini">
+                            Google Gemini (requires API key)
+                          </SelectItem>
                           <SelectItem value="geminimulti">
-                            Google Gemini Multi (requires API key)
+                            Google Gemini Live Multi-Speaker English-only (requires API key)
                           </SelectItem>
                           <SelectItem value="edge">
                             Microsoft Edge TTS (Free)
@@ -968,6 +1068,63 @@ export function CustomPodcast() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Voices (model dependent)</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="button"
+                                className="h-6 w-6 p-0"
+                              >
+                                <InfoCircledIcon className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-sm">
+                              <div className="space-y-2 text-sm">
+                                <p className="font-semibold">
+                                  Voice Instructions:
+                                </p>
+                                <ol className="list-decimal pl-4 space-y-1">
+                                  <li>Go to Google</li>
+                                </ol>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Select
+                        value={form.watch("ttsModel")}
+                        onValueChange={(value: TTSModel) =>
+                          form.setValue("ttsModel", value)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select TTS model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gemini">
+                            Google Gemini 
+                          </SelectItem>
+                          <SelectItem value="geminimulti">
+                            Google Gemini Live Multi-Speaker English-only (requires API key)
+                          </SelectItem>
+                          <SelectItem value="edge">
+                            Microsoft Edge TTS (Free)
+                          </SelectItem>
+                          <SelectItem value="openai">
+                            OpenAI TTS (requires API key)
+                          </SelectItem>
+                          <SelectItem value="elevenlabs">
+                            ElevenLabs (requires API key)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                   </div>
                 </div>
               </AccordionContent>
@@ -1021,7 +1178,11 @@ export function CustomPodcast() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isGenerating}>
+          <Button 
+            type="submit"
+            className="w-full" 
+            disabled={isGenerating}
+          >
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

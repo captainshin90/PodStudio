@@ -1,42 +1,54 @@
-## AI Podcast Generator
-
-A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Powered by [podcastfy.ai](http://podcastfy.ai).
+## AI Podcast Studio
 
 
 ### Key Info 
 
+- This project is running in local .venv (Windows) with Python 3.13.2
+- Activate the venv (inn Windows):
+  > .\.venv\Scripts\activate  
+  (.venv) C:\SRC\PodStudio> 
+
 - Frontend is vite - React/Tailwind/shadcn/WebSocket
 - Backend is app.py - Flask/Python/NodeJs/Bun
 
-- This project is running in local .venv with Python 3.13.2
-  > .\.venv\Scripts\activate  # On Windows
+- Need to update app.py with server's IP address and port
 
 - To install the customized podcastfy package:
   (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
 
 - To build the development frontend and backend:
-  (.venv) > C:\SRC\openpod> bun dev  
+  (.venv) > C:\SRC\podstudio> bun dev  
 
 - Open browser: 
   http://localhost:5173
 
-- To debug backend, open App.py:
-  - open package.json, choose >Debug 
-  -- or Run Debug and pick Python Debugger Flask script
+- to debug frontend (Vite): 
+    - in the main .venv terminal:
+    (.venv)> bun dev   # runs both frontend and backend together
+    - from Run Debug: select "Launch Chrome against localhost
+    - opens a second debug terminal
 
-- To debug frontend, open App.tsx:
-  - Run Debug with Launch Chrome against localhost script  
+- To debug backend (App.py):
+    - in the main .venv terminal: 
+    (.venv) > bun dev:frontend   # will run vite on http://localhost:5173/
+    - from Run Debug: select "Python: Flask app.py"
+      - will run app.py on http://127.0.0.1:8080 
+      - opens a second debug terminal
+
+- OR, open package.json, choose >Debug button and choose configuration
+
 
 - To create a new GitHub repo: https://github.com/captainshin90/<new-repo>
-  (.venv) > git remote remove origin
+  (.venv) > git remote remove origin   # remove old clone origin
   (.venv) > git init
-  (.venv) > git remote add origin https://github.com/captainshin90/PodGenerator.git
+  (.venv) > git remote add origin https://github.com/captainshin90/PodStudio.git  # add my private repo as the origin 
   (.venv) > git config --global --add safe.directory /workspaces/<new-repo>  # when working with .devcontainer
 
 - To check in code to repo: 
   (.venv) > git add .
-  (.venv) > git commit -m "Describe code change"
-  (.venv) > git push -U origin main
+  (.venv) > git branch -M main  # when local code has no branch
+  (.venv) > git commit -m "Describe code change"  #
+  (.venv) > git push -u origin main               # push changed files to GitHub
 
 
 ### Prerequisites
