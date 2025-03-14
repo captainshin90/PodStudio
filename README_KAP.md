@@ -50,6 +50,8 @@
   (.venv) > git commit -m "Describe code change"  #
   (.venv) > git push -u origin main               # push changed files to GitHub
 
+- To remove a previously committed file from the repo (but not delete locally):
+  > git rm --cashed <filename>   (git rm -r --cached <folder/>)
 
 ### Prerequisites
 
