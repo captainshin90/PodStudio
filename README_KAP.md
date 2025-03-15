@@ -14,7 +14,8 @@
 - Need to update app.py with server's IP address and port
 
 - To install the customized podcastfy package:
-  (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
+xx (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
+xx don't need. 
 
 - To build the development frontend and backend:
   (.venv) > C:\SRC\podstudio> bun dev  
@@ -52,6 +53,16 @@
 
 - To remove a previously committed file from the repo (but not delete locally):
   > git rm --cashed <filename>   (git rm -r --cached <folder/>)
+
+
+### Deploy to Netlify
+
+- pull from GitHub https://github.com/captainshin90/PodStudio
+> npm install netlify-cli -g
+> netlify login
+> netlify init
+> netlify env:import .env  - name of .env file 
+
 
 ### Prerequisites
 

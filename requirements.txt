@@ -5,6 +5,7 @@ alabaster==1.0.0
 annotated-types==0.7.0
 anyio==4.6.2.post1
 attrs==24.2.0
+audioop-lts; python_version>='3.13'
 babel==2.16.0
 beautifulsoup4==4.12.3
 bidict==0.23.1
