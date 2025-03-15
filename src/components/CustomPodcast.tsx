@@ -35,29 +35,16 @@ import {
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Switch } from "@/components/ui/switch";
 import { FileUpload } from "@/components/FileUpload";
-
-type ConversationStyle =
-  | "Engaging"
-  | "Fast-paced"
-  | "Enthusiastic"
-  | "Educational"
-  | "Casual"
-  | "Professional"
-  | "Friendly";
-type DialogueStructure =
-  | "Topic Introduction"
-  | "Summary"
-  | "Discussions"
-  | "Q&A"
-  | "Farewell";
-type EngagementTechnique =
-  | "Questions"
-  | "Testimonials"
-  | "Quotes"
-  | "Anecdotes"
-  | "Analogies"
-  | "Humor";
-type TTSModel = "gemini" |"geminimulti" | "edge" | "openai" | "elevenlabs";
+import {
+  TTSModel,
+  ConversationStyle,
+  DialogueStructure,
+  EngagementTechnique,
+  ttsVoiceDefaults,
+  conversationStyles,
+  dialogueStructures,
+  engagementTechniques
+} from '@/config/podcast-config';
 
 interface PodcastPayload {
   text: string;    // just text, no urls
@@ -65,6 +52,7 @@ interface PodcastPayload {
   name: string;
   tagline: string;
   is_long_form: boolean;
+  word_count: number;
   creativity: number;
   conversation_style: string[];
   roles_person1: string;
@@ -76,8 +64,24 @@ interface PodcastPayload {
   google_key?: string;
   openai_key?: string;
   elevenlabs_key?: string;
+  hume_key?: string;
+  playht_key?: string;
+  secret_key?: string;
   image_urls?: string[];
+  voice_question: string;
+  voice_answer: string;
+  voice_model: string;
+  ending_message: string;
+  is_from_transcript: boolean;
 }
+
+/*
+interface VoiceConfig {
+  question: string;
+  answer: string;
+  model: string;
+}
+*/
 
 const formSchema = z.object({
   text: z.string().default(""),
@@ -86,6 +90,7 @@ const formSchema = z.object({
   podcastTagline: z.string(),
   instructions: z.string(),
   isLongForm: z.boolean().default(false),
+  wordCount: z.number().min(100).max(10000).default(250),
   creativityLevel: z.number().min(0).max(1),
   interviewerRole: z.string(),
   expertRole: z.string(),
@@ -94,6 +99,11 @@ const formSchema = z.object({
   engagementTechniques: z.array(z.string()),
   ttsModel: z.string(),
   imageUrls: z.string().default(""),
+  voiceQuestion: z.string(),
+  voiceAnswer: z.string(),
+  voiceModel: z.string(),
+  endingMessage: z.string(),
+  isFromTranscript: z.boolean().default(false),
 });
 
 const extractUrls = (text: string): string[] => {
@@ -188,6 +198,13 @@ const AddCustomValue = ({
   );
 };
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 export function CustomPodcast() {
   const [parsedText, setParsedText] = useState("");
   const [parsedUrls, setParsedUrls] = useState<string[]>([]);
@@ -204,10 +221,12 @@ export function CustomPodcast() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       text: "",
-      podcastName: "",
-      podcastTagline: "",
-      instructions: "",
+      urls: "",
+      podcastName: "Weekly News Update",
+      podcastTagline: "Your weekly update on the latest news",
+      instructions: "Generate a podcast about the latest news in a concise and engaging manner.",
       isLongForm: false,
+      wordCount: 250,
       creativityLevel: 0.7,
       interviewerRole: "Interviewer",
       expertRole: "Subject matter expert",
@@ -216,6 +235,11 @@ export function CustomPodcast() {
       engagementTechniques: ["Questions"],
       ttsModel: "gemini",
       imageUrls: "",
+      voiceQuestion: ttsVoiceDefaults.gemini.question,
+      voiceAnswer: ttsVoiceDefaults.gemini.answer,
+      voiceModel: ttsVoiceDefaults.gemini.model,
+      endingMessage: "Thank you for listening to this episode.",
+      isFromTranscript: false,
     },
   });
 
@@ -228,7 +252,9 @@ export function CustomPodcast() {
     if (savedData) {
       const parsedData = JSON.parse(savedData) as PodcastFormData;
       Object.entries(parsedData).forEach(([key, value]) => {
-        form.setValue(key as keyof PodcastFormData, value);
+        if (key !== 'text') {  // Skip restoring the text field
+          form.setValue(key as keyof PodcastFormData, value);
+        }
       });
     }
 
@@ -263,6 +289,14 @@ export function CustomPodcast() {
     localStorage.setItem("podcast_image_urls", JSON.stringify(parsedImageUrls));
   }, [parsedImageUrls]);
 
+  useEffect(() => {
+    const ttsModel = form.watch("ttsModel") as TTSModel;
+    const defaults = ttsVoiceDefaults[ttsModel];
+    
+    form.setValue("voiceQuestion", defaults.question);
+    form.setValue("voiceAnswer", defaults.answer);
+    form.setValue("voiceModel", defaults.model);
+  }, [form.watch("ttsModel")]);
 
   const handleUrlInput = (text: string) => {
     const urls = extractUrls(text);
@@ -344,10 +378,11 @@ export function CustomPodcast() {
       case "openai":
         return { key: sessionStorage.getItem("openai_key"), name: "OpenAI" };
       case "elevenlabs":
-        return {
-          key: sessionStorage.getItem("elevenlabs_key"),
-          name: "ElevenLabs",
-        };
+        return { key: sessionStorage.getItem("elevenlabs_key"), name: "ElevenLabs" };
+      case "hume":
+        return { key: sessionStorage.getItem("hume_key"), name: "Hume AI" };
+      case "playht":
+        return { key: sessionStorage.getItem("playht_key"), name: "Play HT" };
       case "edge":
         return null; // No API key required
     }
@@ -355,23 +390,24 @@ export function CustomPodcast() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("Form submitted", values);
+      
+    setIsGenerating(true);
+    setProgress(0);
+    setStatusMessage("Connecting to server...");
+    setAudioUrl(""); // Clear previous audio
+    setTranscript(""); // Clear previous transcript
+
+    // validate that we have content to generate the podcast
+    if (parsedText.length === 0 && parsedUrls.length === 0 && uploadedFiles.length === 0) {
+      toast({
+        title: "No Content",
+        description: "Please add text, URLs or upload files to generate the podcast",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      // Validate test, URLs or uploaded files
-      if (parsedText.length === 0 && parsedUrls.length === 0 && uploadedFiles.length === 0) {
-        toast({
-          title: "No Content",
-          description: "Please add text, URLs or upload files to generate the podcast",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setIsGenerating(true);
-      setProgress(0);
-      setStatusMessage("Connecting to server...");
-      setAudioUrl(""); // Clear previous audio
-      setTranscript(""); // Clear previous transcript
-
       // Create socket connection
       const socket = io({
         path: "/socket.io",
@@ -386,18 +422,20 @@ export function CustomPodcast() {
         setIsGenerating(false);
       };
 
-      // Add event handlers
+      // connected to the server, get payload and call the generate_podcast server endpoint
       socket.on("connect", () => {
         console.log("Socket connected successfully");
         setStatusMessage("Connected to server");
 
         // add text, voice types
         const payload: PodcastPayload = {
+          is_from_transcript: values.isFromTranscript,
           text: values.text,
           urls: [...parsedUrls, ...uploadedFiles],
           name: values.podcastName,
           tagline: values.podcastTagline,
           is_long_form: values.isLongForm,
+          word_count: values.wordCount,
           creativity: values.creativityLevel,
           conversation_style: values.conversationStyles,
           roles_person1: values.interviewerRole,
@@ -405,8 +443,13 @@ export function CustomPodcast() {
           dialogue_structure: values.dialogueStructure,
           user_instructions: values.instructions,
           engagement_techniques: values.engagementTechniques,
+          ending_message: values.endingMessage,
           tts_model: values.ttsModel as TTSModel,
           image_urls: parsedImageUrls.length > 0 ? parsedImageUrls : undefined,
+          voice_question: values.voiceQuestion,
+          voice_answer: values.voiceAnswer,
+          voice_model: values.voiceModel,
+          secret_key: sessionStorage.getItem("secret_key") || "",
         };
 
         // Add API key based on selected model
@@ -425,10 +468,16 @@ export function CustomPodcast() {
             case "elevenlabs":
               payload.elevenlabs_key = requiredApiKey.key || undefined;
               break;
+            case "hume":
+              payload.hume_key = requiredApiKey.key || undefined;
+              break;
+            case "playht":
+              payload.playht_key = requiredApiKey.key || undefined;
+              break;
           }
         }
-
-        socket.emit("generate_podcast", payload);
+        // call the generate_podcast server endpoint with the payload
+        socket.emit( "generate_podcast", payload);
       });
 
       socket.on("progress", (data: { progress: number; message: string }) => {
@@ -454,8 +503,7 @@ export function CustomPodcast() {
         cleanup();
       });
 
-      socket.on(
-        "complete",
+      socket.on("complete",
         (data: { audioUrl: string; transcript: string }) => {
           console.log("Podcast generation complete:", data.audioUrl);
           setAudioUrl(data.audioUrl);
@@ -483,31 +531,6 @@ export function CustomPodcast() {
     console.log("Form submission attempted");
     form.handleSubmit(onSubmit)(e);
   };
-
-  const conversationStyles: ConversationStyle[] = [
-    "Engaging",
-    "Fast-paced",
-    "Enthusiastic",
-    "Educational",
-    "Casual",
-    "Professional",
-    "Friendly",
-  ];
-  const dialogueStructures: DialogueStructure[] = [
-    "Topic Introduction",
-    "Summary",
-    "Discussions",
-    "Q&A",
-    "Farewell",
-  ];
-  const engagementTechniques: EngagementTechnique[] = [
-    "Questions",
-    "Testimonials",
-    "Quotes",
-    "Anecdotes",
-    "Analogies",
-    "Humor",
-  ];
 
   const clearSavedData = () => {
     localStorage.removeItem("podcast_form");
@@ -570,631 +593,718 @@ export function CustomPodcast() {
       className="space-y-6"
     >
       <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Custom Podcast</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={clearSavedData}
-            className="text-muted-foreground"
-          >
-            Clear Form
-          </Button>
-        </div>
-
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="text">Enter Text or URLs</Label>
-            <Textarea
-              id="text"
-              placeholder="Paste content containing text or URLs"
-              {...form.register("text")}
-              onPaste={onPaste}
-              onKeyDown={onKeyDown}
-              className="min-h-[100px] font-mono text-sm"
-            />
-          </div>
-
-          {parsedUrls.length > 0 && (
-            <div className="space-y-2">
-              <Label>Parsed URLs</Label>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                {parsedUrls.map((url, index) => {
-                  const domain = new URL(url).hostname;
-                  const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
-                    >
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <img
-                          src={faviconUrl}
-                          alt=""
-                          className="w-4 h-4 flex-shrink-0"
-                          onError={(e) => {
-                            // Fallback if favicon fails to load
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
-                        <span className="truncate font-mono">{url}</span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeUrl(index)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Custom Podcast</h2>
+            <div className="flex-1 flex justify-center items-center">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="from-transcript"
+                  checked={form.watch("isFromTranscript")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("isFromTranscript", checked)
+                  }
+                />
+                <Label htmlFor="from-transcript">From Transcript</Label>
               </div>
             </div>
-          )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSavedData}
+              className="text-muted-foreground"
+            >
+              Clear Form
+            </Button>
+          </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="imageUrls" className="flex items-center gap-2">
-                <ImagePlus className="h-4 w-4" />
-                Image URLs (Optional)
+              <Label htmlFor="text">
+                {form.watch("isFromTranscript") 
+                  ? "Enter Transcript Text or URL"
+                  : "Enter Source Text or URLs"}
               </Label>
               <Textarea
-                id="imageUrls"
-                placeholder="You can paste image URLs or type and press Enter to extract. These will be used as additional sources for the podcast."
-                {...form.register("imageUrls")}
-                onPaste={onImagePaste}
-                onKeyDown={onImageKeyDown}
+                id="text"
+                placeholder={form.watch("isFromTranscript")
+                  ? "Paste or enter a transcript containing text or URLs (press enter to parse a URL) \n" +
+                    "Example: \n" +
+                    "<Person1> How are you? </Person1> \n" +
+                    "<Person2> I'm good, thank you. How are you? </Person2>"
+                  : "Paste or enter source content containing text or URLs (press enter to parse URLs)"}
+                {...form.register("text")}
+                onPaste={onPaste}
+                onKeyDown={onKeyDown}
                 className="min-h-[100px] font-mono text-sm"
               />
             </div>
 
-            {parsedImageUrls.length > 0 && (
+            {parsedUrls.length > 0 && (
               <div className="space-y-2">
-                <Label>Parsed Image URLs</Label>
+                <Label>Parsed URLs</Label>
                 <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                  {parsedImageUrls.map((url, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
-                    >
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <div className="w-8 h-8 flex-shrink-0">
+                  {parsedUrls.map((url, index) => {
+                    const domain = new URL(url).hostname;
+                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
+                      >
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
                           <img
-                            src={url}
+                            src={faviconUrl}
                             alt=""
-                            className="w-full h-full object-cover rounded"
+                            className="w-4 h-4 flex-shrink-0"
                             onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src =
-                                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                              target.className = "w-full h-full p-1";
+                              // Fallback if favicon fails to load
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
                             }}
                           />
+                          <span className="truncate font-mono">{url}</span>
                         </div>
-                        <span className="truncate font-mono">{url}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeUrl(index)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeImageUrl(index)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Upload Files</Label>
-              <FileUpload onUpload={handleFileUpload} />
-            </div>
-
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Uploaded Files</Label>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                  {uploadedFiles.map((filePath, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
-                    >
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <Upload className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate font-mono">{filePath.split('/').pop()}</span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setUploadedFiles((prev) =>
-                            prev.filter((_, i) => i !== index)
-                          );
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="podcastName">Podcast Name</Label>
-              <Input id="podcastName" {...form.register("podcastName")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="podcastTagline">Podcast Tagline</Label>
-              <Input id="podcastTagline" {...form.register("podcastTagline")} />
-            </div>
-          </div>
-
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="advanced">
-              <AccordionTrigger><h2 className="text-xl font-semibold">Advanced Settings</h2></AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="instructions">
-                      Additional Instructions
-                    </Label>
-                    <Textarea
-                      id="instructions"
-                      placeholder="Add any specific instructions or preferences for the podcast generation..."
-                      {...form.register("instructions")}
-                      className="min-h-[100px]"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Optional: Add any specific requirements or preferences for
-                      the podcast generation
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="long-form"
-                        checked={form.watch("isLongForm")}
-                        onCheckedChange={(checked) =>
-                          form.setValue("isLongForm", checked)
-                        }
-                      />
-                      <Label htmlFor="long-form">Long-form Content</Label>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>
-                        Creativity Level ({form.watch("creativityLevel")})
-                      </Label>
-                      <Slider
-                        value={[form.watch("creativityLevel")]}
-                        onValueChange={([value]) =>
-                          form.setValue("creativityLevel", value)
-                        }
-                        max={1}
-                        step={0.1}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label>Interviewer Role</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Define the role of the first speaker (e.g.,
-                                Host, Moderator, Journalist)
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Input {...form.register("interviewerRole")} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label>Expert Role</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Define the role of the second speaker (e.g.,
-                                Guest Expert, Specialist, Researcher)
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Input {...form.register("expertRole")} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Conversation Style</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {customConversationStyles.map((style) => (
-                          <Badge
-                            key={style}
-                            variant={
-                              form.watch("conversationStyles").includes(style)
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer"
-                            onClick={() => {
-                              const current = form.watch("conversationStyles");
-                              if (current.includes(style)) {
-                                form.setValue(
-                                  "conversationStyles",
-                                  current.filter((s) => s !== style)
-                                );
-                              } else {
-                                form.setValue("conversationStyles", [
-                                  ...current,
-                                  style,
-                                ]);
-                              }
-                            }}
-                          >
-                            {style}
-                          </Badge>
-                        ))}
-                        <AddCustomValue
-                          onAdd={(value) => {
-                            setCustomConversationStyles((prev) => [
-                              ...prev,
-                              value as ConversationStyle,
-                            ]);
-                            const current = form.watch("conversationStyles");
-                            if (!current.includes(value)) {
-                              form.setValue("conversationStyles", [
-                                ...current,
-                                value,
-                              ]);
-                            }
-                          }}
-                          placeholder="Enter custom style"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Dialogue Structure</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {customDialogueStructures.map((structure) => (
-                          <Badge
-                            key={structure}
-                            variant={
-                              form
-                                .watch("dialogueStructure")
-                                .includes(structure)
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer"
-                            onClick={() => {
-                              const current = form.watch("dialogueStructure");
-                              if (current.includes(structure)) {
-                                form.setValue(
-                                  "dialogueStructure",
-                                  current.filter((s) => s !== structure)
-                                );
-                              } else {
-                                form.setValue("dialogueStructure", [
-                                  ...current,
-                                  structure,
-                                ]);
-                              }
-                            }}
-                          >
-                            {structure}
-                          </Badge>
-                        ))}
-                        <AddCustomValue
-                          onAdd={(value) => {
-                            setCustomDialogueStructures((prev) => [
-                              ...prev,
-                              value as DialogueStructure,
-                            ]);
-                            const current = form.watch("dialogueStructure");
-                            if (!current.includes(value)) {
-                              form.setValue("dialogueStructure", [
-                                ...current,
-                                value,
-                              ]);
-                            }
-                          }}
-                          placeholder="Enter custom structure"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Engagement Techniques</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {customEngagementTechniques.map((technique) => (
-                          <Badge
-                            key={technique}
-                            variant={
-                              form
-                                .watch("engagementTechniques")
-                                .includes(technique)
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer"
-                            onClick={() => {
-                              const current = form.watch(
-                                "engagementTechniques"
-                              );
-                              if (current.includes(technique)) {
-                                form.setValue(
-                                  "engagementTechniques",
-                                  current.filter((t) => t !== technique)
-                                );
-                              } else {
-                                form.setValue("engagementTechniques", [
-                                  ...current,
-                                  technique,
-                                ]);
-                              }
-                            }}
-                          >
-                            {technique}
-                          </Badge>
-                        ))}
-                        <AddCustomValue
-                          onAdd={(value) => {
-                            setCustomEngagementTechniques((prev) => [
-                              ...prev,
-                              value as EngagementTechnique,
-                            ]);
-                            const current = form.watch("engagementTechniques");
-                            if (!current.includes(value)) {
-                              form.setValue("engagementTechniques", [
-                                ...current,
-                                value,
-                              ]);
-                            }
-                          }}
-                          placeholder="Enter custom technique"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Text-to-Speech Model</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                type="button"
-                                className="h-6 w-6 p-0"
-                              >
-                                <InfoCircledIcon className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-sm">
-                              <div className="space-y-2 text-sm">
-                                <p className="font-semibold">
-                                  API Key Setup Instructions:
-                                </p>
-                                <p>
-                                  <strong>Google Gemini:</strong>
-                                </p>
-                                <ol className="list-decimal pl-4 space-y-1">
-                                  <li>Go to Google Cloud Console</li>
-                                  <li>
-                                    Enable both "Vertex AI API" and "Cloud
-                                    Text-to-Speech API"
-                                  </li>
-                                  <li>
-                                    Create an API key with access to these APIs
-                                  </li>
-                                  <li>
-                                    Add Cloud Text-to-Speech API permission to
-                                    the key
-                                  </li>
-                                </ol>
-                                <p>
-                                  <strong>OpenAI:</strong> Get your API key from
-                                  OpenAI dashboard
-                                </p>
-                                <p>
-                                  <strong>ElevenLabs:</strong> Get your API key
-                                  from ElevenLabs dashboard
-                                </p>
-                                <p>
-                                  <strong>Edge TTS:</strong> No API key required
-                                  - free to use
-                                </p>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Select
-                        value={form.watch("ttsModel")}
-                        onValueChange={(value: TTSModel) =>
-                          form.setValue("ttsModel", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select TTS model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gemini">
-                            Google Gemini (requires API key)
-                          </SelectItem>
-                          <SelectItem value="geminimulti">
-                            Google Gemini Live Multi-Speaker English-only (requires API key)
-                          </SelectItem>
-                          <SelectItem value="edge">
-                            Microsoft Edge TTS (Free)
-                          </SelectItem>
-                          <SelectItem value="openai">
-                            OpenAI TTS (requires API key)
-                          </SelectItem>
-                          <SelectItem value="elevenlabs">
-                            ElevenLabs (requires API key)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Voices (model dependent)</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                type="button"
-                                className="h-6 w-6 p-0"
-                              >
-                                <InfoCircledIcon className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-sm">
-                              <div className="space-y-2 text-sm">
-                                <p className="font-semibold">
-                                  Voice Instructions:
-                                </p>
-                                <ol className="list-decimal pl-4 space-y-1">
-                                  <li>Go to Google</li>
-                                </ol>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Select
-                        value={form.watch("ttsModel")}
-                        onValueChange={(value: TTSModel) =>
-                          form.setValue("ttsModel", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select TTS model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gemini">
-                            Google Gemini 
-                          </SelectItem>
-                          <SelectItem value="geminimulti">
-                            Google Gemini Live Multi-Speaker English-only (requires API key)
-                          </SelectItem>
-                          <SelectItem value="edge">
-                            Microsoft Edge TTS (Free)
-                          </SelectItem>
-                          <SelectItem value="openai">
-                            OpenAI TTS (requires API key)
-                          </SelectItem>
-                          <SelectItem value="elevenlabs">
-                            ElevenLabs (requires API key)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          {isGenerating && (
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
-              <p className="text-sm text-center text-muted-foreground">
-                {statusMessage || `Generating podcast... ${progress}%`}
-              </p>
-            </div>
-          )}
-
-          {audioUrl && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Generated Podcast</Label>
-                <audio controls className="w-full">
-                  <source src={audioUrl} type="audio/mpeg" />
-                  Your browser does not support the audio element.
-                </audio>
+                <Label>
+                  {form.watch("isFromTranscript")
+                    ? "Upload Transcript Files"
+                    : "Upload Source Files"}
+                </Label>
+                <FileUpload onUpload={handleFileUpload} />
               </div>
 
-              <div className="flex space-x-2">
-                <Button
-                  className="flex-1"
-                  onClick={() => window.open(audioUrl)}
-                  variant="secondary"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-              </div>
-
-              {transcript && (
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="transcript">
-                    <AccordionTrigger>View Transcript</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="bg-secondary/50 p-4 rounded-md">
-                        <pre className="whitespace-pre-wrap text-sm">
-                          {transcript}
-                        </pre>
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Uploaded Files</Label>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {uploadedFiles.map((filePath, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
+                      >
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <Upload className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate font-mono">{filePath.split('/').pop()}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setUploadedFiles((prev) =>
+                              prev.filter((_, i) => i !== index)
+                            );
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          )}
+            {!form.watch("isFromTranscript") && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrls" className="flex items-center gap-2">
+                    <ImagePlus className="h-4 w-4" />
+                    Image URLs (Optional)
+                  </Label>
+                  <Textarea
+                    id="imageUrls"
+                    placeholder="You can paste image URLs or type and press Enter to extract. These will be used as additional sources for the podcast."
+                    {...form.register("imageUrls")}
+                    onPaste={onImagePaste}
+                    onKeyDown={onImageKeyDown}
+                    className="min-h-[100px] font-mono text-sm"
+                  />
+                </div>
 
-          <Button 
-            type="submit"
-            className="w-full" 
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Podcast
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Generate Podcast
-              </>
+                {parsedImageUrls.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Parsed Image URLs</Label>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                      {parsedImageUrls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-secondary/50 p-2 rounded text-sm group"
+                        >
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                            <div className="w-8 h-8 flex-shrink-0">
+                              <img
+                                src={url}
+                                alt=""
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src =
+                                    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                  target.className = "w-full h-full p-1";
+                                }}
+                              />
+                            </div>
+                            <span className="truncate font-mono">{url}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeImageUrl(index)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-          </Button>
+
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="podcastName">Podcast Name</Label>
+                <Input id="podcastName" {...form.register("podcastName")} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="podcastTagline">Podcast Tagline</Label>
+                <Input id="podcastTagline" {...form.register("podcastTagline")} />
+              </div>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="advanced">
+                <AccordionTrigger><h2 className="text-xl font-semibold">Advanced Settings</h2></AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="instructions">
+                        Additional Instructions
+                      </Label>
+                      <Textarea
+                        id="instructions"
+                        placeholder="Add any specific instructions or preferences for the podcast generation..."
+                        {...form.register("instructions")}
+                        className="min-h-[100px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Optional: Add any specific requirements or preferences for
+                        the podcast generation
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex items-center space-x-4">
+                          <Switch
+                            id="long-form"
+                            checked={form.watch("isLongForm")}
+                            onCheckedChange={(checked) =>
+                              form.setValue("isLongForm", checked)
+                            }
+                          />
+                          <Label htmlFor="long-form">Long-form Content</Label>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="wordCount">Word Count</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-xs">
+                                    Target number of words for the generated podcast (100-10000)
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Input
+                            id="wordCount"
+                            type="number"
+                            min={100}
+                            max={10000}
+                            step={10}
+                            defaultValue={250}
+                            className="w-30"
+                            value={form.watch("wordCount")}
+                            {...form.register("wordCount", { valueAsNumber: true })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>
+                            Creativity Level ({form.watch("creativityLevel")})
+                          </Label>
+                          <Slider
+                            value={[form.watch("creativityLevel")]}
+                            onValueChange={([value]) =>
+                              form.setValue("creativityLevel", value)
+                            }
+                            max={1}
+                            step={0.1}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Interviewer Role</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-xs">
+                                    Define the role of the first speaker (e.g.,
+                                    Host, Moderator, Journalist)
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Input {...form.register("interviewerRole")} />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Expert Role</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-xs">
+                                    Define the role of the second speaker (e.g.,
+                                    Guest Expert, Specialist, Researcher)
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Input {...form.register("expertRole")} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Conversation Style</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {customConversationStyles.map((style) => (
+                            <Badge
+                              key={style}
+                              variant={
+                                form.watch("conversationStyles").includes(style)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="cursor-pointer"
+                              onClick={() => {
+                                const current = form.watch("conversationStyles");
+                                if (current.includes(style)) {
+                                  form.setValue(
+                                    "conversationStyles",
+                                    current.filter((s) => s !== style)
+                                  );
+                                } else {
+                                  form.setValue("conversationStyles", [
+                                    ...current,
+                                    style,
+                                  ]);
+                                }
+                              }}
+                            >
+                              {style}
+                            </Badge>
+                          ))}
+                          <AddCustomValue
+                            onAdd={(value) => {
+                              setCustomConversationStyles((prev) => [
+                                ...prev,
+                                value as ConversationStyle,
+                              ]);
+                              const current = form.watch("conversationStyles");
+                              if (!current.includes(value)) {
+                                form.setValue("conversationStyles", [
+                                  ...current,
+                                  value,
+                                ]);
+                              }
+                            }}
+                            placeholder="Enter custom style"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Dialogue Structure</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {customDialogueStructures.map((structure) => (
+                            <Badge
+                              key={structure}
+                              variant={
+                                form
+                                  .watch("dialogueStructure")
+                                  .includes(structure)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="cursor-pointer"
+                              onClick={() => {
+                                const current = form.watch("dialogueStructure");
+                                if (current.includes(structure)) {
+                                  form.setValue(
+                                    "dialogueStructure",
+                                    current.filter((s) => s !== structure)
+                                  );
+                                } else {
+                                  form.setValue("dialogueStructure", [
+                                    ...current,
+                                    structure,
+                                  ]);
+                                }
+                              }}
+                            >
+                              {structure}
+                            </Badge>
+                          ))}
+                          <AddCustomValue
+                            onAdd={(value) => {
+                              setCustomDialogueStructures((prev) => [
+                                ...prev,
+                                value as DialogueStructure,
+                              ]);
+                              const current = form.watch("dialogueStructure");
+                              if (!current.includes(value)) {
+                                form.setValue("dialogueStructure", [
+                                  ...current,
+                                  value,
+                                ]);
+                              }
+                            }}
+                            placeholder="Enter custom structure"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Engagement Techniques</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {customEngagementTechniques.map((technique) => (
+                            <Badge
+                              key={technique}
+                              variant={
+                                form
+                                  .watch("engagementTechniques")
+                                  .includes(technique)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className="cursor-pointer"
+                              onClick={() => {
+                                const current = form.watch(
+                                  "engagementTechniques"
+                                );
+                                if (current.includes(technique)) {
+                                  form.setValue(
+                                    "engagementTechniques",
+                                    current.filter((t) => t !== technique)
+                                  );
+                                } else {
+                                  form.setValue("engagementTechniques", [
+                                    ...current,
+                                    technique,
+                                  ]);
+                                }
+                              }}
+                            >
+                              {technique}
+                            </Badge>
+                          ))}
+                          <AddCustomValue
+                            onAdd={(value) => {
+                              setCustomEngagementTechniques((prev) => [
+                                ...prev,
+                                value as EngagementTechnique,
+                              ]);
+                              const current = form.watch("engagementTechniques");
+                              if (!current.includes(value)) {
+                                form.setValue("engagementTechniques", [
+                                  ...current,
+                                  value,
+                                ]);
+                              }
+                            }}
+                            placeholder="Enter custom technique"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="endingMessage">Ending Message</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  The message that will be played at the end of the podcast
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Input
+                          id="endingMessage"
+                          {...form.register("endingMessage")}
+                          placeholder="Enter the ending message for your podcast"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Text-to-Speech Model</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  type="button"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <InfoCircledIcon className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-sm">
+                                <div className="space-y-2 text-sm">
+                                  <p className="font-semibold">
+                                    API Key Setup Instructions:
+                                  </p>
+                                  <p>
+                                    <strong>Google Gemini:</strong>
+                                  </p>
+                                  <ol className="list-decimal pl-4 space-y-1">
+                                    <li>Go to Google Cloud Console</li>
+                                    <li>
+                                      Enable both "Vertex AI API" and "Cloud
+                                      Text-to-Speech API"
+                                    </li>
+                                    <li>
+                                      Create an API key with access to these APIs
+                                    </li>
+                                    <li>
+                                      Add Cloud Text-to-Speech API permission to
+                                      the key
+                                    </li>
+                                  </ol>
+                                  <p>
+                                    <strong>OpenAI:</strong> Get your API key from
+                                    OpenAI dashboard
+                                  </p>
+                                  <p>
+                                    <strong>ElevenLabs:</strong> Get your API key
+                                    from ElevenLabs dashboard
+                                  </p>
+                                  <p>
+                                    <strong>Edge TTS:</strong> No API key required
+                                    - free to use
+                                  </p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Select
+                          value={form.watch("ttsModel")}
+                          onValueChange={(value: TTSModel) =>
+                            form.setValue("ttsModel", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select TTS model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gemini">
+                              Google Gemini (requires API key)
+                            </SelectItem>
+                            <SelectItem value="geminimulti">
+                              Google Gemini Live Multi-Speaker English-only (requires API key)
+                            </SelectItem>
+                            <SelectItem value="edge">
+                              Microsoft Edge TTS (Free)
+                            </SelectItem>
+                            <SelectItem value="openai">
+                              OpenAI TTS (requires API key)
+                            </SelectItem>
+                            <SelectItem value="elevenlabs">
+                              ElevenLabs (requires API key)
+                            </SelectItem>
+                            <SelectItem value="hume">
+                              Hume AI (requires API key)
+                            </SelectItem>
+                            <SelectItem value="playht">
+                              Play HT (requires API key)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-4 mt-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Question Voice</Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">
+                                      {form.watch("ttsModel").startsWith("gemini") ? (
+                                        <>
+                                          Select a voice from the{" "}
+                                          <a 
+                                            href="https://cloud.google.com/text-to-speech/docs/list-voices-and-types"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-500 hover:underline"
+                                          >
+                                            Google Cloud Text-to-Speech voices list
+                                          </a>
+                                        </>
+                                      ) : (
+                                        "Voice used for the interviewer's questions"
+                                      )}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <Input
+                              {...form.register("voiceQuestion")}
+                              placeholder="Voice for questions"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Answer Voice</Label>
+                            <Input
+                              {...form.register("voiceAnswer")}
+                              placeholder="Voice for answers"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Voice Model</Label>
+                            <Input
+                              {...form.register("voiceModel")}
+                              placeholder="Voice model"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {isGenerating && (
+              <div className="space-y-2">
+                <Progress value={progress} className="w-full" />
+                <p className="text-sm text-center text-muted-foreground">
+                  {statusMessage || `Generating podcast... ${progress}%`}
+                </p>
+              </div>
+            )}
+
+            {audioUrl && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Generated Podcast</Label>
+                  <audio controls className="w-full">
+                    <source src={audioUrl} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => window.open(audioUrl)}
+                    variant="secondary"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+
+                {
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="transcript">
+                      <AccordionTrigger>View Transcript</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="bg-secondary/50 p-4 rounded-md">
+                          <pre className="whitespace-pre-wrap text-sm">
+                            {transcript}
+                          </pre>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                }
+              </div>
+            )}
+
+            <Button 
+              type="submit"
+              className="w-full" 
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Podcast
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Generate Podcast
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </Card>
     </form>

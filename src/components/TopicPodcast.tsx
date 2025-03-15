@@ -14,6 +14,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 export function TopicPodcast() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -33,7 +40,7 @@ export function TopicPodcast() {
       return;
     }
 
-    // Get the Gemini API key
+/*    // Get the Gemini API key
     const apiKey = sessionStorage.getItem("google_key");
     if (!apiKey) {
       toast({
@@ -43,7 +50,7 @@ export function TopicPodcast() {
       });
       return;
     }
-
+*/
     setIsGenerating(true);
     setProgress(0);
     setStatusMessage("Connecting to server...");
@@ -51,6 +58,7 @@ export function TopicPodcast() {
     setTranscript("");
 
     try {
+      // connect to the server
       const socket = io({
         path: "/socket.io",
         reconnection: true,
@@ -63,9 +71,11 @@ export function TopicPodcast() {
 
         const payload = {
           topics: topic,
-          google_key: apiKey,
+          google_key: sessionStorage.getItem("google_key") || undefined,
+          secret_key: sessionStorage.getItem("secret_key") || undefined,
         };
 
+        // call the generate_news_podcast server endpoint with the payload
         socket.emit("generate_news_podcast", payload);
       });
 
@@ -74,10 +84,9 @@ export function TopicPodcast() {
         setStatusMessage(data.message);
       });
 
-      socket.on(
-        "complete",
+      socket.on("complete",
         (data: { audioUrl: string; transcript: string }) => {
-          console.log("Podcast generation complete:", data);
+          console.log("Podcast generation complete:", data.audioUrl);
           setAudioUrl(data.audioUrl);
           setTranscript(data.transcript);
           socket.disconnect();
@@ -94,6 +103,13 @@ export function TopicPodcast() {
     }
   };
 
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-4">

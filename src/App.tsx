@@ -25,7 +25,7 @@ export default function App() {
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-3">Pod Studio</h1>
           <p className="text-lg text-muted-foreground mb-4">
-            Transform any content into engaging podcast conversations
+            Create and manage podcasts with AI
           </p>
         </div>
 

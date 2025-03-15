@@ -84,12 +84,73 @@ const API_KEY_INSTRUCTIONS = {
       },
     ],
   },
+  hume: {
+    title: "Get Hume AI API Key",
+    steps: [
+      {
+        title: "Create Hume AI Account",
+        steps: [
+          "Go to hume.ai",
+          "Sign up or log in to your account",
+          "Navigate to the API section",
+        ],
+      },
+      {
+        title: "Generate API Key",
+        steps: [
+          "Go to your Dashboard",
+          "Find the 'API Keys' section",
+          "Create a new API key",
+          "Copy your API key",
+        ],
+      },
+    ],
+  },
+  playht: {
+    title: "Get Play HT API Key",
+    steps: [
+      {
+        title: "Create Play HT Account",
+        steps: [
+          "Go to play.ht",
+          "Sign up or log in to your account",
+        ],
+      },
+      {
+        title: "Get API Credentials",
+        steps: [
+          "Go to your Dashboard",
+          "Navigate to the API section",
+          "Generate both User ID and API Key",
+          "Copy both credentials",
+        ],
+      },
+    ],
+  },
+  secret: {
+    title: "Secret Key",
+    steps: [
+      {
+        title: "Get Secret Key",
+        steps: [
+          "This key is used to read default API keys from the .env file",
+          "Contact your administrator to get the secret key",
+        ],
+      },
+    ],
+  },
 };
 
 function InstructionsDialog({
   instructions,
 }: {
-  instructions: (typeof API_KEY_INSTRUCTIONS)[keyof typeof API_KEY_INSTRUCTIONS];
+  instructions: (typeof API_KEY_INSTRUCTIONS)[keyof typeof API_KEY_INSTRUCTIONS] | {
+    title: string;
+    steps: Array<{
+      title: string;
+      steps: string[];
+    }>;
+  };
 }) {
   return (
     <Dialog>
@@ -126,23 +187,32 @@ function InstructionsDialog({
 
 export function APIKeys() {
   const [keys, setKeys] = useState({
+    secret: "",
     google: "",
     openai: "",
     elevenlabs: "",
+    hume: "",
+    playht: "",
   });
   const [showKeys, setShowKeys] = useState({
+    secret: false,
     google: false,
     openai: false,
     elevenlabs: false,
+    hume: false,
+    playht: false,
   });
   const { toast } = useToast();
 
   // Load saved keys on component mount
   useEffect(() => {
     const loadedKeys = {
+      secret: sessionStorage.getItem("secret_key") || "",
       google: sessionStorage.getItem("google_key") || "",
       openai: sessionStorage.getItem("openai_key") || "",
       elevenlabs: sessionStorage.getItem("elevenlabs_key") || "",
+      hume: sessionStorage.getItem("hume_key") || "",
+      playht: sessionStorage.getItem("playht_key") || "",
     };
     setKeys(loadedKeys);
   }, []);
@@ -176,58 +246,117 @@ export function APIKeys() {
       <h2 className="text-xl font-semibold mb-6">API Keys</h2>
 
       <div className="space-y-6">
-        {Object.entries(keys).map(([type, value]) => (
-          <div key={type} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor={type} className="capitalize">
-                {type === "google"
-                  ? "Google"
-                  : type === "openai"
-                  ? "OpenAI"
-                  : "ElevenLabs"}{" "}
-                API Key
-              </Label>
-              <InstructionsDialog
-                instructions={
-                  API_KEY_INSTRUCTIONS[
-                    type as keyof typeof API_KEY_INSTRUCTIONS
-                  ]
+        {/* Secret Key field */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="secret">Secret Key</Label>
+            <InstructionsDialog
+              instructions={{
+                title: "Secret Key",
+                steps: [
+                  {
+                    title: "Get Secret Key",
+                    steps: [
+                      "This key is used to read default API keys from the .env file",
+                      "Contact your administrator to get the secret key",
+                    ],
+                  },
+                ],
+              }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                id="secret"
+                type={showKeys.secret ? "text" : "password"}
+                value={keys.secret}
+                onChange={(e) =>
+                  setKeys((prev) => ({ ...prev, secret: e.target.value }))
                 }
+                className="pr-10"
               />
-            </div>
-            <div className="flex space-x-2">
-              <div className="relative flex-1">
-                <Input
-                  id={type}
-                  type={
-                    showKeys[type as keyof typeof keys] ? "text" : "password"
-                  }
-                  value={value}
-                  onChange={(e) =>
-                    setKeys((prev) => ({ ...prev, [type]: e.target.value }))
-                  }
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => toggleShowKey(type as keyof typeof keys)}
-                >
-                  {showKeys[type as keyof typeof keys] ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              <Button onClick={() => saveKey(type as keyof typeof keys)}>
-                Save
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => toggleShowKey("secret")}
+              >
+                {showKeys.secret ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
               </Button>
             </div>
+            <Button onClick={() => saveKey("secret")}>Save</Button>
           </div>
-        ))}
+        </div>
+
+        {/* Existing API key fields */}
+        {Object.entries(keys)
+          .filter(([type]) => type !== "secret")
+          .map(([type, value]) => (
+            <div key={type} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor={type} className="capitalize">
+                  {type === "google"
+                    ? "Google"
+                    : type === "openai"
+                    ? "OpenAI"
+                    : type === "elevenlabs"
+                    ? "ElevenLabs"
+                    : type === "hume"
+                    ? "Hume AI"
+                    : "Play HT"}{" "}
+                  API Key
+                </Label>
+                <InstructionsDialog
+                  instructions={
+                    API_KEY_INSTRUCTIONS[type as keyof typeof API_KEY_INSTRUCTIONS] || {
+                      title: `Get ${type === "hume" ? "Hume AI" : "Play HT"} API Key`,
+                      steps: [
+                        {
+                          title: "Contact Support",
+                          steps: ["Please contact support for API key instructions"],
+                        },
+                      ],
+                    }
+                  }
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id={type}
+                    type={showKeys[type as keyof typeof keys] ? "text" : "password"}
+                    value={value}
+                    onChange={(e) =>
+                      setKeys((prev) => ({ ...prev, [type]: e.target.value }))
+                    }
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => toggleShowKey(type as keyof typeof keys)}
+                  >
+                    {showKeys[type as keyof typeof keys] ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+                <Button onClick={() => saveKey(type as keyof typeof keys)}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          ))}
       </div>
     </Card>
   );

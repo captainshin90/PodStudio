@@ -1,0 +1,55 @@
+# This yaml file is not being used as it's not compatible with Vite.
+# It's being replaced with a TypeScript file that exports the config as a constants in the src/config/podcast-config.ts file.
+
+ttsVoiceDefaults:
+  elevenlabs:
+    question: "Chris"
+    answer: "Jessica"
+    model: "eleven_multilingual_v2"
+  openai:
+    question: "echo"
+    answer: "shimmer"
+    model: "tts-1-hd"
+  edge:
+    question: "en-US-JennyNeural"
+    answer: "en-US-EricNeural"
+    model: ""
+  gemini:
+    question: "en-US-Standard-A"
+    answer: "en-US-Standard-C"
+    model: ""
+  geminimulti:
+    question: "R"
+    answer: "S"
+    model: "en-US-Studio-MultiSpeaker"
+
+conversationStyles:
+  - "Engaging"
+  - "Fast-paced"
+  - "Enthusiastic"
+  - "Educational"
+  - "Casual"
+  - "Professional"
+  - "Friendly"
+
+dialogueStructures:
+  - "Topic Introduction"
+  - "Summary"
+  - "Discussions"
+  - "Q&A"
+  - "Farewell"
+
+engagementTechniques:
+  - "Questions"
+  - "Testimonials"
+  - "Quotes"
+  - "Anecdotes"
+  - "Analogies"
+  - "Humor"
+
+ttsModels:
+  - "gemini"
+  - "geminimulti"
+  - "edge"
+  - "openai"
+  - "elevenlabs" 
