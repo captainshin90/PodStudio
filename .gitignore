@@ -150,3 +150,5 @@ data/*
 public/*
 tmp/*
 static/*
+# Local Netlify folder
+.netlify
