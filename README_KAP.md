@@ -18,7 +18,11 @@ xx (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
 xx don't need. 
 
 - To build the development frontend and backend:
-  (.venv) > C:\SRC\podstudio> bun dev  
+  (.venv) > C:\SRC\podstudio> bun dev 
+
+- To build the development frontend and backend:
+  (.venv) > C:\SRC\podstudio> bun run build
+
 
 - Open browser: 
   http://localhost:5173
