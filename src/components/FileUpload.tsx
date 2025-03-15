@@ -7,7 +7,7 @@ interface FileUploadProps {
   onUpload: (filePaths: string[]) => void;
 }
 
-export function FileUpload({ onUpload }: FileUploadProps) {
+const FileUpload = ({ onUpload }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -86,4 +86,6 @@ export function FileUpload({ onUpload }: FileUploadProps) {
       </div>
     </div>
   );
-} 
+}
+
+export default FileUpload; 

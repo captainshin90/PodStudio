@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense, lazy } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Switch } from "@/components/ui/switch";
-import { FileUpload } from "@/components/FileUpload";
 import {
   TTSModel,
   ConversationStyle,
@@ -197,6 +196,9 @@ const AddCustomValue = ({
     </Badge>
   );
 };
+
+// Replace dynamic imports with React.lazy and wrap usage in Suspense
+const FileUpload = lazy(() => import('@/components/FileUpload'));
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -688,7 +690,9 @@ export function CustomPodcast() {
                     ? "Upload Transcript Files"
                     : "Upload Source Files"}
                 </Label>
-                <FileUpload onUpload={handleFileUpload} />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <FileUpload onUpload={handleFileUpload} />
+                </Suspense>
               </div>
 
               {uploadedFiles.length > 0 && (
