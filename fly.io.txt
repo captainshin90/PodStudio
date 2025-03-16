@@ -1,10 +1,9 @@
 
+filepath='./static/uploads\\easthamzoning.txt'
+filepaths=['./static/uploads\\easthamzoning.txt']
+
+response OK
 
 
-
-
-
-
-
-
-
+Check again to see if the file is deleted by fly.io:
+https://podstudio.fly.dev/static/tmp/podcast_5be828751fbe8c5a.mp3

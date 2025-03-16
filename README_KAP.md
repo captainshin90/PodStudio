@@ -11,7 +11,7 @@ To start .venv:
 > git add .
 > git commit -m "fix file upload"
 > git push -u origin main
-> fly auth login
+> fly auth login     # once per session
 > fly deploy
 
 ### Key Info 

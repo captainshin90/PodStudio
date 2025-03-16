@@ -403,6 +403,15 @@ export function CustomPodcast() {
       return;
     }
     
+    // check if any data changed from the previous form submission
+//    if (JSON.stringify(form.getValues()) === JSON.stringify(values)) {
+//      toast({
+//        title: "No Changes",
+//        description: "Please make changes to the form to generate the podcast",
+//      });
+//      return;
+//    }
+
     setIsGenerating(true);
     setProgress(0);
     setStatusMessage("Connecting to server...");
@@ -581,12 +590,18 @@ export function CustomPodcast() {
     });
   };
 
-  // Add this separate handler for the form submit event
-//  const handleFormSubmit = (e: React.FormEvent) => {
-//    e.preventDefault();
-//    console.log("Form submission attempted");
-//    form.handleSubmit(onSubmit)(e);
-//  };
+  // Add this function before the return statement
+  const handleDownload = () => {
+    if (audioUrl) {
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      link.download = 'podcast.mp3'; // You can customize the filename
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    return false;
+  };
 
   ///////////////////////////////////////////////////////////////////////////////
   // RETURN PAGE HTML
@@ -620,6 +635,7 @@ export function CustomPodcast() {
             <Button
               variant="outline"
               size="sm"
+              type="button"
               onClick={clearSavedData}
               className="text-muted-foreground"
             >
@@ -1271,9 +1287,10 @@ export function CustomPodcast() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button
+                  <Button 
                     className="flex-1"
-                    onClick={() => window.open(audioUrl)}
+                    type="button"
+                    onClick={handleDownload}
                     variant="secondary"
                   >
                     <Download className="w-4 h-4 mr-2" />
