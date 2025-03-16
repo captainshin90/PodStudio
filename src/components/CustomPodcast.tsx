@@ -545,9 +545,10 @@ export function CustomPodcast() {
     setParsedText("");
     setParsedUrls([]);
     setParsedImageUrls([]);
+    setUploadedFiles([]);
     toast({
       title: "Form Cleared",
-      description: "All saved data has been cleared",
+      description: "Entered data has been cleared and set with default values",
     });
     return false; // prevent default form submission
   };
