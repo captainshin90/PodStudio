@@ -7,7 +7,7 @@ To start .venv:
 > bun run dev:frontend
   > Debug: Launch Chrome against localhost
   > Debug: Python: Flask app.py
-> bun run build
+> bun run build && ls
 > git add .
 > git commit -m "fix file upload"
 > git push -u origin main

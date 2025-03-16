@@ -31,14 +31,16 @@ const FileUpload = ({ onUpload }: FileUploadProps) => {
         validFiles.forEach(file => {
           formData.append("files", file);
         });
-
+        // call the backend file upload endpoint
         const response = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
 
+        // check if the upload was successful
         if (!response.ok) throw new Error("Upload failed");
 
+        // get the file paths from the response
         const data = await response.json();
         onUpload(data.file_paths);
       } catch (error: any) {

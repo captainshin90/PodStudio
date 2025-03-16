@@ -640,8 +640,13 @@ def upload_files():
             file.save(filepath)
             # in local windows dev, a full os.path (e.g. C:/) doesn't work
             # file_paths.append(f'./static/uploads/{filename}')
-            file_paths.append(filepath)  
+            # file_paths.append(filepath)
+            # try returning a URL instead
+            # get the base URL
+            base_url = request.url_root
+            file_paths.append(f'{base_url}/static/uploads/{filename}')
             print(f"Uploaded: {filepath}")
+            print(f"File URL: {file_paths[-1]}")
 
     return jsonify({'file_paths': file_paths})
 
