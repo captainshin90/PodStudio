@@ -393,12 +393,6 @@ export function CustomPodcast() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("Form submitted", values);
       
-    setIsGenerating(true);
-    setProgress(0);
-    setStatusMessage("Connecting to server...");
-    setAudioUrl(""); // Clear previous audio
-    setTranscript(""); // Clear previous transcript
-
     // validate that we have content to generate the podcast
     if (parsedText.length === 0 && parsedUrls.length === 0 && uploadedFiles.length === 0) {
       toast({
@@ -409,6 +403,12 @@ export function CustomPodcast() {
       return;
     }
     
+    setIsGenerating(true);
+    setProgress(0);
+    setStatusMessage("Connecting to server...");
+    setAudioUrl(""); // Clear previous audio
+    setTranscript(""); // Clear previous transcript
+
     try {
       // Create socket connection
       const socket = io({
@@ -527,13 +527,6 @@ export function CustomPodcast() {
     }
   };
 
-  // Add this separate handler for the form submit event
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submission attempted");
-    form.handleSubmit(onSubmit)(e);
-  };
-
   const clearSavedData = () => {
     localStorage.removeItem("podcast_form");
     localStorage.removeItem("podcast_urls");
@@ -547,6 +540,7 @@ export function CustomPodcast() {
       title: "Form Cleared",
       description: "All saved data has been cleared",
     });
+    return false; // prevent default form submission
   };
 
   // Convert the constant arrays to state so we can add to them
@@ -587,14 +581,21 @@ export function CustomPodcast() {
     });
   };
 
+  // Add this separate handler for the form submit event
+//  const handleFormSubmit = (e: React.FormEvent) => {
+//    e.preventDefault();
+//    console.log("Form submission attempted");
+//    form.handleSubmit(onSubmit)(e);
+//  };
+
+  ///////////////////////////////////////////////////////////////////////////////
   // RETURN PAGE HTML
-  //
+  ///////////////////////////////////////////////////////////////////////////////
+  
   return (
-    <form 
-      onSubmit={handleFormSubmit}
-      className="space-y-6"
-    >
-      <Card className="p-6">
+//    <form onSubmit={handleFormSubmit} className="space-y-6">
+     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+       <Card className="p-6">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Custom Podcast</h2>
@@ -843,7 +844,7 @@ export function CustomPodcast() {
                             <Label htmlFor="wordCount">Word Count</Label>
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger asChild>
                                   <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -889,7 +890,7 @@ export function CustomPodcast() {
                             <Label>Interviewer Role</Label>
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger asChild>
                                   <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -909,7 +910,7 @@ export function CustomPodcast() {
                             <Label>Expert Role</Label>
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger asChild>
                                   <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -1083,7 +1084,7 @@ export function CustomPodcast() {
                           <Label htmlFor="endingMessage">Ending Message</Label>
                           <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger>
+                              <TooltipTrigger asChild>
                                 <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
@@ -1197,7 +1198,7 @@ export function CustomPodcast() {
                               <Label>Question Voice</Label>
                               <TooltipProvider>
                                 <Tooltip>
-                                  <TooltipTrigger>
+                                  <TooltipTrigger asChild>
                                     <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                                   </TooltipTrigger>
                                   <TooltipContent>

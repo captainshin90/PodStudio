@@ -65,7 +65,8 @@ if not API_TOKEN:
 
 # Enable CORS in development
 if app.debug:
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+    CORS(app)
+    # CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
     # Serve index.html from root directory in development
     @app.route('/')
     def index():
@@ -637,10 +638,9 @@ def upload_files():
             filename = secure_filename(file.filename)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
-            # in local windows dev, a full path (e.g. C:/) doesn't work
+            # in local windows dev, a full os.path (e.g. C:/) doesn't work
             # file_paths.append(f'./static/uploads/{filename}')
-            # file_paths.append(f'./static/uploads/{filename}')
-            file_paths.append(filepath)  # this raises an error in JSON
+            file_paths.append(filepath)  
             print(f"Uploaded: {filepath}")
 
     return jsonify({'file_paths': file_paths})
