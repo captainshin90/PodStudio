@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"py app.py\" \"vite\"",
+    "dev": "concurrently \"python app.py\" \"vite\"",
     "dev:frontend": "vite",
-    "dev:backend": "py app.py",
+    "dev:backend": "python app.py",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -23,6 +23,11 @@ xx don't need.
 - To build the development frontend and backend:
   (.venv) > C:\SRC\podstudio> bun run build
 
+- To regenerate the bun.lockb file, simply run bun install in your project directory. This will re-evaluate your dependencies and create a new lockfile based on your package.json. 
+  (.venv> > bun install)
+
+- To regenerate package-lock.json, run:
+  (.venv) > npm install --package-lock 
 
 - Open browser: 
   http://localhost:5173
@@ -60,7 +65,7 @@ xx don't need.
 
 
 ### Deploy to Netlify
-
+- for Bun, the publishing site is "static"
 - pull from GitHub https://github.com/captainshin90/PodStudio
 > npm install netlify-cli -g
 > netlify login
