@@ -622,7 +622,7 @@ def serve_audio(filename):
     return jsonify({'error': 'Audio file not found'}), 404
 
 ### ------------------------------------------------------------------------------------------------
-### upload files
+### upload files return file paths
 ### ------------------------------------------------------------------------------------------------
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
@@ -638,8 +638,9 @@ def upload_files():
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
             # in local windows dev, a full path (e.g. C:/) doesn't work
-            # file_paths.append(f'./public/uploads/{filename}')
-            file_paths.append({filepath})  
+            # file_paths.append(f'./static/uploads/{filename}')
+            # file_paths.append(f'./static/uploads/{filename}')
+            file_paths.append(filepath)  # this raises an error in JSON
             print(f"Uploaded: {filepath}")
 
     return jsonify({'file_paths': file_paths})

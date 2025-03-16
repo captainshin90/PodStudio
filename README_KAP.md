@@ -1,13 +1,16 @@
 ## AI Podcast Studio
 
+.\.venv\Scripts\activate
 
 ### Key Info 
+
+Admin URL: https://fly.io/apps/podstudio
 
 Deployed site: https://podstudio.fly.dev/
 
 - This project is running in local .venv (Windows) with Python 3.13.2
 - Activate the venv (inn Windows):
-  > .\.venv\Scripts\activate  
+  > .\.venv\Scripts\activate
   (.venv) C:\SRC\PodStudio> 
 
 - Frontend is vite - React/Tailwind/shadcn/WebSocket
@@ -17,7 +20,7 @@ Deployed site: https://podstudio.fly.dev/
 
 - To install the customized podcastfy package:
 xx (.venv) > pip install C:/SRC/podcastfy/dist/podcastfy-0.4.1.tar.gz
-xx don't need. 
+xx don't need, use standard podcastfy package 
 
 - To build the development frontend and backend:
   (.venv) > C:\SRC\podstudio> bun dev 
@@ -26,13 +29,17 @@ xx don't need.
   (.venv) > C:\SRC\podstudio> bun run build
 
 - To regenerate the bun.lockb file, simply run bun install in your project directory. This will re-evaluate your dependencies and create a new lockfile based on your package.json. 
-  (.venv> > bun install)
+  (.venv> > bun install
 
 - To regenerate package-lock.json, run:
   (.venv) > npm install --package-lock 
 
 - Open browser: 
   http://localhost:5173
+
+### Debugging 
+
+- look for error messages in both terminals and debug console
 
 - to debug frontend (Vite): 
     - in the main .venv terminal:
@@ -46,6 +53,7 @@ xx don't need.
     - from Run Debug: select "Python: Flask app.py"
       - will run app.py on http://127.0.0.1:8080 
       - opens a second debug terminal
+
 
 - OR, open package.json, choose >Debug button and choose configuration
 
@@ -212,6 +220,12 @@ Deploy Token: name: "kapremote"
 FlyV1 fm2_lJPECAAAAAAACGlqxBAFOrnNuXvWoXr6YHcP2nTrwrVodHRwczovL2FwaS5mbHkuaW8vdjGWAJLOAA9nCB8Lk7lodHRwczovL2FwaS5mbHkuaW8vYWFhL3YxxDxbonrVi192QZH5w0ZxRxigF0/cXarVnyNbb14TlFksrdi55iCEmc3DMCCcT5m3Ot3IkMHEBp+ay2Z8APDETlvjGr0yVYed3pW8GZCyWRNQBD8InMX0UGSV6uv2/41xecJ1xY+wg34lArcEtiNYVVY+7vp+4KfUg2D2crF493o6a+OL38XmTh+U3CztKg2SlAORgc4Aam12HwWRgqdidWlsZGVyH6J3Zx8BxCBD+VH6EgXoa59UWzfdPZSLq35Pm/F3NIhz31lIng+/bg==,fm2_lJPETlvjGr0yVYed3pW8GZCyWRNQBD8InMX0UGSV6uv2/41xecJ1xY+wg34lArcEtiNYVVY+7vp+4KfUg2D2crF493o6a+OL38XmTh+U3CztKsQQwCeM0pLhj2FfwlOpYxhZpsO5aHR0cHM6Ly9hcGkuZmx5LmlvL2FhYS92MZgEks5n1jgEzwAAAAEjzlYiF84ADs7oCpHOAA7O6AzEEEQQt4RFvfQQMbho4QRrf/rEIEN/K1Mwn1OE1D09uvBtH7O0gPXAcIFcdl8gEYSRrtfM
 
 
+
+Run `fly tokens create deploy -x 999999h` to create a token and set it as the FLY_API_TOKEN secret in your GitHub repository settings
+See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions
+
+
+
 Issues with Bun lock file:
 https://bun.sh/blog/bun-lock-text-lockfile
 - bun.lock is text file new format
@@ -221,139 +235,3 @@ How to deploy .env file to Fly.io:
 - use command: fly secrets set API_KEY=....
 - or use Fly.io admin console
 
-Your API will be available at:
-- Web UI: `https://your-app.fly.dev`
-- API Endpoint: `https://your-app.fly.dev/api/generate-from-transcript`
-
-Make sure to include your API token in requests:
-
-```bash
-curl -X POST \
-  https://your-app.fly.dev/api/generate-from-transcript \
-  -H 'Authorization: Bearer your_api_token' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "transcript": "Your transcript here",
-    "podcast_name": "My Podcast",
-    "google_key": "your_google_api_key"
-  }'
-```
-
-### Project Structure
-
-```
-.
-├── src/                  # Frontend source code
-│   ├── components/       # React components
-│   ├── lib/             # Utility functions
-│   └── hooks/           # Custom React hooks
-├── app.py               # Flask backend
-├── requirements.txt     # Python dependencies
-└── fly.toml            # Fly.io configuration
-```
-
-### Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### API Endpoints
-
-#### Generate Podcast from Transcript
-
-A secure endpoint that generates podcasts from existing transcripts. Requires API token authentication.
-
-##### Authentication
-
-1. Generate a secure API token and add it to your `.env` file:
-```bash
-# Generate a secure token
-openssl rand -hex 32
-
-# Add to .env
-API_TOKEN=your_generated_token
-```
-
-##### Endpoint Details
-
-- **URL**: `/api/generate-from-transcript`
-- **Method**: `POST`
-- **Auth Required**: Yes (Bearer Token)
-- **Headers**:
-  ```
-  Authorization: Bearer your_api_token
-  Content-Type: application/json
-  ```
-
-##### Request Body
-```json
-{
-  "transcript": "Your conversation transcript here",
-  "tts_model": "geminimulti", // optional
-  "creativity": 0.7, // optional
-  "conversation_style": ["casual", "humorous"], // optional
-  "roles_person1": "Host", // optional
-  "roles_person2": "Guest", // optional
-  "dialogue_structure": ["Introduction", "Content", "Conclusion"], // optional
-  "podcast_name": "My Custom Podcast", // optional
-  "podcast_tagline": "", // optional
-  "output_language": "English", // optional
-  "user_instructions": "", // optional
-  "engagement_techniques": [], // optional
-  "ending_message": "Thank you for listening", // optional
-  "google_key": "your_google_api_key" // required for gemini/geminimulti
-}
-```
-
-##### Response
-Success Response:
-
-```json
-{
-  "success": true,
-  "audio_url": "/audio/transcript_podcast_abc123.mp3",
-  "transcript": "Processed transcript..." // if available
-}
-```
-
-Error Response:
-```json
-{
-  "error": "Error message here"
-}
-```
-
-##### Example Usage
-
-```bash
-curl -X POST \
-  http://your-server/api/generate-from-transcript \
-  -H 'Authorization: Bearer your_api_token' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "transcript": "<Person1> Hi and welcome to the podcast! </Person1>\n<Person2> Thanks for having me! </Person2>\n<Person1> Let'\''s get started with our first topic. </Person1>",
-    "podcast_name": "My Custom Podcast",
-    "google_key": "your_google_api_key"
-  }'
-```
-
-For Windows PowerShell users:
-
-```powershell
-$body = @{
-    transcript = "<Person1> Hi and welcome to the podcast! </Person1>`n<Person2> Thanks for having me! </Person2>`n<Person1> Let's get started with our first topic. </Person1>"
-    podcast_name = "My Custom Podcast"
-    google_key = "your_google_api_key"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post `
-    -Uri "http://your-server/api/generate-from-transcript" `
-    -Headers @{
-        "Authorization" = "Bearer your_api_token"
-        "Content-Type" = "application/json"
-    } `
-    -Body $body
-```
