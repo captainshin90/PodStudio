@@ -24,22 +24,27 @@ load_dotenv(dotenv_path=env_path, override=True)
 # if need to use \ slash: use a r prefix: r"C:\path\to\file"
 
 # Flask uses the static folder for static files like images, css, and js
-TEMP_AUDIO_DIR = './tmp/audio'
-UPLOAD_FOLDER = './public/uploads'
+# Fly.io doesn't allow access to the root directory, 
+# so we need to use the static folder for the temp and upload directories
 STATIC_DIR = './static'
-# STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
+TEMP_DIR = './static/tmp'
+UPLOAD_FOLDER = './static/uploads'
 AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
 TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
+# STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
+# UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'public/uploads')
+# TEMP_DIR = os.path.join(os.path.dirname(__file__), 'public/tmp/audio')
+
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
 
-print(f"TEMP_AUDIO_DIR: {TEMP_AUDIO_DIR}")
+print(f"TEMP_DIR: {TEMP_DIR}")
 print(f"UPLOAD_FOLDER: {UPLOAD_FOLDER}")
 print(f"STATIC_DIR: {STATIC_DIR}")
 print(f"AUDIO_DIR: {AUDIO_DIR}")
 print(f"TRANSCRIPT_DIR: {TRANSCRIPT_DIR}")
 
-os.makedirs(TEMP_AUDIO_DIR, exist_ok=True)
+os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -185,7 +190,7 @@ def handle_generate_podcast(data):
 
         api_key_label = None
         # Set up API keys based on selected model
-        if tts_model in ['gemini', 'geminimulti']:
+        if tts_model == 'gemini':
             api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
             if not api_key:
                 raise ValueError("app.py: Missing Google API key")
@@ -193,33 +198,72 @@ def handle_generate_podcast(data):
             os.environ['GEMINI_API_KEY'] = api_key
             api_key_label = 'GEMINI_API_KEY'
             default_voices = {
-                'question': data.get('voice_question', "en-US-Journey-D"), 
-                'answer': data.get('voice_answer', "en-US-Journey-O")
+                'question': data.get('voice_question', "en-US-Standard-A"), 
+                'answer': data.get('voice_answer', "en-US-Standard-C")
             }
+            voice_model = data.get('voice_model', "")
+        elif tts_model == 'geminimulti':
+            api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
+            if not api_key:
+                raise ValueError("app.py: Missing Google API key")
+            os.environ['GOOGLE_API_KEY'] = api_key
+            os.environ['GEMINI_API_KEY'] = api_key
+            api_key_label = 'GEMINI_API_KEY'
+            default_voices = {
+                'question': data.get('voice_question', "R"), 
+                'answer': data.get('voice_answer', "S")
+            }
+            voice_model = data.get('voice_model', "en-US-Studio-MultiSpeaker")
+        elif tts_model == 'edge':
+            default_voices = {
+                'question': data.get('voice_question', "en-US-JennyNeural"), 
+                'answer': data.get('voice_answer', "en-US-EricNeural"),
+            }
+            voice_model = data.get('voice_model', "")
         elif tts_model == 'openai':
             api_key = os.getenv('OPENAI_API_KEY') if use_default_keys else data.get('openai_key')
             if not api_key:
                 raise ValueError("app.py: Missing OpenAI API key")
             os.environ['OPENAI_API_KEY'] = api_key
             api_key_label = 'OPENAI_API_KEY'
+            default_voices = {
+                'question': data.get('voice_question', "echo"), 
+                'answer': data.get('voice_answer', "shimmer"),
+            }
+            voice_model = data.get('voice_model', "tts-1-hd")
         elif tts_model == 'elevenlabs':
             api_key = os.getenv('ELEVENLABS_API_KEY') if use_default_keys else data.get('elevenlabs_key')
             if not api_key:
                 raise ValueError("app.py: Missing ElevenLabs API key")
             os.environ['ELEVENLABS_API_KEY'] = api_key
             api_key_label = 'ELEVENLABS_API_KEY'
+            default_voices = {
+                'question': data.get('voice_question', "Chris"), 
+                'answer': data.get('voice_answer', "Jessica"),
+            }
+            voice_model = data.get('voice_model', "eleven_multilingual_v2")
         elif tts_model == 'hume':
             api_key = os.getenv('HUME_API_KEY') if use_default_keys else data.get('hume_key')
             if not api_key:
                 raise ValueError("app.py: Missing Hume AI API key")
             os.environ['HUME_API_KEY'] = api_key
             api_key_label = 'HUME_API_KEY'
+            default_voices = {
+                'question': data.get('voice_question', "Default"), 
+                'answer': data.get('voice_answer', "Default"),
+            }
+            voice_model = data.get('voice_model', "default")
         elif tts_model == 'playht':
             api_key = os.getenv('PLAYHT_API_KEY') if use_default_keys else data.get('playht_key')
             if not api_key:
                 raise ValueError("app.py: Missing Play HT API key")
             os.environ['PLAYHT_API_KEY'] = api_key
             api_key_label = 'PLAYHT_API_KEY'
+            default_voices = {
+                'question': data.get('voice_question', "Default"), 
+                'answer': data.get('voice_answer', "Default"),
+            }
+            voice_model = data.get('voice_model', "default")  
 
         # Extract conversation config from data
         conversation_config = {
@@ -235,7 +279,7 @@ def handle_generate_podcast(data):
             'user_instructions': data.get('user_instructions'),
             'engagement_techniques': data.get('engagement_techniques', []),
             'text_to_speech': {
-                'temp_audio_dir': TEMP_AUDIO_DIR,
+                'temp_audio_dir': TEMP_DIR,
                 'ending_message': data.get('ending_message', "Bye Bye!"),
                 'default_tts_model': tts_model,
                 'audio_format': 'mp3',
@@ -245,7 +289,7 @@ def handle_generate_podcast(data):
                 },
                 tts_model: {
                     'default_voices': default_voices, 
-                    'model': tts_model
+                    'model': voice_model
                 }
             }
         }
@@ -303,16 +347,16 @@ def handle_generate_podcast(data):
         # Handle the result. Create a new file and copy the result to it.
         if isinstance(result, str) and os.path.isfile(result):
             filename = f"podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_AUDIO_DIR, filename)
+            output_path = os.path.join(TEMP_DIR, filename)
             shutil.copy2(result, output_path)
             emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
             emit('complete', {
-                'audioUrl': f'{TEMP_AUDIO_DIR}/{filename}',
+                'audioUrl': f'{TEMP_DIR}/{filename}',
                 'transcript': None
             }, room=request.sid)
         elif hasattr(result, 'audio_path'):
             filename = f"podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_AUDIO_DIR, filename)
+            output_path = os.path.join(TEMP_DIR, filename)
             shutil.copy2(result.audio_path, output_path)
             emit('complete', {
                 'audioUrl': f'/audio/{filename}',
@@ -391,7 +435,7 @@ def handle_generate_news_podcast(data):
         # Handle the result
         if isinstance(result, str) and os.path.isfile(result):
             filename = f"news_podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_AUDIO_DIR, filename)
+            output_path = os.path.join(TEMP_DIR, filename)
             shutil.copy2(result, output_path)
             emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
             emit('complete', {
@@ -400,7 +444,7 @@ def handle_generate_news_podcast(data):
             }, room=request.sid)
         elif hasattr(result, 'audio_path'):
             filename = f"news_podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_AUDIO_DIR, filename)
+            output_path = os.path.join(TEMP_DIR, filename)
             shutil.copy2(result.audio_path, output_path)
             emit('complete', {
                 'audioUrl': f'/audio/{filename}',
@@ -483,7 +527,7 @@ def generate_from_transcript():
             'user_instructions': data.get('user_instructions', ''),
             'engagement_techniques': data.get('engagement_techniques', []),
             'text_to_speech': {
-                'temp_audio_dir': TEMP_AUDIO_DIR,  
+                'temp_audio_dir': TEMP_DIR,  
                 'ending_message': data.get('ending_message', "Bye Bye!"),
                 'default_tts_model': tts_model,
                 'audio_format': 'mp3',
@@ -562,11 +606,12 @@ def serve_audio(filename):
     """Serve generated audio files"""
     # Check all possible audio paths
     possible_paths = [
-        os.path.join(TEMP_AUDIO_DIR, filename),
+        os.path.join(TEMP_DIR, filename),
         os.path.join(AUDIO_DIR, filename),
         os.path.join('data/audio', filename), # does podcastfy use this?
+        os.path.join('tmp', filename),
         # Add any additional mounted volume paths here
-        "/app/data/audio/" + filename,
+        # "/app/data/audio/" + filename,
     ]
 
     for path in possible_paths:
@@ -592,8 +637,9 @@ def upload_files():
             filename = secure_filename(file.filename)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
-            file_paths.append(f'./public/uploads/{filename}')
-            #file_paths.append({filepath})
+            # in local windows dev, a full path (e.g. C:/) doesn't work
+            # file_paths.append(f'./public/uploads/{filename}')
+            file_paths.append({filepath})  
             print(f"Uploaded: {filepath}")
 
     return jsonify({'file_paths': file_paths})

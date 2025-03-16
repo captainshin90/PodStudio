@@ -20,7 +20,7 @@ xx don't need.
 - To build the development frontend and backend:
   (.venv) > C:\SRC\podstudio> bun dev 
 
-- To build the development frontend and backend:
+- To build the production frontend and backend:
   (.venv) > C:\SRC\podstudio> bun run build
 
 - To regenerate the bun.lockb file, simply run bun install in your project directory. This will re-evaluate your dependencies and create a new lockfile based on your package.json. 
@@ -161,7 +161,15 @@ The application will be available at `http://localhost:5173`
 
 ### Deployment with Fly.io
 
+https://fly.io/docs/flyctl/install/
+
+
 1. Install the Fly CLI:
+
+Windows: 
+> pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
+
+
 ```bash
 curl -L https://fly.io/install.sh | sh
 ```
@@ -178,23 +186,38 @@ fly launch
 
 4. Set up environment variables:
 ```bash
-# Generate a secure API token
-openssl rand -hex 32
-
+# Generate a secure API token (from .devcontainer Linux)
+(done) openssl rand -hex 32
+c07f18dfc8b0ade00a085f6c81407078dd5c398661c5c240e6fdb2f70e939c09
 # Set it in Fly.io
-fly secrets set API_TOKEN=your_generated_token
+(done) fly secrets set API_TOKEN=c07f18dfc8b0ade00a085f6c81407078dd5c398661c5c240e6fdb2f70e939c09
 ```
+(done) run fly secrets set for all KEYS in .env
+
 
 5. Create a volume for audio files:
 ```bash
-fly volumes create audio_data --size 1
+(done) fly volumes create audio_data --size 1
 ```
 
 6. Deploy the application:
 ```bash
 # Deploy to Fly.io (this will automatically build both frontend and backend)
-fly deploy
+(done) fly deploy
 ```
+
+Deploy Token: name: "kapremote"
+FlyV1 fm2_lJPECAAAAAAACGlqxBAFOrnNuXvWoXr6YHcP2nTrwrVodHRwczovL2FwaS5mbHkuaW8vdjGWAJLOAA9nCB8Lk7lodHRwczovL2FwaS5mbHkuaW8vYWFhL3YxxDxbonrVi192QZH5w0ZxRxigF0/cXarVnyNbb14TlFksrdi55iCEmc3DMCCcT5m3Ot3IkMHEBp+ay2Z8APDETlvjGr0yVYed3pW8GZCyWRNQBD8InMX0UGSV6uv2/41xecJ1xY+wg34lArcEtiNYVVY+7vp+4KfUg2D2crF493o6a+OL38XmTh+U3CztKg2SlAORgc4Aam12HwWRgqdidWlsZGVyH6J3Zx8BxCBD+VH6EgXoa59UWzfdPZSLq35Pm/F3NIhz31lIng+/bg==,fm2_lJPETlvjGr0yVYed3pW8GZCyWRNQBD8InMX0UGSV6uv2/41xecJ1xY+wg34lArcEtiNYVVY+7vp+4KfUg2D2crF493o6a+OL38XmTh+U3CztKsQQwCeM0pLhj2FfwlOpYxhZpsO5aHR0cHM6Ly9hcGkuZmx5LmlvL2FhYS92MZgEks5n1jgEzwAAAAEjzlYiF84ADs7oCpHOAA7O6AzEEEQQt4RFvfQQMbho4QRrf/rEIEN/K1Mwn1OE1D09uvBtH7O0gPXAcIFcdl8gEYSRrtfM
+
+
+Issues with Bun lock file:
+https://bun.sh/blog/bun-lock-text-lockfile
+- bun.lock is text file new format
+- bun.lockb is binary
+
+How to deploy .env file to Fly.io:
+- use command: fly secrets set API_KEY=....
+- or use Fly.io admin console
 
 Your API will be available at:
 - Web UI: `https://your-app.fly.dev`

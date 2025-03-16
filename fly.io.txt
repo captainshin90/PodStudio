@@ -1,4 +1,4 @@
-
+Deploy to Fly.io
 
 Admin URL: https://fly.io/apps/podstudio
 Hostname: podstudio.fly.dev
@@ -7,3 +7,38 @@ See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-a
 Wrote config file fly.toml
 Validating C:\SRC\PodStudio\fly.toml
 ✓ Configuration is valid
+
+
+
+https://fly.io/apps/podstudio
+https://podstudio.fly.dev/
+
+<source src="./tmp/audio/podcast_3d6f443778159b08.mp3" type="audio/mpeg">
+
+
+Integrations:
+https://fly-metrics.net/connections/add-new-connection
+
+MongoDB
+Firebase
+Firestore
+Elasticsearch
+...
+
+
+Fly.io Console Dashboard:
+https://fly-metrics.net/
+- terminal logs, graphs
+- env secrets
+
+How to see root folder and files?
+
+root@080ee42a699958:/app/tmp# cd audio
+root@080ee42a699958:/app/tmp/audio# ls
+podcast_a8bc5b1256edb5bc.mp3  podcast_dd9ea2924e5a9fe7.mp3
+root@080ee42a699958:/app/tmp/audio#
+
+
+
+
+
