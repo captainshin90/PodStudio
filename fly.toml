@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for openpod on 2024-11-16T12:01:28-05:00
+# fly.toml app configuration file generated for podstudio on 2025-03-15T20:38:00-04:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'podcon'
-primary_region = 'ewr'
+app = 'podstudio'
+primary_region = 'bos'
 
 [build]
 

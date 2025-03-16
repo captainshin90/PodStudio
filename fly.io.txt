@@ -1,0 +1,9 @@
+
+
+Admin URL: https://fly.io/apps/podstudio
+Hostname: podstudio.fly.dev
+Run `fly tokens create deploy -x 999999h` to create a token and set it as the FLY_API_TOKEN secret in your GitHub repository settings
+See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions
+Wrote config file fly.toml
+Validating C:\SRC\PodStudio\fly.toml
+✓ Configuration is valid
