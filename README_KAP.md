@@ -3,6 +3,8 @@
 
 ### Key Info 
 
+Deployed site: https://podstudio.fly.dev/
+
 - This project is running in local .venv (Windows) with Python 3.13.2
 - Activate the venv (inn Windows):
   > .\.venv\Scripts\activate  

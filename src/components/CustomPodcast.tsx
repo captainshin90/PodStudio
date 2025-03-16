@@ -599,15 +599,21 @@ export function CustomPodcast() {
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Custom Podcast</h2>
             <div className="flex-1 flex justify-center items-center">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Switch
                   id="from-transcript"
                   checked={form.watch("isFromTranscript")}
                   onCheckedChange={(checked) =>
                     form.setValue("isFromTranscript", checked)
                   }
+                  className="scale-125"
                 />
-                <Label htmlFor="from-transcript">From Transcript</Label>
+                <Label 
+                  htmlFor="from-transcript" 
+                  className="text-lg font-medium"
+                >
+                  From Transcript
+                </Label>
               </div>
             </div>
             <Button
@@ -687,8 +693,8 @@ export function CustomPodcast() {
               <div className="space-y-2">
                 <Label>
                   {form.watch("isFromTranscript")
-                    ? "Upload Transcript Files"
-                    : "Upload Source Files"}
+                    ? "Upload Transcript Files (TXT, JSON, etc.)"
+                    : "Upload Source Files (PDF, DOCX, etc.)"}
                 </Label>
                 <Suspense fallback={<div>Loading...</div>}>
                   <FileUpload onUpload={handleFileUpload} />

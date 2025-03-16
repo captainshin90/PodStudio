@@ -86,9 +86,9 @@ This is a more secure approach since the default API keys never leave the server
     x - add option to set the length of the podcast in word count
     x - read default conversation_config.yaml file - not needed?
     x - create podcast from transcript
-    - podcastfy: add support for Hume AI, Play HT. Check langchain.
     - podcastfy: Add Deepseek, Grok for content to transcript
     - podcastfy: Add Play.ht, Hume AI for transcript to speech
+    - podcastfy: add support for local LLMs. Check langchain.
     - check why can't view the transcript: podcastify doesn't return file name
     - read default config.yaml file from project folder - what type of info?
     - save and select from generated transcripts for each user
@@ -101,7 +101,7 @@ This is a more secure approach since the default API keys never leave the server
     - add Type: newscast, sportscast, debate, interview, seminar, presentation, documentary  
     - Handle duplicate file uploads
     - integrate podcastfy code into PodStudio? - no need
-    - deploy to Netlify.dev / Fly.dev 
+    x - deploy to Netlify.dev (no) / Fly.dev (yes)
 
 - submit text file transcripts, youtube videos,
 - (nice to have - mp4 videos and have system transcribe)
@@ -112,3 +112,5 @@ x - Add intro title ("welcome to X, tagline Y")
 - ideally with different voices for different reporters for different topics
 - ability to change tone and style via prompt engineering
 
+### Issues:
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
