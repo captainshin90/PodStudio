@@ -5,6 +5,9 @@ import { APIKeys } from "@/components/APIKeys";
 import { TopicPodcast } from "@/components/TopicPodcast";
 import { Toaster } from "@/components/ui/toaster";
 
+  ///////////////////////////////////////////////////////////////////////////////
+// App component
+///////////////////////////////////////////////////////////////////////////////
 export default function App() {
   const [activeTab, setActiveTab] = useState("custom");
 
@@ -19,6 +22,9 @@ export default function App() {
     };
   }, []);
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // Render the App component
+  ///////////////////////////////////////////////////////////////////////////////
   return (
     <div className="min-h-screen w-full bg-background">
       <div className="container mx-auto py-8 px-4">

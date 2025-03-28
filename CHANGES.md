@@ -1,5 +1,41 @@
 # CHANGES.md
 
+
+### Todo:
+    x - read API KEYs from .env file
+    x - podcastfy: add support for different voices and multi-speaker in Gemini
+    x - add option to set the length of the podcast in word count
+    x - read default conversation_config.yaml file - not needed?
+    x - create podcast from transcript
+    - podcastfy: Add Deepseek, Grok for content to transcript
+    - podcastfy: Add Play.ht, Hume AI for transcript to speech
+    - podcastfy: add support for local LLMs. Check langchain.
+    - check why can't view the transcript: podcastify doesn't return file name
+    - read default config.yaml file from project folder - what type of info?
+    - save and select from generated transcripts for each user
+    - save and select advanced settings for each user
+    - select voices from a drop down for each provider
+    - store transcripts, podcasts in a database
+    - file manager UI for uploaded documents, URLs, transcripts 
+    - create and manage topics to group multiple transcripts, podcasts, episodes
+    - store list of voices by provider, gender, language, model in a yaml file
+    - add Type: newscast, sportscast, debate, interview, seminar, presentation, documentary  
+    - Handle duplicate file uploads
+    - integrate podcastfy code into PodStudio? - no need
+    x - deploy to Netlify.dev (no) / Fly.dev (yes)
+
+- submit text file transcripts, youtube videos,
+- (nice to have - mp4 videos and have system transcribe)
+x - choose voices and TTM model
+x - Add intro title ("welcome to X, tagline Y")
+- structure the format like a newscast
+- less of 2 person podcast and more of news anchor introducing topic and second voice acts as reporter commenting
+- ideally with different voices for different reporters for different topics
+- ability to change tone and style via prompt engineering
+
+### Issues:
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+
 ### 3/12/2025: Add drag and drop file upload (using Cursor AI)
 
 Can you help me add a drag and drop file upload component on this page? The uploaded files should be less than 10MB and stored in the data/uploads folder.  
@@ -80,37 +116,35 @@ Do both - enter some API keys manually and use defaults for others
 This is a more secure approach since the default API keys never leave the server.
 
 
-### Todo:
-    x - read API KEYs from .env file
-    x - podcastfy: add support for different voices and multi-speaker in Gemini
-    x - add option to set the length of the podcast in word count
-    x - read default conversation_config.yaml file - not needed?
-    x - create podcast from transcript
-    - podcastfy: Add Deepseek, Grok for content to transcript
-    - podcastfy: Add Play.ht, Hume AI for transcript to speech
-    - podcastfy: add support for local LLMs. Check langchain.
-    - check why can't view the transcript: podcastify doesn't return file name
-    - read default config.yaml file from project folder - what type of info?
-    - save and select from generated transcripts for each user
-    - save and select advanced settings for each user
-    - select voices from a drop down for each provider
-    - store transcripts, podcasts in a database
-    - file manager UI for uploaded documents, URLs, transcripts 
-    - create and manage topics to group multiple transcripts, podcasts, episodes
-    - store list of voices by provider, gender, language, model in a yaml file
-    - add Type: newscast, sportscast, debate, interview, seminar, presentation, documentary  
-    - Handle duplicate file uploads
-    - integrate podcastfy code into PodStudio? - no need
-    x - deploy to Netlify.dev (no) / Fly.dev (yes)
+### Bug Fixes:
 
-- submit text file transcripts, youtube videos,
-- (nice to have - mp4 videos and have system transcribe)
-x - choose voices and TTM model
-x - Add intro title ("welcome to X, tagline Y")
-- structure the format like a newscast
-- less of 2 person podcast and more of news anchor introducing topic and second voice acts as reporter commenting
-- ideally with different voices for different reporters for different topics
-- ability to change tone and style via prompt engineering
-
-### Issues:
-WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+x - clone and adapt OpenPod: https://github.com/giulioco/openpod
+x - using local .venv 
+x - OpenPod.ipynb - port to Colab, play with it
+x - cloned repo to local and Cloud Shell
+x - Build OpenPod: local and Cloud Shell
+x - build and debug in VS Core and Cursor
+x - install my custom podcastfy package
+x - add more API KEYS to .env file
+x - upload to private GitHub repo 
+x - figure out how to debug Python (app.py and podcastfy)
+x - add drag and drop file upload UI component
+x - allow paste into text field
+x - add support for tts_model="gemini"
+x - audio file play and download not working
+x - enter voices for question and answer for each provider
+x - add UI for customization options for the podcast
+x - clear text on load
+x - secret key to use API KEYs from .env file
+x - add word_count and ending_message options
+x - podcastfy: add support for different voices and multi-speaker in Gemini
+x - read default conversation_config.yaml file - not needed?
+x - add option to set the length of the podcast in word count
+x - create podcast from transcript
+x - check how an uploaded transcript file is passed to generate_from_transcript function 
+x - deploy to Netlify.dev (no) / Fly.dev (yes)
+x - issue with clicking on tooltips and triggering form submit
+x - issue with uploading txt files
+x - issue with processing txt files - just copy txt to the text field?
+x - download triggers another Generate Podcast.
+x - Try Bolt or Cursor to generate code for new features.
