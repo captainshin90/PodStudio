@@ -8,9 +8,9 @@ export interface Subscription {
   subscription_period: string; // monthly, yearly, etc.
   features?: string[]; // Features
   is_active: boolean; // Is Active
-  // is_deleted: boolean; // Is Deleted - updated by the database service
-  // created_at: Date; // Created Date and Time - updated by the database service
-  // updated_at: Date; // Updated Date and Time - updated by the database service
+  is_deleted: boolean; // Is Deleted - updated by the database service
+  created_at: Date; // Created Date and Time - updated by the database service
+  updated_at: Date; // Updated Date and Time - updated by the database service
 }
 
 // Helper function to convert Firestore data to Subscription type
@@ -24,8 +24,8 @@ export function convertToSubscription(data: any): Subscription {
     subscription_price: data.subscription_price,
     subscription_period: data.subscription_period,
     is_active: data.is_active = true,
-    // is_deleted: data.is_deleted = false, // updated by the database service
-    // created_at: data.created_at?.toDate(), // updated by the database service
-    // updated_at: data.updated_at?.toDate() // updated by the database service
+    is_deleted: data.is_deleted = false,
+    created_at: data.created_at?.toDate(),
+    updated_at: data.updated_at?.toDate()
   };
 }

@@ -3,11 +3,16 @@ import { useDropzone } from "react-dropzone";
 import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// FileUpload component
+// This component allows the user to upload files to the server
+// It uses the react-dropzone library to handle the file upload
+// It also uses the useToast hook to display toast messages
+
 interface FileUploadProps {
   onUpload: (filePaths: string[]) => void;
 }
 
-const FileUpload = ({ onUpload }: FileUploadProps) => {
+export const FileUpload = ({ onUpload }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -27,6 +32,7 @@ const FileUpload = ({ onUpload }: FileUploadProps) => {
 
         if (validFiles.length === 0) return;
 
+        // create a form data object to send the files to the backend
         const formData = new FormData();
         validFiles.forEach(file => {
           formData.append("files", file);
@@ -56,6 +62,7 @@ const FileUpload = ({ onUpload }: FileUploadProps) => {
     [onUpload, toast]
   );
 
+  // use the react-dropzone library to handle the file upload
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -67,6 +74,7 @@ const FileUpload = ({ onUpload }: FileUploadProps) => {
     maxSize: 10 * 1024 * 1024,  // max size of 10MB
   });
 
+  // return the file upload component
   return (
     <div
       {...getRootProps()}

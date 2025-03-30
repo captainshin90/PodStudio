@@ -10,14 +10,14 @@ import {
   getDocs, 
   setDoc, 
   updateDoc, 
-  deleteDoc, 
+//  deleteDoc,  // not doing hard deletes
   query, 
   where, 
   orderBy, 
   limit, 
   Timestamp, 
   addDoc,
-  DocumentReference,
+//  DocumentReference,
   DocumentData,
   FirestoreError,
   Firestore,
@@ -160,7 +160,25 @@ export class DatabaseService {
     } else return;
   }
 
-  // Delete all document matching the conditions
+  // Soft delete a document by Firestore Document ID
+  async delete(collectionName: string, id: string): Promise<void> {
+    if (this.db && collectionName && id) {
+      try {
+        const docRef = doc(this.db, collectionName, id);
+        // await deleteDoc(docRef);
+        await updateDoc(docRef, {       // soft delete
+          deleted_at: Timestamp.now(),
+          is_deleted: true
+        });
+      } catch (error) {
+        console.error(`Error deleting document from ${collectionName} with ID ${id}:`, error);
+        this.handleFirestoreError(error as FirestoreError);
+        throw error;
+      }
+    } else return;
+  }
+
+  // Sof delete all document matching the conditions
   async deleteAll(collectionName: string, conditions: { field: string; operator: string; value: any }[]): Promise<void> {
     if (this.db && collectionName) {
       try {
@@ -180,24 +198,6 @@ export class DatabaseService {
         await batch.commit();
       } catch (error) {
         console.error(`Error deleting documents from ${collectionName}:`, error);
-        this.handleFirestoreError(error as FirestoreError);
-        throw error;
-      }
-    } else return;
-  }
-
-  // Delete a document by Firestore Document ID
-  async delete(collectionName: string, id: string): Promise<void> {
-    if (this.db && collectionName && id) {
-      try {
-        const docRef = doc(this.db, collectionName, id);
-        // await deleteDoc(docRef);
-        await updateDoc(docRef, {       // soft delete
-          deleted_at: Timestamp.now(),
-          is_deleted: true
-        });
-      } catch (error) {
-        console.error(`Error deleting document from ${collectionName} with ID ${id}:`, error);
         this.handleFirestoreError(error as FirestoreError);
         throw error;
       }
@@ -328,6 +328,10 @@ export const usersService = {
     return databaseService.update('users', id, userData);
   },
   
+  async deleteUser(id: string): Promise<void> {
+    return databaseService.delete('users', id);
+  },
+
   async getUserByEmail(email: string): Promise<DocumentData | null> {
     const users = await databaseService.query('users', [
       { field: 'email1', operator: '==', value: email }
@@ -367,6 +371,10 @@ export const subscriptionsService = {
   async updateSubscription(id: string, subscriptionData: any): Promise<void> {
     return databaseService.update('subscriptions', id, subscriptionData);
   },
+
+  async deleteSubscription(id: string): Promise<void> {
+    return databaseService.delete('subscriptions', id);
+  },
   
   async getActiveSubscriptions( ): Promise<DocumentData[] | null> {
     return databaseService.query('subscriptions', [
@@ -400,6 +408,10 @@ export const personasService = {
   async updatePersona(id: string, personaData: any): Promise<void> {
     return databaseService.update('personas', id, personaData);
   },
+
+  async deletePersona(id: string): Promise<void> {
+    return databaseService.delete('personas', id);
+  },
   
   async getPersonasByType(type: string): Promise<DocumentData[] | null> {
     return databaseService.query('personas', [
@@ -419,7 +431,7 @@ export const documentsService = {
   
   async getDocumentById(docId: string): Promise<DocumentData | null> {
     const documents = await databaseService.query('documents', [
-      { field: 'document_id', operator: '==', value: docId }
+      { field: 'doc_id', operator: '==', value: docId }
     ]);
     if (documents)
       return documents.length > 0 ? documents[0] : null;
@@ -433,7 +445,11 @@ export const documentsService = {
   async updateDocument(id: string, documentData: any): Promise<void> {
     return databaseService.update('documents', id, documentData);
   },
-  
+
+  async deleteDocument(id: string): Promise<void> {
+    return databaseService.delete('documents', id);
+  },
+    
   async getDocumentsByTopic(topicTag: string): Promise<DocumentData[] | null> {
     return databaseService.query('documents', [
       { field: 'topic_tags', operator: 'array-contains', value: topicTag }
@@ -473,6 +489,10 @@ export const topicsService = {
     ]);
   },
   
+  async deleteTopic(id: string): Promise<void> {
+    return databaseService.delete('topics', id);
+  },
+  
   async getPublicTopics( ): Promise<DocumentData[] | null> {
     return databaseService.query('topics', [
       { field: 'is_private', operator: '==', value: false }
@@ -504,6 +524,10 @@ export const transcriptsService = {
   
   async updateTranscript(id: string, transcriptData: any): Promise<void> {
     return databaseService.update('transcripts', id, transcriptData);
+  },
+  
+  async deleteTranscript(id: string): Promise<void> {
+    return databaseService.delete('transcripts', id);
   },
   
   async getTranscriptsByType(type: string): Promise<DocumentData[] | null> {
@@ -544,7 +568,11 @@ export const promptsService = {
   async updatePrompt(id: string, promptData: any): Promise<void> {
     return databaseService.update('prompts', id, promptData);
   },
-  
+
+  async deletePrompt(id: string): Promise<void> {
+    return databaseService.delete('prompts', id);
+  },
+
   async getActivePrompts(): Promise<DocumentData[] | null> {
     return databaseService.query('prompts', [
       { field: 'is_active', operator: '==', value: true }
@@ -583,7 +611,11 @@ export const podcastsService = {
   async updatePodcast(id: string, podcastData: any): Promise<void> {
     return databaseService.update('podcasts', id, podcastData);
   },
-  
+
+  async deletePodcast(id: string): Promise<void> {
+    return databaseService.delete('podcasts', id);
+  },
+
   async getPodcastsByType(type: string): Promise<DocumentData[] | null> {
     return databaseService.query('podcasts', [
       { field: 'podcast_type', operator: '==', value: type }
@@ -608,10 +640,14 @@ export const podcastsService = {
 ///////////////////////////////////////////////////////////////////////////////
 
 export const episodesService = {
-  async getAllEpisodes(podcastId: string): Promise<DocumentData[] | null> {
-    return databaseService.query('episodes', [
-      { field: 'podcast_id', operator: '==', value: podcastId }
-    ]);
+  async getAllEpisodes(podcastId?: string): Promise<DocumentData[] | null> {
+    if (podcastId) {
+      return databaseService.query('episodes', [
+        { field: 'podcast_id', operator: '==', value: podcastId }
+      ]);
+    } else {
+      return databaseService.getAll('episodes');
+    }
   },
 
   // why need both podcastId and episodeId?
@@ -632,6 +668,10 @@ export const episodesService = {
   async updateEpisode(id: string, episodeData: any): Promise<void> {
     return databaseService.update('episodes', id, episodeData);
   },
+
+  async deleteEpisode(id: string): Promise<void> {
+    return databaseService.delete('episodes', id);
+  },
   
   async getEpisodesByTopic(topicTag: string): Promise<DocumentData[] | null> {
     return databaseService.query('episodes', [
@@ -643,7 +683,7 @@ export const episodesService = {
     return databaseService.query(
       'episodes', 
       [], 
-      'publish_datetime', 'desc', limit
+      'publish_date', 'desc', limit
     );
   },
   
@@ -677,7 +717,11 @@ export const questionsService = {
   async updateQuestion(id: string, questionData: any): Promise<void> {
     return databaseService.update('questions', id, questionData);
   },
-  
+
+  async deleteQuestion(id: string): Promise<void> {
+    return databaseService.delete('questions', id);
+  },
+
   async getPopularQuestions(podcastId: string, limit: number = 10): Promise<DocumentData[] | null> {
     return databaseService.query('questions', 
       [{ field: 'podcast_id', operator: '==', value: podcastId }], 
@@ -709,13 +753,11 @@ export const chatsService = {
     return databaseService.create('chats', chatData);
   },
   
+  // soft delete
   async deleteChatMessage(id: string): Promise<void> {
-    return databaseService.update('chats', id, {
-      deleted_at: Timestamp.now()
-    });
+    return databaseService.delete('chats', id);
   },
   
-
   async getActiveChatHistory(userId: string): Promise<DocumentData[] | null> {
     return databaseService.query(
       'chats',
@@ -725,6 +767,7 @@ export const chatsService = {
     );
   },
 
+  // hard delete
   async clearChatHistory(userId: string): Promise<void> {
     return databaseService.deleteAll('chats', [
       { field: 'user_id', operator: '==', value: userId }

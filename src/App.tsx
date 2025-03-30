@@ -1,44 +1,66 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomPodcast } from "@/components/CustomPodcast";
-import { APIKeys } from "@/components/APIKeys";
 import { TopicPodcast } from "@/components/TopicPodcast";
+import EpisodesPage from "@/pages/episodes";
+import DocumentsPage from "@/pages/documents";
+import PromptsPage from "@/pages/prompts";
+import TranscriptsPage from "@/pages/transcripts";
+import PodcastsPage from "@/pages/podcasts";
 import { Toaster } from "@/components/ui/toaster";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+//  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { APIKeys } from "@/components/APIKeys";
 
-  ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // App component
 ///////////////////////////////////////////////////////////////////////////////
 export default function App() {
-  const [activeTab, setActiveTab] = useState("custom");
+  const [activeMainTab, setActiveMainTab] = useState("create");
+//  const [activePodcastTab, setActivePodcastTab] = useState("custom");
 
-  useEffect(() => { 
-    const script = document.createElement("script");
-    script.src = "https://buttons.github.io/buttons.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  ///////////////////////////////////////////////////////////////////////////////
-  // Render the App component
-  ///////////////////////////////////////////////////////////////////////////////
   return (
     <div className="min-h-screen w-full bg-background">
-      <div className="container mx-auto py-8 px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-3">Pod Studio</h1>
-          <p className="text-lg text-muted-foreground mb-4">
-            Create and manage awesome podcasts with AI
-          </p>
+      <header className="border-b">
+        <div className="container mx-auto py-4 px-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Four Freedoms Studio</h1>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <div className="p-4">
+                <APIKeys />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+      <main className="container mx-auto py-0 px-4">
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab}>
+          <TabsList className="w-full border-b mb-6">
+            <TabsTrigger value="create">Create</TabsTrigger>
+            <TabsTrigger value="episodes">Episodes</TabsTrigger>
+            <TabsTrigger value="podcasts">Podcasts</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
+            <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+          </TabsList>
+
+          {/* Podcasts Section */}
+          <TabsContent value="create">
+            {/* <Tabs value={activePodcastTab} onValueChange={setActivePodcastTab} */}
+            <Tabs>
+            <TabsList className="mb-4">
                 <TabsTrigger value="custom">Custom Podcast</TabsTrigger>
                 <TabsTrigger value="topic">Topic Research</TabsTrigger>
               </TabsList>
@@ -49,43 +71,37 @@ export default function App() {
                 <TopicPodcast />
               </TabsContent>
             </Tabs>
-          </div>
+          </TabsContent>
 
-          <div className="lg:col-span-1">
-            <APIKeys />
-          </div>
-        </div>
-      </div>
+          {/* Podcasts Section */}
+          <TabsContent value="podcasts">
+            <PodcastsPage />
+          </TabsContent>
+
+          {/* Episodes Section */}
+          <TabsContent value="episodes">
+            <EpisodesPage />
+          </TabsContent>
+
+          {/* Documents Section */}
+          <TabsContent value="documents">
+            <DocumentsPage />
+          </TabsContent>
+
+          {/* Transcripts Section */}
+          <TabsContent value="transcripts">
+            <TranscriptsPage />
+          </TabsContent>
+
+          {/* Prompts Section */}
+          <TabsContent value="prompts">
+            <PromptsPage />
+          </TabsContent>
+        </Tabs>
+      </main>
+
       <Toaster />
     </div>
   );
 }
 
-
-
-
-/****
-          <div className="flex flex-column items-center justify-center gap-4 text-sm text-muted-foreground">
-            <p className="text-sm text-muted-foreground">
-              Powered by{" "}
-              <a
-                href="https://podcastfy.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline font-medium"
-              >
-                Podcastfy
-              </a>
-            </p>
-            <a
-              className="github-button"
-              href="https://github.com/giulioco/openpod"
-              data-color-scheme="no-preference: light_high_contrast; light: dark; dark: dark;"
-              data-size="large"
-              data-show-count="true"
-              aria-label="Star giulioco/openpod on GitHub"
-            >
-              Star
-            </a>
-          </div>
- */

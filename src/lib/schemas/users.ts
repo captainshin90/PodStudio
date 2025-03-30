@@ -28,9 +28,9 @@ export interface User {
   card_cvv?: string;             // Should not be stored in production
   card_city?: string;
   is_active: boolean;            // Is Active
-  // created_at: Date;             // updated by the database service
-  // updated_at: Date;             // updated by the database service
-  // is_deleted: boolean;          // Is Deleted - updated by the database service
+  created_at: Date;             // updated by the database service
+  updated_at: Date;             // updated by the database service
+  is_deleted: boolean;          // Is Deleted - updated by the database service
 }
 
 export interface Address {
@@ -87,8 +87,8 @@ export function convertToUser(data: any): User {
     card_cvv: data.card_cvv,
     card_city: data.card_city,
     is_active: data.is_active = true,
-    // created_at: data.created_at?.toDate(),    // updated by the database service
-    // updated_at: data.updated_at?.toDate(),    // updated by the database service
-    // is_deleted: data.is_deleted = false // updated by the database service
+    created_at: data.created_at?.toDate(),    // updated by the database service
+    updated_at: data.updated_at?.toDate(),    // updated by the database service
+    is_deleted: data.is_deleted = false // updated by the database service
   };
 }

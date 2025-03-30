@@ -6,8 +6,10 @@ Quick Start:
 (.venv) > bun run dev          # if not debugging
 (.venv) > bun run dev:frontend # required to debug either front/back end
 
-# To debug frontend: Launch Chrome against localhost
-# To debug backend: Launch Python: Flask app.py
+# To debug frontend: 
+> Launch Chrome against localhost
+# To debug backend: 
+> Launch Python: Flask app.py
 
 (.venv) > bun run build && ls # (to build for production)
 
@@ -15,6 +17,7 @@ Quick Start:
 
 (.venv) > git add .
 (.venv) > git commit -m "fix file upload"
+(.venv) > git tag -a "v.0.1.0-alpha" -m "version v0.1.0-alpha"
 (.venv) > git push -u origin main
 (.venv) > fly auth login     # once per session
 (.venv) > fly deploy         # to push new code to fly site    
@@ -97,7 +100,7 @@ To create a new GitHub repo: https://github.com/captainshin90/<new-repo>
 (.venv) > git commit -m "Describe code change"  # 
 
 # To set new code version, example:
-(.venv) > git tag -a "v.1.0-alpha" -m "version v0.1.0-beta"
+(.venv) > git tag -a "v.1.0-alpha" -m "version v0.1.0-alpha"
 (.venv) > git push -u origin main  # push changed files to GitHub
 
 # To remove a previously committed file from the repo (but not delete locally):
@@ -248,9 +251,13 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - 3/28/25: npm install react-markdown
 - 3/28/25: npm uninstall netlify
 - 3/28/25: pip freeze > requirements.txt
+- 3/28/25: npm install @radix-ui/react-dropdown-menu
+- 3/28/25: npm install clsx tailwind-merge
+- 3/28/25: npm install dotenv
 
 ### Repo Versions 
-- xx/xx/xx: git tag -a "vx.y.z-alpha" -m "version vx.y.z-alpha"
+- 03/28/25: git tag -a "v0.1.1-alpha" -m "version v0.1.1-alpha" - working version before adding content management features
+- 03/30/25: git tag -a "v0.2.0-alpha" -m "version v0.2.0-alpha" - added podcast, transcript, prompt, document management features
 
 ### Deploys
 3/15/25: Fly deploy

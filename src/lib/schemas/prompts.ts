@@ -1,3 +1,5 @@
+import { TTSModel } from "@/config/podcast-config";
+
 export interface Prompt {
   id: string; // Firestore Document ID (needed for Firestore)
   prompt_id: string; // Prompt ID
@@ -7,13 +9,27 @@ export interface Prompt {
   target_persona: string; // Target Persona
   prompt_text: string; // Prompt Text
   prompt_audio?: string; // Prompt Audio
+  is_long_form: boolean;
+  word_count: number;
+  creativity: number;
+  roles_person1: string;
+  roles_person2: string;
+  conversation_style: string[]; 
+  dialogue_structure: string[];
+  engagement_techniques: string[];
+  user_instructions?: string;
+  system_instructions?: string;
+  tts_model: TTSModel;
+  voice_question: string;
+  voice_answer: string;
+  voice_model: string;
+  ending_message: string;
   is_active: boolean; // Is Active
-  // is_deleted: boolean; // Is Deleted - updated by the database service
-  // created_at: Date; // Created Date and Time - updated by the database service
-  // updated_at: Date; // Updated Date and Time - updated by the database service
-  // modified_datetime?: Date; // Modified Date and Time
-  // delete_datetime?: Date; // Delete Date and Time
+  is_deleted: boolean; // Is Deleted - updated by the database service
+  created_at: Date; // Created Date and Time - updated by the database service
+  updated_at: Date; // Updated Date and Time - updated by the database service
 }
+
 
 // Helper function to convert Firestore data to Prompt type
 export function convertToPrompt(data: any): Prompt {
@@ -26,11 +42,24 @@ export function convertToPrompt(data: any): Prompt {
     target_persona: data.target_persona,
     prompt_text: data.prompt_text,
     prompt_audio: data.prompt_audio,
+    is_long_form: data.is_long_form,
+    word_count: data.word_count,
+    creativity: data.creativity,
+    roles_person1: data.roles_person1,
+    roles_person2: data.roles_person2,
+    conversation_style: data.conversation_style,
+    dialogue_structure: data.dialogue_structure,
+    engagement_techniques: data.engagement_techniques,
+    user_instructions: data.user_instructions,
+    system_instructions: data.system_instructions,
+    tts_model: data.tts_model,
+    voice_question: data.voice_question,
+    voice_answer: data.voice_answer,
+    voice_model: data.voice_model,
+    ending_message: data.ending_message,
     is_active: data.is_active = true,
-    // is_deleted: data.is_deleted = false,
-    // created_at: data.created_at?.toDate(), // updated by the database service
-    // updated_at: data.updated_at?.toDate(), // updated by the database service
-    // modified_datetime: data.modified_datetime?.toDate(),
-    // delete_datetime: data.delete_datetime?.toDate(),
+    is_deleted: data.is_deleted = false,
+    created_at: data.created_at?.toDate(), // updated by the database service
+    updated_at: data.updated_at?.toDate(), // updated by the database service
   };
 }

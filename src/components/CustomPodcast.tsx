@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, Suspense, lazy } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,6 +44,7 @@ import {
   dialogueStructures,
   engagementTechniques
 } from '@/config/podcast-config';
+import { FileUpload } from "@/components/FileUpload";
 
 interface PodcastPayload {
   text: string;    // just text, no urls
@@ -74,13 +75,6 @@ interface PodcastPayload {
   is_from_transcript: boolean;
 }
 
-/*
-interface VoiceConfig {
-  question: string;
-  answer: string;
-  model: string;
-}
-*/
 
 const formSchema = z.object({
   text: z.string().default(""),
@@ -197,16 +191,10 @@ const AddCustomValue = ({
   );
 };
 
-// Replace dynamic imports with React.lazy and wrap usage in Suspense
-const FileUpload = lazy(() => import('@/components/FileUpload'));
+///////////////////////////////////////////////////////////////////////////////
+// CustomPodcast component  
+///////////////////////////////////////////////////////////////////////////////
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 export function CustomPodcast() {
   const [parsedText, setParsedText] = useState("");
   const [parsedUrls, setParsedUrls] = useState<string[]>([]);
@@ -714,9 +702,7 @@ export function CustomPodcast() {
                     ? "Upload Transcript Files (TXT, JSON, etc.)"
                     : "Upload Source Files (PDF, DOCX, etc.)"}
                 </Label>
-                <Suspense fallback={<div>Loading...</div>}>
-                  <FileUpload onUpload={handleFileUpload} />
-                </Suspense>
+                <FileUpload onUpload={handleFileUpload} />
               </div>
 
               {uploadedFiles.length > 0 && (

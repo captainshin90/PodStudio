@@ -6,16 +6,8 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { Auth, getAuth, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider } from "firebase/auth";
 import { initializeFirestore, getFirestore, Firestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
-import config from "../server/config";
+import { config } from "../config/config";
 
-
-// Validate required configuration
-const requiredEnvVars = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID'
-];
 
 // Initialize Firebase objects
 let app: FirebaseApp;
@@ -34,6 +26,7 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
   login_hint: ''
 });
+
 
 //////////////////////////////////////////////////////////////// 
 // This is the client side initialization of Firebase Auth 
@@ -122,8 +115,6 @@ export {
   app, 
   auth, 
   db, 
-//  firebaseConfig, 
-//  firestoreConfig, 
   googleProvider, 
   facebookProvider, 
   microsoftProvider 

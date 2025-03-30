@@ -14,10 +14,9 @@ export interface Topic {
   is_private: boolean; // Is Private
   managed_by?: string[]; // Managed By
   is_active: boolean; // Is Active
-  // is_deleted: boolean; // Is Deleted - updated by the database service
-  // created_at: Date; // Created Date and Time - updated by the database service
-  // updated_at: Date; // Updated Date and Time - updated by the database service
-  // datetime: Date; // Datetime
+  is_deleted: boolean; // Is Deleted - updated by the database service
+  created_at: Date; // Created Date and Time - updated by the database service
+  updated_at: Date; // Updated Date and Time - updated by the database service
 }
 
 // Helper function to convert Firestore data to Topic type
@@ -33,9 +32,8 @@ export function convertToTopic(data: any): Topic {
     is_private: data.is_private,
     managed_by: data.managed_by,
     is_active: data.is_active = true,
-    // is_deleted: data.is_deleted = false, // updated by the database service
-    // created_at: data.created_at?.toDate(), // updated by the database service
-    // updated_at: data.updated_at?.toDate() // updated by the database service
-    // datetime: data.datetime?.toDate(),
+    is_deleted: data.is_deleted = false, // updated by the database service
+    created_at: data.created_at?.toDate(), // updated by the database service
+    updated_at: data.updated_at?.toDate() // updated by the database service
   };
 }

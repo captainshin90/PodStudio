@@ -9,10 +9,10 @@ export interface Chat {
   chat_text: string; // Chat Text
   conversation_id: string; // Conversation ID for LLM
   podcast_data?: PlayerEpisode; // Store podcast data for podcast messages
-  // created_at: Date | null;  // updated by the database service
-  // updated_at: Date;         // no need for this field as chat is not updated
-  // deleted_at: Date | null;  // updated by the database service
-  // is_deleted: boolean | false; // Is Deleted
+  created_at: Date | null;  // updated by the database service
+  updated_at: Date | null;  // updated by the database service
+  deleted_at: Date | null;  // updated by the database service
+  is_deleted: boolean | false; // Is Deleted
 }
 
 export type ChatMessage = { // Message type for chat history
@@ -44,9 +44,9 @@ export function convertToChat(data: any): Chat {
     chat_text: data.content || "",
     conversation_id: data.conversation_id || null,
     podcast_data: data.player_episode || null,
-    // deleted_at: data.deleted_at?.toDate() || null, // updated by the database service
-    // created_at: data.timestamp?.toDate() || null,  // updated by the database service
-    // updated_at: data.timestamp?.toDate() || null,  // updated by the database service
-    // is_deleted: data.is_deleted || false,
+    deleted_at: data.deleted_at?.toDate() || null, // updated by the database service
+    created_at: data.timestamp?.toDate() || null,  // updated by the database service
+    updated_at: data.timestamp?.toDate() || null,  // updated by the database service
+    is_deleted: data.is_deleted || false,
   };
 }
