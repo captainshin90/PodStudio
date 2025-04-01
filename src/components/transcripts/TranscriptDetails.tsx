@@ -22,6 +22,10 @@ interface TranscriptDetailsProps {
   isNew?: boolean;
 }
 
+/////////////////////////////////////////////////////////////////////////////// 
+// TranscriptDetails component
+/////////////////////////////////////////////////////////////////////////////// 
+
 export default function TranscriptDetails({
   transcript,
   onSave,
@@ -32,15 +36,17 @@ export default function TranscriptDetails({
   const [formData, setFormData] = useState<Partial<Transcript>>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isEditable, setIsEditable] = useState(false);
 
   useEffect(() => {
     if (transcript) {
       setFormData(transcript);
       setHasChanges(false);
+      setIsEditable(false);
     } else if (isNew) {
       setFormData({
         transcript_id: crypto.randomUUID(),
-        transcript_title: "Enter Transcript Title",
+        transcript_title: "",
         transcript_type: "interview",
         topic_tags: [],
         transcript_model: "",
@@ -51,9 +57,11 @@ export default function TranscriptDetails({
         updated_at: new Date()
       });
       setHasChanges(true);
+      setIsEditable(true);
     } else {
       setFormData({});
       setHasChanges(false);
+      setIsEditable(false);
     }
   }, [transcript, isNew]);
 
@@ -158,6 +166,7 @@ export default function TranscriptDetails({
             <Input
               id="transcript_title"
               name="transcript_title"
+              placeholder="Enter Transcript Title"
               value={formData.transcript_title || ""}
               onChange={handleChange}
             />
@@ -189,13 +198,24 @@ export default function TranscriptDetails({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="transcript_text">Transcript Text</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="transcript_text">Generated Transcript Text</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_editable"
+                checked={isEditable}
+                onCheckedChange={setIsEditable}
+              />
+              <Label htmlFor="is_editable" className="text-sm">Edit</Label>
+            </div>
+          </div>
           <Textarea
             id="transcript_text"
             name="transcript_text"
             value={formData.transcript_text || ""}
             onChange={handleChange}
             className="min-h-[200px]"
+            disabled={!isEditable}
           />
         </div>
 

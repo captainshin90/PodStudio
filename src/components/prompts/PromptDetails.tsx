@@ -1,7 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useForm } from "react-hook-form";
 import { Prompt } from "@/lib/schemas/prompts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,23 +32,6 @@ import {
   dialogueStructures,
   engagementTechniques
 } from '@/config/podcast-config';
-
-
-const formSchema = z.object({
-  is_long_form: z.boolean().default(false),
-  word_count: z.number().min(100).max(10000).default(250),
-  creativity: z.number().min(0).max(1),
-  roles_person1: z.string(),
-  roles_person2: z.string(),
-  conversation_style: z.array(z.string()),
-  dialogue_structure: z.array(z.string()),
-  engagement_techniques: z.array(z.string()),
-  tts_model: z.string(),
-  voice_question: z.string(),
-  voice_answer: z.string(),
-  voice_model: z.string(),
-  ending_message: z.string(),
-});
 
 interface PromptDetailsProps {
   prompt: Prompt | null;
@@ -129,7 +109,7 @@ const AddCustomValue = ({
 // PromptDetails component
 /////////////////////////////////////////////////////////////////////////////// 
 
-  export default function PromptDetails({
+export default function PromptDetails({
   prompt,
   onSave,
   onCancel,
@@ -139,26 +119,9 @@ const AddCustomValue = ({
   const [formData, setFormData] = useState<Partial<Prompt>>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      is_long_form: false,
-      word_count: 250,
-      creativity: 0.7,
-      roles_person1: "Interviewer",
-      roles_person2: "Subject matter expert",
-      conversation_style: ["Engaging", "Fast-paced", "Enthusiastic"],
-      dialogue_structure: ["Discussions"],
-      engagement_techniques: ["Questions"],
-      tts_model: "gemini",
-      voice_question: ttsVoiceDefaults.gemini.question,
-      voice_answer: ttsVoiceDefaults.gemini.answer,
-      voice_model: ttsVoiceDefaults.gemini.model,
-      ending_message: "Thank you for listening to this episode.",
-    },
-  });
+  const [customConversationStyles, setCustomConversationStyles] = useState<ConversationStyle[]>(conversationStyles);
+  const [customDialogueStructures, setCustomDialogueStructures] = useState<DialogueStructure[]>(dialogueStructures);
+  const [customEngagementTechniques, setCustomEngagementTechniques] = useState<EngagementTechnique[]>(engagementTechniques);
 
   useEffect(() => {
     if (prompt) {
@@ -166,11 +129,10 @@ const AddCustomValue = ({
       setHasChanges(false);
     } else if (isNew) {
       setFormData({
-       // id: crypto.randomUUID(),
         prompt_id: crypto.randomUUID(),
-        prompt_name: "Enter Prompt Name",
-        prompt_desc: "Enter Prompt Description",
-        prompt_text: "Enter Prompt Text",
+        prompt_name: "",
+        prompt_desc: "",
+        prompt_text: "",
         is_long_form: false,
         word_count: 250,
         creativity: 0.7,
@@ -233,16 +195,6 @@ const AddCustomValue = ({
     setHasChanges(true);
   };
 
-
-// Convert the constant arrays to state so we can add to them
-const [customConversationStyles, setCustomConversationStyles] =
-useState<ConversationStyle[]>(conversationStyles);
-const [customDialogueStructures, setCustomDialogueStructures] =
-useState<DialogueStructure[]>(dialogueStructures);
-const [customEngagementTechniques, setCustomEngagementTechniques] =
-useState<EngagementTechnique[]>(engagementTechniques);
-
-
   //////////////////////////////////////////////////////////////////////////////
   // return the prompt details component
   //////////////////////////////////////////////////////////////////////////////
@@ -289,6 +241,7 @@ useState<EngagementTechnique[]>(engagementTechniques);
           <Input
             id="prompt_name"
             name="prompt_name"
+            placeholder="Enter Prompt Name"
             value={formData.prompt_name || ""}
             onChange={handleChange}
             required
@@ -300,6 +253,7 @@ useState<EngagementTechnique[]>(engagementTechniques);
           <Textarea
             id="prompt_desc"
             name="prompt_desc"
+            placeholder="Enter Prompt Description"
             value={formData.prompt_desc || ""}
             onChange={handleChange}
           />
@@ -310,6 +264,7 @@ useState<EngagementTechnique[]>(engagementTechniques);
           <Textarea
             id="prompt_text"
             name="prompt_text"
+            placeholder="Enter Prompt Instructions"
             value={formData.prompt_text || ""}
             onChange={handleChange}
             className="min-h-[200px]"
@@ -322,9 +277,9 @@ useState<EngagementTechnique[]>(engagementTechniques);
               <div className="flex items-center space-x-4">
                 <Switch
                   id="long-form"
-                  checked={form.watch("is_long_form")}
+                  checked={formData.is_long_form || false}
                   onCheckedChange={(checked) =>
-                    form.setValue("is_long_form", checked)
+                    setFormData({ ...formData, is_long_form: checked })
                   }
                 />
                 <Label htmlFor="long-form">Long-form Content</Label>
@@ -352,21 +307,20 @@ useState<EngagementTechnique[]>(engagementTechniques);
                     min={100}
                     max={10000}
                     step={10}
-                    defaultValue={250}
                     className="w-30"
-                    value={form.watch("word_count")}
-                    {...form.register("word_count", { valueAsNumber: true })}
+                    value={formData.word_count || 250}
+                    onChange={handleChange}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label>
-                    Creativity Level ({form.watch("creativity")})
+                    Creativity Level ({formData.creativity})
                   </Label>
                   <Slider
-                    value={[form.watch("creativity")]}
+                    value={[formData.creativity || 0.7]}
                     onValueChange={([value]) =>
-                      form.setValue("creativity", value)
+                      setFormData({ ...formData, creativity: value })
                     }
                     max={1}
                     step={0.1}
@@ -393,7 +347,12 @@ useState<EngagementTechnique[]>(engagementTechniques);
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <Input {...form.register("roles_person1")} />
+                  <Input 
+                    id="roles_person1"
+                    name="roles_person1"
+                    value={formData.roles_person1 || ""}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -413,7 +372,12 @@ useState<EngagementTechnique[]>(engagementTechniques);
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <Input {...form.register("roles_person2")} />
+                  <Input 
+                    id="roles_person2" 
+                    name="roles_person2" 
+                    value={formData.roles_person2 || ""} 
+                    onChange={handleChange} 
+                  />
                 </div>
               </div>
 
@@ -424,23 +388,26 @@ useState<EngagementTechnique[]>(engagementTechniques);
                   <Badge
                     key={style}
                     variant={
-                      form.watch("conversation_style").includes(style)
+                      formData.conversation_style?.includes(style)
                         ? "default"
                         : "outline"
                     }
                     className="cursor-pointer"
                     onClick={() => {
-                      const current = form.watch("conversation_style");
+                      const current = formData.conversation_style || [];
                       if (current.includes(style)) {
-                        form.setValue(
-                          "conversation_style",
-                          current.filter((s) => s !== style)
-                        );
+                        setFormData({
+                          ...formData,
+                          conversation_style: current.filter((s) => s !== style)
+                        });
                       } else {
-                        form.setValue("conversation_style", [
-                          ...current,
-                          style,
-                        ]);
+                        setFormData({
+                          ...formData,
+                          conversation_style: [
+                            ...current,
+                            style,
+                          ],
+                        });
                       }
                     }}
                   >
@@ -453,13 +420,16 @@ useState<EngagementTechnique[]>(engagementTechniques);
                       ...prev,
                       value as ConversationStyle,
                     ]);
-                    const current = form.watch("conversation_style");
+                    const current = formData.conversation_style || [];
                     if (!current.includes(value)) {
-                      form.setValue("conversation_style", [
-                        ...current,
+                      setFormData({
+                        ...formData,
+                        conversation_style: [
+                          ...current,
                         value,
-                      ]);
-                    }
+                      ],
+                    });
+                  }
                   }}
                   placeholder="Enter custom style"
                 />
@@ -473,25 +443,27 @@ useState<EngagementTechnique[]>(engagementTechniques);
                 <Badge
                   key={structure}
                   variant={
-                    form
-                      .watch("dialogue_structure")
-                      .includes(structure)
+                    formData.dialogue_structure?.includes(structure)
                       ? "default"
                       : "outline"
                   }
                   className="cursor-pointer"
                   onClick={() => {
-                    const current = form.watch("dialogue_structure");
+                    const current = formData.dialogue_structure || [];
                     if (current.includes(structure)) {
-                      form.setValue(
-                        "dialogue_structure",
+                      setFormData({
+                        ...formData,
+                        dialogue_structure: current.filter((s) => s !== structure)
+                      });
                         current.filter((s) => s !== structure)
-                      );
                     } else {
-                      form.setValue("dialogue_structure", [
-                        ...current,
-                        structure,
-                      ]);
+                      setFormData({
+                        ...formData,
+                        dialogue_structure: [
+                          ...current,
+                          structure,
+                        ],
+                      });
                     }
                   }}
                 >
@@ -504,12 +476,15 @@ useState<EngagementTechnique[]>(engagementTechniques);
                     ...prev,
                     value as DialogueStructure,
                   ]);
-                  const current = form.watch("dialogue_structure");
+                  const current = formData.dialogue_structure || [];
                   if (!current.includes(value)) {
-                    form.setValue("dialogue_structure", [
-                      ...current,
-                      value,
-                    ]);
+                    setFormData({
+                      ...formData,
+                      dialogue_structure: [
+                        ...current,
+                        value,
+                      ],
+                    });
                   }
                 }}
                 placeholder="Enter custom structure"
@@ -524,45 +499,47 @@ useState<EngagementTechnique[]>(engagementTechniques);
                 <Badge
                   key={technique}
                   variant={
-                    form
-                      .watch("engagement_techniques")
-                      .includes(technique)
+                    formData.engagement_techniques?.includes(technique)
                       ? "default"
                       : "outline"
                   }
                   className="cursor-pointer"
                   onClick={() => {
-                    const current = form.watch(
-                      "engagement_techniques"
-                    );
+                    const current = formData.engagement_techniques || [];
                     if (current.includes(technique)) {
-                      form.setValue(
-                        "engagement_techniques",
-                        current.filter((t) => t !== technique)
-                      );
+                      setFormData({
+                        ...formData,
+                        engagement_techniques: current.filter((t) => t !== technique)
+                      });
                     } else {
-                      form.setValue("engagement_techniques", [
-                        ...current,
-                        technique,
-                      ]);
+                      setFormData({
+                        ...formData,
+                        engagement_techniques: [
+                          ...current,
+                          technique,
+                        ],
+                      });
                     }
                   }}
                 >
                   {technique}
                 </Badge>
               ))}
-              <AddCustomValue
+              <AddCustomValue 
                 onAdd={(value) => {
                   setCustomEngagementTechniques((prev) => [
                     ...prev,
                     value as EngagementTechnique,
                   ]);
-                  const current = form.watch("engagement_techniques");
+                  const current = formData.engagement_techniques || [];
                   if (!current.includes(value)) {
-                    form.setValue("engagement_techniques", [
-                      ...current,
-                      value,
-                    ]);
+                    setFormData({
+                      ...formData,
+                      engagement_techniques: [
+                        ...current,
+                        value,
+                      ],
+                    }); 
                   }
                 }}
                 placeholder="Enter custom technique"
@@ -588,7 +565,9 @@ useState<EngagementTechnique[]>(engagementTechniques);
             </div>
             <Input
               id="ending_message"
-              {...form.register("ending_message")}
+              name="ending_message"
+              value={formData.ending_message || ""}
+              onChange={handleChange}
               placeholder="Enter the ending message for your podcast"
             />
           </div>
@@ -648,9 +627,9 @@ useState<EngagementTechnique[]>(engagementTechniques);
               </TooltipProvider>
             </div>
             <Select
-              value={form.watch("tts_model")}
+              value={formData.tts_model}
               onValueChange={(value: TTSModel) =>
-                form.setValue("tts_model", value)
+                setFormData({ ...formData, tts_model: value })
               }
             >
               <SelectTrigger>
@@ -694,7 +673,7 @@ useState<EngagementTechnique[]>(engagementTechniques);
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-xs">
-                          {form.watch("tts_model").startsWith("gemini") ? (
+                          {formData.tts_model?.startsWith("gemini") ? (
                             <>
                               Select a voice from the{" "}
                               <a 
@@ -715,21 +694,30 @@ useState<EngagementTechnique[]>(engagementTechniques);
                   </TooltipProvider>
                 </div>
                 <Input
-                  {...form.register("voice_question")}
+                  id="voice_question"
+                  name="voice_question"
+                  value={formData.voice_question || ""}
+                  onChange={handleChange}
                   placeholder="Voice for questions"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Answer Voice</Label>
                 <Input
-                  {...form.register("voice_answer")}
+                  id="voice_answer"
+                  name="voice_answer"
+                  value={formData.voice_answer || ""}
+                  onChange={handleChange}
                   placeholder="Voice for answers"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Voice Model</Label>
                 <Input
-                  {...form.register("voice_model")}
+                  id="voice_model"
+                  name="voice_model"
+                  value={formData.voice_model || ""}
+                  onChange={handleChange}
                   placeholder="Voice model"
                 />
               </div>

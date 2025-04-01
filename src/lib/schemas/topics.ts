@@ -2,6 +2,7 @@
 // export type TopicType = 'place' | 'company' | 'school' | 'club' | 'person' | 'sport' | 'issue';
 // or categories: 'place', 'company', 'school', 'club', 'person', 'sport', 'issue'?
 
+// Topic schema version 0.2.0
 export interface Topic {
   id: string; // Firestore Document ID (needed for Firestore)
   topic_id: string; // Topic ID

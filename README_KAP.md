@@ -262,3 +262,6 @@ https://bun.sh/blog/bun-lock-text-lockfile
 ### Deploys
 3/15/25: Fly deploy
 3/16/25: Fly deploy - working version
+3/30/25: Fly deploy - content management features
+3/30/25: Fly secret - added VITE_ secret keys
+3/30/25: Firebase: add podstudio.fly.dev to authorized domains

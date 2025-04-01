@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Transcript } from "@/lib/schemas/transcripts";
-import { transcriptsService } from "@/lib/services/database-service";
+// import { transcriptsService } from "@/lib/services/database-service";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Loader2 } from "lucide-react";
@@ -12,6 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { databaseService } from "@/lib/services/database-service";
 
 interface TranscriptBrowserProps {
   onSelectTranscript: (transcript: Transcript) => void;
@@ -34,33 +36,39 @@ export default function TranscriptBrowser({
   });
 
   useEffect(() => {
-    loadTranscripts();
-  }, [filters]);
+    if (!databaseService.db) return;
 
-  const loadTranscripts = async () => {
-    try {
-      let loadedTranscripts = await transcriptsService.getAllTranscripts();
-      if (loadedTranscripts) {
-        // Apply filters
-        loadedTranscripts = loadedTranscripts.filter(transcript => {
-          const matchesType = filters.transcript_type === "all" || transcript.transcript_type === filters.transcript_type;
-          const matchesDeleted = transcript.is_deleted === filters.is_deleted;
-          const matchesActive = transcript.is_active === filters.is_active;
-          return matchesType && matchesDeleted && matchesActive;
-        });
-        setTranscripts(loadedTranscripts as Transcript[]);
-      }
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading transcripts:", error);
-      setIsLoading(false);
+    // Create the base query
+    let q = query(collection(databaseService.db, 'transcripts'));
+
+    // Apply filters
+    if (filters.transcript_type !== "all") {
+      q = query(q, where('transcript_type', '==', filters.transcript_type));
     }
-  };
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    q = query(q, where('is_active', '==', filters.is_active));
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedTranscripts: Transcript[] = [];
+      snapshot.forEach((doc) => {
+        updatedTranscripts.push({ id: doc.id, ...doc.data() } as Transcript);
+      });
+      setTranscripts(updatedTranscripts);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error listening to transcripts:", error);
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [filters]);
 
   const filteredTranscripts = transcripts.filter((transcript) => {
     return (
       transcript.transcript_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transcript.topic_tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      transcript.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
 
@@ -135,7 +143,7 @@ export default function TranscriptBrowser({
           >
             <div className="font-medium">{transcript.transcript_title}</div>
             <div className="text-xs opacity-80 mt-0.5">
-              {transcript.topic_tags.join(", ")}
+              {transcript.topic_tags?.join(", ")}
             </div>
           </div>
         ))}

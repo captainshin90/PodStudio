@@ -3,7 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { initFirestore } from "./lib/firebase";
+import { initFirestore, initStorage } from "./lib/firebase";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Validate environment variables
@@ -34,7 +34,11 @@ async function bootstrap() {
     console.log("Initializing Firebase...");
     console.log("Firestore database ID:", config.firestore.databaseId);
     
-    await initFirestore(config.firestore.databaseId);
+    // Initialize both Firestore and Storage
+    await Promise.all([
+      initFirestore(config.firestore.databaseId),
+      initStorage()
+    ]);
     
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>

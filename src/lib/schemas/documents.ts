@@ -1,6 +1,7 @@
 export type DocumentSourceFormat = 'txt' | 'pdf' | 'docx' | 'mp3';
 export type DocumentType = 'article' | 'podcast' | 'transcript' | 'question' | 'answer' | 'summary' | 'chat' | 'document';
 
+// Document schema version 0.2.0
 export interface Document {
   id: string; // Firestore Document ID (needed for Firestore)
   doc_id: string; // Document id

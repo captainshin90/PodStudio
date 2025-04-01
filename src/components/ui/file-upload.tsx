@@ -3,6 +3,10 @@ import { useDropzone } from "react-dropzone";
 // import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 
+// There is a similar component in the src/components/FileUpload.tsx file
+// This component is used in the src/components/podcasts/PodcastDetails.tsx file
+// This component is used in the src/components/episodes/EpisodeDetails.tsx file
+
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   accept?: string;
@@ -14,6 +18,8 @@ export function FileUpload({
   accept,
   maxSize = 5242880, // 5MB default
 }: FileUploadProps) {
+  
+  // use the useCallback hook to handle the file upload
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
@@ -23,6 +29,7 @@ export function FileUpload({
     [onFileSelect]
   );
 
+  // use the react-dropzone library to handle the file upload
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: accept ? { [accept]: [] } : undefined,

@@ -17,12 +17,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+///////////////////////////////////////////////////////////////////////////////
+// Transcripts page
+///////////////////////////////////////////////////////////////////////////////
 export default function TranscriptsPage() {
   const [showNewTranscript, setShowNewTranscript] = useState(false);
   const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
+  // Handle save transcript
   const handleSave = async (updatedTranscript: Transcript) => {
     try {
       await transcriptsService.updateTranscript(updatedTranscript.id, updatedTranscript);
@@ -41,6 +45,28 @@ export default function TranscriptsPage() {
     }
   };
 
+  // Handle create transcript
+  const handleCreate = async (newTranscript: Transcript) => {
+    try {
+      const transcriptId = await transcriptsService.createTranscript(newTranscript);
+      if (transcriptId) {
+        toast({
+          title: "Success", 
+          description: "Transcript created successfully",
+        });
+        setShowNewTranscript(false);
+      }
+    } catch (error) {
+      console.error("Error creating transcript:", error); 
+      toast({
+        title: "Error",
+        description: "Failed to create transcript",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete transcript
   const handleDelete = async () => {
     if (!selectedTranscript?.id) return;
     
@@ -62,6 +88,7 @@ export default function TranscriptsPage() {
     }
   };
 
+  // Render the page
   return (
     <div className="container mx-auto py-2">
       <h1 className="text-2xl font-bold mb-6">Transcripts Management</h1>
@@ -82,25 +109,7 @@ export default function TranscriptsPage() {
             <div className="space-y-4">
               <TranscriptDetails
                 transcript={null}
-                onSave={async (newTranscript) => {
-                  try {
-                    const transcriptId = await transcriptsService.createTranscript(newTranscript);
-                    if (transcriptId) {
-                      toast({
-                        title: "Success",
-                        description: "Transcript created successfully",
-                      });
-                      setShowNewTranscript(false);
-                    }
-                  } catch (error) {
-                    console.error("Error creating transcript:", error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to create transcript",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onSave={handleCreate}
                 onCancel={() => setShowNewTranscript(false)}
                 isNew={true}
               />

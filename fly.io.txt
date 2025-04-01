@@ -1,3 +1,7 @@
+
+Error uploading image: FirebaseError: Firebase Storage: User does not have permission to access 'episodes/ac03b7fd-51ff-4beb-852d-75a446277ea5/1743455462122-133845369074856524.jpg'. (storage/unauthorized) {code: 'storage/unauthorized', customData: {…}, name: 'FirebaseError', status_: 403, _baseMessage: "Firebase Storage: User does not have permi…369074856524.jpg'. (storage/unauthorized)", …}
+
+
 userlocation = Newton, MA
 need limit of 5 topics?
 

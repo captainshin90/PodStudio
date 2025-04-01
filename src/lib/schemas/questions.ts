@@ -1,3 +1,4 @@
+// Question schema version 0.2.0
 export interface Question {
   id: string; // Firestore Document ID (needed for Firestore)
   question_id: string; // Question ID

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Podcast } from "@/lib/schemas/podcasts";
-import { podcastsService } from "@/lib/services/database-service";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Loader2 } from "lucide-react";
@@ -12,12 +11,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { databaseService } from "@/lib/services/database-service";
 
 interface PodcastBrowserProps {
   onSelectPodcast: (podcast: Podcast) => void;
   selectedPodcast: Podcast | null;
   disabled?: boolean;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// PodcastBrowser component
+///////////////////////////////////////////////////////////////////////////////
 
 export default function PodcastBrowser({
   onSelectPodcast,
@@ -34,36 +39,44 @@ export default function PodcastBrowser({
   });
 
   useEffect(() => {
-    loadPodcasts();
+    if (!databaseService.db) return;
+
+    // Create the base query
+    let q = query(collection(databaseService.db, 'podcasts'));
+
+    // Apply filters
+    if (filters.podcast_type !== "all") {
+      q = query(q, where('podcast_type', '==', filters.podcast_type));
+    }
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    q = query(q, where('is_active', '==', filters.is_active));
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedPodcasts: Podcast[] = [];
+      snapshot.forEach((doc) => {
+        updatedPodcasts.push({ id: doc.id, ...doc.data() } as Podcast);
+      });
+      setPodcasts(updatedPodcasts);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error listening to podcasts:", error);
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [filters]);
 
-  const loadPodcasts = async () => {
-    try {
-      let loadedPodcasts = await podcastsService.getAllPodcasts();
-      if (loadedPodcasts) {
-        // Apply filters
-        loadedPodcasts = loadedPodcasts.filter(podcast => {
-          const matchesType = filters.podcast_type === "all" || podcast.podcast_type === filters.podcast_type;
-          const matchesDeleted = podcast.is_deleted === filters.is_deleted;
-          const matchesActive = podcast.is_active === filters.is_active;
-          return matchesType && matchesDeleted && matchesActive;
-        });
-        setPodcasts(loadedPodcasts as Podcast[]);
-      }
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading podcasts:", error);
-      setIsLoading(false);
-    }
-  };
-
+  // filter the podcasts
   const filteredPodcasts = podcasts.filter((podcast) => {
     return (
       podcast.podcast_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      podcast.topic_tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      podcast.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
 
+  // return the loading component
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -72,6 +85,7 @@ export default function PodcastBrowser({
     );
   }
 
+  // return the podcast browser component
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex gap-2">
@@ -132,7 +146,7 @@ export default function PodcastBrowser({
           >
             <div className="font-medium">{podcast.podcast_title}</div>
             <div className="text-xs opacity-80 mt-0.5">
-              {podcast.topic_tags.join(", ")}
+              {podcast.topic_tags?.join(", ")}
             </div>
           </div>
         ))}

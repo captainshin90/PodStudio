@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Document } from "@/lib/schemas/documents";
-import { documentsService } from "@/lib/services/database-service";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,63 +11,70 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { databaseService } from "@/lib/services/database-service";
 
 interface DocumentBrowserProps {
-  onSelectDocument: (doc: Document) => void;
+  onSelectDocument: (document: Document) => void;
   selectedDocument: Document | null;
   disabled?: boolean;
 }
 
-export default function DocumentBrowser({ 
-    onSelectDocument, 
-    selectedDocument, 
-    disabled = false, 
+///////////////////////////////////////////////////////////////////////////////
+// DocumentBrowser component
+///////////////////////////////////////////////////////////////////////////////
+
+export default function DocumentBrowser({
+  onSelectDocument,
+  selectedDocument,
+  disabled = false,
 }: DocumentBrowserProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    document_type: "all",
+    doc_type: "all",
     is_deleted: false,
     is_active: true,
   });
 
   useEffect(() => {
-    loadDocuments();
+    if (!databaseService.db) return;
+
+    // Create the base query
+    let q = query(collection(databaseService.db, 'documents'));
+
+    // Apply filters
+    if (filters.doc_type !== "all") {
+      q = query(q, where('doc_type', '==', filters.doc_type));
+    }
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    q = query(q, where('is_active', '==', filters.is_active));
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedDocuments: Document[] = [];
+      snapshot.forEach((doc) => {
+        updatedDocuments.push({ id: doc.id, ...doc.data() } as Document);
+      });
+      setDocuments(updatedDocuments);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error listening to documents:", error);
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [filters]);
 
-  const loadDocuments = async () => {
-    try {
-      let loadedDocuments = await documentsService.getAllDocuments();
-      if (loadedDocuments) {
-        // Apply filters
-        loadedDocuments = loadedDocuments.filter(document => {
-          const matchesType = filters.document_type === "all" || document.doc_type === filters.document_type;
-          const matchesDeleted = document.is_deleted === filters.is_deleted;
-          const matchesActive = document.is_active === filters.is_active;
-          return matchesType && matchesDeleted && matchesActive;
-        });
-        setDocuments(loadedDocuments as Document[]);
-      }
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading documents:", error);
-      setIsLoading(false);
-    }
-  };
-
+  // filter the documents
   const filteredDocuments = documents.filter((document) => {
     return (
       document.doc_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      document.topic_tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      document.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
-
-  // Add click handler to debug selection
-  const handleDocumentClick = (doc: Document) => {
-    console.log("Document clicked:", doc);
-    onSelectDocument(doc);
-  };
 
   if (loading) {
     return (
@@ -79,9 +84,9 @@ export default function DocumentBrowser({
     );
   }
 
+  // return the document browser component
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      {/* Search and Filter */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -99,17 +104,29 @@ export default function DocumentBrowser({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, document_type: "all" }))}>
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "all" }))}>
               All Types
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, document_type: "pdf" }))}>
-              PDFs
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "article" }))}>
+              Articles
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, document_type: "doc" }))}>
-              Word Documents
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "podcast" }))}>
+              Podcasts
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, document_type: "txt" }))}>
-              Text Files
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "transcript" }))}>
+              Transcripts
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "question" }))}>
+              Questions
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "answer" }))}>
+              Answers
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "summary" }))}>
+              Summaries
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, doc_type: "chat" }))}>
+              Chats
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
@@ -128,24 +145,19 @@ export default function DocumentBrowser({
         </DropdownMenu>
       </div>
 
-      {/* Document List */}
       <div className="space-y-1">
-        {filteredDocuments.map((doc) => (
+        {filteredDocuments.map((document) => (
           <div
-            key={doc.id}
-            className={`p-2 rounded-lg cursor-pointer hover:bg-secondary/50 ${
-              selectedDocument?.id === doc.id 
-              ? "bg-secondary" : "hover:bg-muted"
+            key={document.id}
+            className={`p-2 rounded-lg cursor-pointer transition-colors ${
+              selectedDocument?.id === document.id
+                ? "bg-secondary" : "hover:bg-muted"
             }`}
-            onClick={() => handleDocumentClick(doc)}
+            onClick={() => onSelectDocument(document)}
           >
-            <h3 className="font-medium">{doc.doc_name}</h3>
-            <div className="flex flex-wrap gap-1 mt-0.5">
-              {doc.topic_tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
+            <div className="font-medium">{document.doc_name}</div>
+            <div className="text-xs opacity-80 mt-0.5">
+             { document.topic_tags?.join(", ") }
             </div>
           </div>
         ))}

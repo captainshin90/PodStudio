@@ -1,3 +1,4 @@
+// Persona schema version 0.2.0
 export type PersonaType = 'resident' | 'student' | 'official' | 'lobbyst' | 'politician';
 
 export interface Persona {

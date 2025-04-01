@@ -1,23 +1,28 @@
 import { useState, useEffect } from "react";
 import { Prompt } from "@/lib/schemas/prompts";
-import { promptsService } from "@/lib/services/database-service";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+//  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
+//  DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { databaseService } from "@/lib/services/database-service";
 
 interface PromptBrowserProps {
   onSelectPrompt: (prompt: Prompt) => void;
   selectedPrompt: Prompt | null;
   disabled?: boolean;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// PromptBrowser component
+///////////////////////////////////////////////////////////////////////////////
 
 export default function PromptBrowser({
   onSelectPrompt,
@@ -26,36 +31,38 @@ export default function PromptBrowser({
 }: PromptBrowserProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    prompt_type: "all",
     is_deleted: false,
     is_active: true,
   });
 
   useEffect(() => {
-    loadPrompts();
-  }, [filters]);
+    if (!databaseService.db) return;
 
-  const loadPrompts = async () => {
-    try {
-      let loadedPrompts = await promptsService.getAllPrompts();
-      if (loadedPrompts) {
-        // Apply filters
-        loadedPrompts = loadedPrompts.filter(prompt => {
-          const matchesType = filters.prompt_type === "all" || prompt.prompt_type === filters.prompt_type;
-          const matchesDeleted = prompt.is_deleted === filters.is_deleted;
-          const matchesActive = prompt.is_active === filters.is_active;
-          return matchesType && matchesDeleted && matchesActive;
-        });
-        setPrompts(loadedPrompts as Prompt[]);
-      }
+    // Create the base query
+    let q = query(collection(databaseService.db, 'prompts'));
+
+    // Apply filters
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    q = query(q, where('is_active', '==', filters.is_active));
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedPrompts: Prompt[] = [];
+      snapshot.forEach((doc) => {
+        updatedPrompts.push({ id: doc.id, ...doc.data() } as Prompt);
+      });
+      setPrompts(updatedPrompts);
       setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading prompts:", error);
+    }, (error) => {
+      console.error("Error listening to prompts:", error);
       setIsLoading(false);
-    }
-  };
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [filters]);
 
   const filteredPrompts = prompts.filter((prompt) => {
     return (
@@ -64,7 +71,7 @@ export default function PromptBrowser({
     );
   });
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -72,9 +79,9 @@ export default function PromptBrowser({
     );
   }
 
+  // return the prompt browser component
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      {/* Search and Filter */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -92,19 +99,6 @@ export default function PromptBrowser({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, prompt_type: "all" }))}>
-              All Types
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, prompt_type: "system" }))}>
-              System Prompts
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, prompt_type: "user" }))}>
-              User Prompts
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilters(prev => ({ ...prev, prompt_type: "assistant" }))}>
-              Assistant Prompts
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
               checked={filters.is_active}
               onCheckedChange={(checked) => setFilters(prev => ({ ...prev, is_active: checked }))}
@@ -121,28 +115,22 @@ export default function PromptBrowser({
         </DropdownMenu>
       </div>
 
-      {/* Prompt List */}
       <div className="space-y-1">
-        {isLoading ? (
-          <div>Loading prompts...</div>
-        ) : (
-          filteredPrompts.map((prompt) => (
-            <div
-              key={prompt.id}
-              className={`p-2 rounded-lg cursor-pointer transition-colors ${
-                selectedPrompt?.id === prompt.id
-                  ? "bg-secondary"
-                  : "hover:bg-muted"
-              }`}
-              onClick={() => onSelectPrompt(prompt)}
-            >
-              <div className="font-medium">{prompt.prompt_name}</div>
-              <div className="text-xs opacity-80 mt-0.5">
-                {prompt.prompt_desc}
-              </div>
+        {filteredPrompts.map((prompt) => (
+          <div
+            key={prompt.id}
+            className={`p-2 rounded-lg cursor-pointer transition-colors ${
+              selectedPrompt?.id === prompt.id
+                ? "bg-secondary" : "hover:bg-muted"
+            }`}
+            onClick={() => onSelectPrompt(prompt)}
+          >
+            <div className="font-medium">{prompt.prompt_name}</div>
+            <div className="text-xs opacity-80 mt-0.5">
+              {prompt.prompt_desc}
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );

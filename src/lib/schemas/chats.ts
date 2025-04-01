@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 import { PlayerEpisode } from "./episodes";
 
+// Chat schema version 0.2.0
 export interface Chat {
   id: string; // Firestore Document ID
   chat_id: string; // Chat ID

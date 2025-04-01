@@ -41,6 +41,28 @@ export default function PodcastsPage() {
     }
   };
 
+  // Handle create podcast  
+  const handleCreate = async (newPodcast: Podcast) => {
+    try {
+      const podcastId = await podcastsService.createPodcast(newPodcast);
+      if (podcastId) {
+        toast({
+          title: "Success",
+          description: "Podcast created successfully",
+        });
+        setShowNewPodcast(false);
+      }
+    } catch (error) { 
+      console.error("Error creating podcast:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create podcast",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete podcast
   const handleDelete = async () => {
     if (!selectedPodcast?.id) return;
     
@@ -82,25 +104,7 @@ export default function PodcastsPage() {
             <div className="space-y-4">
               <PodcastDetails
                 podcast={null}
-                onSave={async (newPodcast) => {
-                  try {
-                    const podcastId = await podcastsService.createPodcast(newPodcast);
-                    if (podcastId) {
-                      toast({
-                        title: "Success",
-                        description: "Podcast created successfully",
-                      });
-                      setShowNewPodcast(false);
-                    }
-                  } catch (error) {
-                    console.error("Error creating podcast:", error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to create podcast",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onSave={handleCreate}
                 onCancel={() => setShowNewPodcast(false)}
                 isNew={true}
               />

@@ -1,3 +1,4 @@
+// Podcast schema version 0.2.0
 export type PodcastType = 'summary' | 'audio_podcast' | 'video_podcast';
 export type PodcastFormat = 'html' | 'mp3' | 'mp4';
 

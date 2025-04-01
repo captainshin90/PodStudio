@@ -18,7 +18,7 @@ import {
 
 interface DocumentDetailsProps {
   document: Document | null;
-  onSave: (doc: Document) => void;
+  onSave: (document: Document) => void;
   onCancel: () => void;
   onDelete?: () => void;
   isNew?: boolean;
@@ -42,49 +42,36 @@ export default function DocumentDetails({
   const [hasChanges, setHasChanges] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [isEditable, setIsEditable] = useState(false);
 
   // use the useEffect hook to set the form data to the document details
   useEffect(() => {
-    console.log("DocumentDetails received document:", document);
     if (document) {
       // Ensure we have all required fields
-      setFormData({
-        ...document,
-        id: document.id, // Ensure the Firestore ID is preserved
-        doc_id: document.doc_id,
-        doc_name: document.doc_name || "",
-        doc_desc: document.doc_desc || "",
-        doc_type: document.doc_type || "article",
-        topic_tags: document.topic_tags || [],
-        doc_source_url: document.doc_source_url || "",
-        doc_extracted_text: document.doc_extracted_text || "",
-        doc_source_format: document.doc_source_format || "txt",
-        extract_tool: document.extract_tool || "none",
-        is_active: document.is_active ?? true,
-        is_deleted: document.is_deleted ?? false,
-        created_at: document.created_at || new Date(),
-        updated_at: document.updated_at || new Date()
-      });
-      console.log("DocumentDetails set form data:", formData);
+      setFormData(document);
       setHasChanges(false);
+      setIsEditable(false);
     } else if (isNew) {
       setFormData({
         doc_id: crypto.randomUUID(),
-        doc_name: "Enter Document Name",
-        doc_desc: "Enter Document Description",
+        doc_name: "",
+        doc_desc: "",
         doc_type: "article" as DocumentType,
+        topic_tags: [],
         doc_source_format: "txt" as DocumentSourceFormat,
-        doc_source_url: "Enter Document Source URL",
-        doc_extracted_text: "Enter Document Extracted Text",
+        doc_source_url: "https://",
+        doc_extracted_text: "",
         is_active: true,
         is_deleted: false,
         created_at: new Date(),
         updated_at: new Date()
       });
       setHasChanges(true);
+      setIsEditable(true);
     } else {
       setFormData({});
       setHasChanges(false);
+      setIsEditable(false);
     }
   }, [document, isNew]);
 
@@ -95,6 +82,7 @@ export default function DocumentDetails({
     </div>;
   }
 
+  // validate the url
   const validateUrl = (url: string): boolean => {
     if (!url) return true; // Allow empty URLs
     try {
@@ -105,6 +93,7 @@ export default function DocumentDetails({
     }
   };
 
+  // handle the submit event
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -158,6 +147,7 @@ export default function DocumentDetails({
     }
   };
 
+  // handle the file upload event
   const handleFileUpload = async (filePaths: string[]) => {
     setUploadedFiles((prev) => [...new Set([...prev, ...filePaths])]);
     
@@ -179,6 +169,7 @@ export default function DocumentDetails({
     });
   };
 
+  // detect the file format
   const detectFileFormat = (filePath: string): DocumentSourceFormat => {
     const extension = filePath.split('.').pop()?.toLowerCase();
     switch (extension) {
@@ -211,7 +202,7 @@ export default function DocumentDetails({
             </Button>
           )}
           <Button type="submit" disabled={!hasChanges}>
-            {document ? "Save Changes" : "Create Document"}
+            {document ? "Save Changes" : "Save Document"}
           </Button>
         </div>
       </div>
@@ -219,19 +210,42 @@ export default function DocumentDetails({
       {/* Document upload section */}
       {isNew && (
         <div className="space-y-4">
-          <FileUpload onUpload={handleFileUpload} />
-          {uploadedFiles.length > 0 && (
-            <div className="space-y-2">
-              <Label>Uploaded Files</Label>
-              <div className="space-y-1">
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="text-sm text-muted-foreground">
-                    {file.split('/').pop()}
-                  </div>
-                ))}
+          <div className="space-y-4">
+            <FileUpload onUpload={handleFileUpload} />
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Uploaded Files</Label>
+                <div className="space-y-1">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="text-sm text-muted-foreground">
+                      {file.split('/').pop()}
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="doc_source_url">Source URL</Label>
+              <Input 
+                id="doc_source_url"
+                name="doc_source_url"
+                value={formData.doc_source_url || ""}
+                onChange={handleChange}
+                className={urlError ? "border-red-500" : ""}
+              />
+              {urlError && (
+                <p className="text-sm text-red-500">{urlError}</p>
+              )}
             </div>
-          )}
+            <Button type="button" variant="outline" onClick={() => {
+              setFormData({ ...formData, doc_source_url: "" });
+              setUrlError(null);
+            }}>
+              Extract Text
+            </Button>
+          </div>
         </div>
       )}
 
@@ -253,6 +267,7 @@ export default function DocumentDetails({
           <Input
             id="doc_name"
             name="doc_name"
+            placeholder="Enter Document Name"
             value={formData.doc_name || ""}
             onChange={handleChange}
             required
@@ -264,6 +279,7 @@ export default function DocumentDetails({
           <Textarea
             id="doc_desc"
             name="doc_desc"
+            placeholder="Enter Document Description"
             value={formData.doc_desc || ""}
             onChange={handleChange}
           />
@@ -332,29 +348,41 @@ export default function DocumentDetails({
             }}
           />
         </div>
+        {!isNew && (
+          <div className="space-y-2">
+            <Label htmlFor="doc_source_url">Source URL</Label>
+            <Input
+              id="doc_source_url"
+              name="doc_source_url"
+              value={formData.doc_source_url || ""}
+              onChange={handleChange}
+              className={urlError ? "border-red-500" : ""}
+            />
+            {urlError && (
+              <p className="text-sm text-red-500">{urlError}</p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
-          <Label htmlFor="doc_source_url">Source URL</Label>
-          <Input
-            id="doc_source_url"
-            name="doc_source_url"
-            value={formData.doc_source_url || ""}
-            onChange={handleChange}
-            className={urlError ? "border-red-500" : ""}
-          />
-          {urlError && (
-            <p className="text-sm text-red-500">{urlError}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="doc_extracted_text">Extracted Text</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="doc_extracted_text">Extracted Text</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_editable"
+                checked={isEditable}
+                onCheckedChange={setIsEditable}
+              />
+              <Label htmlFor="is_editable" className="text-sm">Edit</Label>
+            </div>
+          </div>
           <Textarea
             id="doc_extracted_text"
             name="doc_extracted_text"
             value={formData.doc_extracted_text || ""}
             onChange={handleChange}
             className="min-h-[200px] font-mono text-sm"
+            disabled={!isEditable}
           />
         </div>
 

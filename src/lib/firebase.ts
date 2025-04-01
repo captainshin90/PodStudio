@@ -6,6 +6,7 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { Auth, getAuth, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider } from "firebase/auth";
 import { initializeFirestore, getFirestore, Firestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 import { config } from "../config/config";
 
 
@@ -13,6 +14,7 @@ import { config } from "../config/config";
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
+let storage: FirebaseStorage;
 
 // Create providers as constants instead of variables
 const googleProvider = new GoogleAuthProvider();
@@ -32,6 +34,7 @@ googleProvider.setCustomParameters({
 // This is the client side initialization of Firebase Auth 
 ////////////////////////////////////////////////////////////////
 export async function initAuth() : Promise<Auth> {
+
   if (!getApps().length) {
     try {
       // Validate config before initialization
@@ -66,8 +69,8 @@ export async function initFirestore(databaseId: string = "") : Promise<Firestore
 
   if (!getApps().length) {
     try {
-      // Use config.firebase from server/config.js
-      // console.log('Firebase databaseId=' + process.env.NEXT_PUBLIC_FIRESTORE_DATABASE_ID);
+      // Use config.firebase from config.js
+      // console.log('Firebase databaseId=' + process.env.VITEFIRESTORE_DATABASE_ID);
       // app = initializeApp(firebaseConfig);      
       app = initializeApp(config.firebase); 
       console.log("Firebase app initialized successfully");
@@ -107,6 +110,26 @@ export async function initFirestore(databaseId: string = "") : Promise<Firestore
   return db;
 }
 
+//////////////////////////////////////////////////////////////// 
+// This is the client side initialization of Firebase Storage
+////////////////////////////////////////////////////////////////
+export async function initStorage(): Promise<FirebaseStorage> {
+  if (!getApps().length) {
+    try {
+      app = initializeApp(config.firebase);
+      console.log("Firebase app initialized successfully");
+    } catch (error) {
+      console.error("Firebase app initialization error:", error);
+      throw error;
+    }
+  } else {
+    app = getApps()[0];
+    console.log("Firebase app already initialized");
+  }
+
+  storage = getStorage(app);
+  return storage;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Export the Firebase objects
@@ -114,7 +137,8 @@ export async function initFirestore(databaseId: string = "") : Promise<Firestore
 export { 
   app, 
   auth, 
-  db, 
+  db,
+  storage,
   googleProvider, 
   facebookProvider, 
   microsoftProvider 

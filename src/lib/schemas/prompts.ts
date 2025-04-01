@@ -1,5 +1,6 @@
 import { TTSModel } from "@/config/podcast-config";
 
+// Prompt schema version 0.2.0
 export interface Prompt {
   id: string; // Firestore Document ID (needed for Firestore)
   prompt_id: string; // Prompt ID

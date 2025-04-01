@@ -253,3 +253,21 @@ x - issue with uploading txt files
 x - issue with processing txt files - just copy txt to the text field?
 x - download triggers another Generate Podcast.
 x - Try Bolt or Cursor to generate code for new features.
+x - clear url list and other fields on clear form button.
+x - Prompts: add podcastfy settings
+x - Filter: Deleted true/false 
+x - store transcripts, podcasts, episodes in a database (check microfeed)
+x - select voices from a drop down for each provider
+x - Transcript schema: add doc_id
+x - Podcasts/Episodes page: podcast_slug: from podcast_title, and episode_title
+x - when updating a record, the change is not reflected in the record browser panel as it has an earlier snapshot. Need to implement snapshot.docChange() listener: 
+onSnapshot(q, (snapshot) => {
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "modified") {
+      console.log("Modified document: ", change.document.data());
+In this example, the onSnapshot function sets up a listener for changes to the "your_collection" collection. The docChanges() method returns an array of DocumentChange objects, and the code iterates over them to check for modified documents.
+x - Episodes: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Prompts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Transcripts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Podcasts: test of view(yes), delete(yes), edit-save(save), new-save(yes)
+x - Documents: of test view(yes), delete, edit-save(yes), new-save(yes), 

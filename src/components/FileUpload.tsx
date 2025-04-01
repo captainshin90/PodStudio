@@ -8,6 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 // It uses the react-dropzone library to handle the file upload
 // It also uses the useToast hook to display toast messages
 
+// There is a similar component in the src/components/ui/file-upload.tsx file
+// This component is used in the src/components/documents/DocumentDetails.tsx file
+// This component is used in the src/components/create/CustomPodcast.tsx file
+
 interface FileUploadProps {
   onUpload: (filePaths: string[]) => void;
 }
@@ -16,6 +20,7 @@ export const FileUpload = ({ onUpload }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
+  // use the useCallback hook to handle the file upload
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       try {

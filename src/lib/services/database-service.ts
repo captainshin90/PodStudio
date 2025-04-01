@@ -1,4 +1,5 @@
 // lib/services/database-service.ts
+// Database service version 0.2.0
 // This is the database service for the client side of the application.
 // It is used to interact with the Firestore database.
 // It is also used to interact with the Firebase Auth service.

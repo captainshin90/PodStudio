@@ -14,7 +14,7 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 
 # Load environment variables with explicit path and override
-env_path = Path('.') / '.env'
+env_path = Path('.') / '.env.local'
 load_dotenv(dotenv_path=env_path, override=True)
 
 # Create required directories

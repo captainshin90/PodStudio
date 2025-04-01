@@ -41,6 +41,26 @@ export default function PromptsPage() {
     }
   };
 
+  const handleCreate = async (newPrompt: Prompt) => {
+    try {
+      const promptId = await promptsService.createPrompt(newPrompt);
+      if (promptId) {
+        toast({
+          title: "Success",
+          description: "Prompt created successfully",
+        });
+        setShowNewPrompt(false);
+      }
+    } catch (error) {
+      console.error("Error creating prompt:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create prompt",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedPrompt?.id) return;
     
@@ -93,25 +113,7 @@ export default function PromptsPage() {
             <div className="space-y-4">
               <PromptDetails
                 prompt={null}
-                onSave={async (newPrompt) => {
-                  try {
-                    const promptId = await promptsService.createPrompt(newPrompt);
-                    if (promptId) {
-                      toast({
-                        title: "Success",
-                        description: "Prompt created successfully",
-                      });
-                      setShowNewPrompt(false);
-                    }
-                  } catch (error) {
-                    console.error("Error creating prompt:", error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to create prompt",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onSave={handleCreate}
                 onCancel={() => setShowNewPrompt(false)}
                 isNew={true}
               />

@@ -28,22 +28,22 @@ export default function EpisodesPage() {
 //    setShowNewEpisode(false);
 //  };
 
-  const handleSave = async (episode: Episode) => {
+  const handleSave = async (updatedEpisode: Episode) => {
     try {
       if (selectedEpisode) {
-        await episodesService.updateEpisode(episode.episode_id, episode);
+        await episodesService.updateEpisode(updatedEpisode.id, updatedEpisode);
         toast({
           title: "Success",
           description: "Episode updated successfully",
         });
       } else {
-        await episodesService.createEpisode(episode);
+        await episodesService.createEpisode(updatedEpisode);
         toast({
           title: "Success",
           description: "Episode created successfully",
         });
       }
-      setSelectedEpisode(episode);
+      setSelectedEpisode(updatedEpisode);
       setShowNewEpisode(false);
     } catch (error) {
       console.error("Error saving episode:", error);
@@ -55,6 +55,28 @@ export default function EpisodesPage() {
     }
   };
 
+  // Handle create episode  
+  const handleCreate = async (newEpisode: Episode) => {
+    try {
+      const episodeId = await episodesService.createEpisode(newEpisode);
+      if (episodeId) {
+        toast({
+          title: "Success",
+          description: "Episode created successfully",
+        });
+        setShowNewEpisode(false);
+      }
+    } catch (error) {
+      console.error("Error creating episode:", error);  
+      toast({
+        title: "Error",
+        description: "Failed to create episode",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete episode
   const handleDelete = async () => {
     if (!selectedEpisode) return;
 
@@ -102,25 +124,7 @@ export default function EpisodesPage() {
             <div className="space-y-4">
               <EpisodeDetails
                 episode={null}
-                onSave={async (newEpisode) => {
-                  try {
-                    const episodeId = await episodesService.createEpisode(newEpisode);
-                    if (episodeId) {
-                      toast({
-                        title: "Success",
-                        description: "Episode created successfully",
-                      });
-                      setShowNewEpisode(false);
-                    }
-                  } catch (error) {
-                    console.error("Error creating episode:", error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to create episode",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onSave={handleCreate}
                 onCancel={() => setShowNewEpisode(false)}
                 isNew={true}
               />

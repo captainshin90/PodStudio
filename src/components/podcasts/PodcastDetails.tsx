@@ -24,6 +24,10 @@ interface PodcastDetailsProps {
   isNew?: boolean;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// PodcastDetails component
+///////////////////////////////////////////////////////////////////////////////
+
 export default function PodcastDetails({
   podcast,
   onSave,
@@ -45,10 +49,11 @@ export default function PodcastDetails({
     } else if (isNew) {
       setFormData({
         podcast_id: crypto.randomUUID(),
-        podcast_title: "Enter Podcast Title",
+        podcast_title: "",
+        podcast_slug: "",
         podcast_hosts: [],
         podcast_image: "",
-        podcast_desc: "Enter Podcast Description",
+        podcast_desc: "",
         podcast_type: "summary",
         podcast_format: "html",
         topic_tags: [],
@@ -65,6 +70,7 @@ export default function PodcastDetails({
     }
   }, [podcast, isNew]);
 
+  // load the episodes for the podcast
   const loadEpisodes = async (podcastId: string) => {
     try {
       const loadedEpisodes = await episodesService.getAllEpisodes(podcastId);
@@ -83,6 +89,7 @@ export default function PodcastDetails({
     </div>;
   }
 
+  // handle the submit event
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -102,6 +109,7 @@ export default function PodcastDetails({
     );
   }
 
+  // handle the change event
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -113,6 +121,24 @@ export default function PodcastDetails({
     setHasChanges(true);
   };
 
+  // handle the title change event
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    // Convert title to slug format
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+    setFormData(prev => ({
+      ...prev,
+      podcast_title: title,
+      podcast_slug: slug
+    }));
+    setHasChanges(true);
+  };
+
+  // handle the file upload event
   const handleFileUpload = async (file: File) => {
     // Here you would typically upload the file to your storage service
     // and get back a URL. For now, we'll just use a placeholder
@@ -124,6 +150,7 @@ export default function PodcastDetails({
     setHasChanges(true);
   };
 
+  // return the podcast details component
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between mb-4">
@@ -144,7 +171,7 @@ export default function PodcastDetails({
             </Button>
           )}
           <Button type="submit" disabled={!hasChanges}>
-            {podcast ? "Save Changes" : "Create Podcast"}
+            {podcast ? "Save Changes" : "Save Podcast"}
           </Button>
         </div>
       </div>
@@ -186,8 +213,18 @@ export default function PodcastDetails({
           <Input
             id="podcast_title"
             name="podcast_title"
+            placeholder="Enter Podcast Title"
             value={formData.podcast_title || ""}
-            onChange={handleChange}
+            onChange={handleTitleChange}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="podcast_slug">Slug</Label>
+          <Input
+            id="podcast_slug"
+            name="podcast_slug"
+            value={formData.podcast_slug || ""}
+            disabled
           />
         </div>
 
@@ -258,6 +295,7 @@ export default function PodcastDetails({
           <Textarea
             id="podcast_desc"
             name="podcast_desc"
+            placeholder="Enter Podcast Description"
             value={formData.podcast_desc || ""}
             onChange={handleChange}
             className="min-h-[100px]"

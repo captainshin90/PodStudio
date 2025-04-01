@@ -1,5 +1,6 @@
 // import { Podcast } from "@/lib/schemas/podcasts";
 
+// Episode schema version 0.2.0
 export interface Episode {
   id: string; // Firestore Document ID (needed for Firestore)
   episode_id: string; // Episode ID
@@ -8,10 +9,10 @@ export interface Episode {
   prompt_id: string; // Prompt ID
   episode_title: string; // Episode Title
   episode_slug: string; // Episode Slug For when you need to refer to your episode in a url.
-  episode_number: number; // Episode Number
-  episode_duration: number; // Episode Duration in seconds
   episode_desc: string; // Episode Description
   episode_summary: string; // Episode Summary - string containing one or more descriptive sentences summarizing your episode for potential listeners. You can specify up to 4000 characters.
+  episode_number: number; // Episode Number
+  episode_duration: number; // Episode Duration in seconds
   episode_transcript: string; // Episode Transcript - this is the transcript of the episode copied from the transcript service.
   topic_tags: string[]; // Topic Tags
   views: number; // Views
@@ -85,6 +86,7 @@ export function convertToEpisode(data: any): Episode {
 
 /*
 // Helper function to convert Episode to PlayerEpisode
+// This function is not used in the project yet
 export function convertToPlayerEpisode(podcast: Podcast, episode: Episode): PlayerEpisode {
   return {
     id: episode.episode_id,

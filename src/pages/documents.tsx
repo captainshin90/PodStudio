@@ -17,18 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+///////////////////////////////////////////////////////////////////////////////
+// Documents page
+///////////////////////////////////////////////////////////////////////////////
 export default function DocumentsPage() {
-  const [showUpload, setShowUpload] = useState(false);
+  const [showNewDocUpload, setShowNewDocUpload] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   // Add debug handler for document selection
-  const handleDocumentSelect = (doc: Document) => {
-    console.log("Document selected in DocumentsPage:", doc);
-    setSelectedDocument(doc);
-  };
+//  const handleDocumentSelect = (doc: Document) => {
+//    console.log("Document selected in DocumentsPage:", doc);
+//    setSelectedDocument(doc);
+//  };
 
+  // Handle save document
   const handleSave = async (updatedDoc: Document) => {
     try {
       await documentsService.updateDocument(updatedDoc.id, updatedDoc);
@@ -47,6 +51,28 @@ export default function DocumentsPage() {
     }
   };
 
+  // Handle create document
+  const handleCreate = async (newDocument: Document) => {
+    try {
+      const documentId = await documentsService.createDocument(newDocument);
+      if (documentId) {
+        toast({ 
+          title: "Success",
+          description: "Document created successfully",
+        });
+        setShowNewDocUpload(false);
+      }
+    } catch (error) { 
+      console.error("Error creating document:", error); 
+      toast({
+        title: "Error",
+        description: "Failed to create document",
+        variant: "destructive",
+      });
+    }
+  };  
+
+  // Handle delete document
   const handleDelete = async () => {
     if (!selectedDocument?.id) return;
     
@@ -68,6 +94,7 @@ export default function DocumentsPage() {
     }
   };
 
+  // Render the page
   return (
     <div className="container mx-auto py-0">
       <h1 className="text-2xl font-bold mb-6">Document Management</h1>
@@ -77,32 +104,42 @@ export default function DocumentsPage() {
         <div className="col-span-4 border rounded-lg p-4">
           <DocumentBrowser 
             selectedDocument={selectedDocument}
-            onSelectDocument={handleDocumentSelect}
-            disabled={showUpload}
+            onSelectDocument={setSelectedDocument}
+            disabled={showNewDocUpload}
           />
         </div>
 
         {/* Right Panel - Document Details */}
         <div className="col-span-8 border rounded-lg p-4">
-          {!selectedDocument && !showUpload && (
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => setShowUpload(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Document
-              </Button>
+          {showNewDocUpload ? (
+            <div className="space-y-4">
+              <DocumentDetails
+                document={null}
+                onSave={handleCreate}
+                onCancel={() => setShowNewDocUpload(false)}
+                isNew={true}
+              />
             </div>
+          ) : (
+            <>
+              {!selectedDocument && !showNewDocUpload && (
+                <div className="flex justify-end mb-4">
+                  <Button onClick={() => setShowNewDocUpload(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Document
+                  </Button>
+                </div>
+              )}
+              <DocumentDetails
+                document={selectedDocument}
+                onSave={handleSave}
+                onCancel={() => setSelectedDocument(null)}
+                onDelete={() => setShowDeleteDialog(true)}
+                isNew={false}
+              />
+            </>
           )}
-          <DocumentDetails
-            document={selectedDocument}
-            onSave={handleSave}
-            onCancel={() => {
-              setShowUpload(false);
-              setSelectedDocument(null);
-            }}
-            onDelete={() => setShowDeleteDialog(true)}
-            isNew={showUpload}
-          />
-        </div>
+        </div> 
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

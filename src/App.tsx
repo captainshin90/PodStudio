@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CustomPodcast } from "@/components/CustomPodcast";
-import { TopicPodcast } from "@/components/TopicPodcast";
+import { CustomPodcast } from "@/components/create/CustomPodcast";
+import { TopicPodcast } from "@/components/create/TopicPodcast";
 import EpisodesPage from "@/pages/episodes";
 import DocumentsPage from "@/pages/documents";
 import PromptsPage from "@/pages/prompts";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
-import { APIKeys } from "@/components/APIKeys";
+import { APIKeys } from "@/components/settings/APIKeys";
 
 ///////////////////////////////////////////////////////////////////////////////
 // App component

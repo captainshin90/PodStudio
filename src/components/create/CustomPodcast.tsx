@@ -133,6 +133,10 @@ const extractImageUrls = (text: string): string[] => {
 
 type PodcastFormData = z.infer<typeof formSchema>;
 
+///////////////////////////////////////////////////////////////////////////////
+// AddCustomValue component
+///////////////////////////////////////////////////////////////////////////////
+
 const AddCustomValue = ({
   onAdd,
   placeholder,
@@ -262,23 +266,28 @@ export function CustomPodcast() {
     }
   }, []);
 
+  // save the form data
   useEffect(() => {
     const formData = form.getValues();
     localStorage.setItem("podcast_form", JSON.stringify(formData));
   }, [form.watch()]);
 
+  // save the text
   useEffect(() => {
     localStorage.setItem("podcast_text", parsedText);
   }, [parsedText]);
 
+  // save the urls
   useEffect(() => {
     localStorage.setItem("podcast_urls", JSON.stringify(parsedUrls));
   }, [parsedUrls]);
 
+  // save the image urls
   useEffect(() => {
     localStorage.setItem("podcast_image_urls", JSON.stringify(parsedImageUrls));
   }, [parsedImageUrls]);
 
+  // set the voice question, answer, and model
   useEffect(() => {
     const ttsModel = form.watch("ttsModel") as TTSModel;
     const defaults = ttsVoiceDefaults[ttsModel];
@@ -288,6 +297,7 @@ export function CustomPodcast() {
     form.setValue("voiceModel", defaults.model);
   }, [form.watch("ttsModel")]);
 
+  // handle the url input
   const handleUrlInput = (text: string) => {
     const urls = extractUrls(text);
     if (urls.length > 0) {
@@ -308,6 +318,7 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the image url input
   const handleImageUrlInput = (text: string) => {
     const urls = extractImageUrls(text);
     if (urls.length > 0) {
@@ -335,12 +346,14 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the paste event
   const onPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData("text");
     handleUrlInput(pastedText);
   };
 
+  // handle the key down event
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -351,6 +364,7 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the remove url event
   const removeUrl = (index: number) => {
     // Prevent event propagation
     event?.preventDefault();
@@ -359,6 +373,7 @@ export function CustomPodcast() {
     setParsedUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // get the required api key
   const getRequiredApiKey = (model: TTSModel) => {
     switch (model) {
       case "geminimulti":
@@ -378,6 +393,7 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the submit event
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("Form submitted", values);
       
@@ -524,6 +540,7 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the clear saved data event
   const clearSavedData = () => {
     localStorage.removeItem("podcast_form");
     localStorage.removeItem("podcast_urls");
@@ -549,12 +566,14 @@ export function CustomPodcast() {
   const [customEngagementTechniques, setCustomEngagementTechniques] =
     useState<EngagementTechnique[]>(engagementTechniques);
 
+  // handle the image paste event
   const onImagePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData("text");
     handleImageUrlInput(pastedText);
   };
 
+  // handle the image key down event
   const onImageKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -565,12 +584,14 @@ export function CustomPodcast() {
     }
   };
 
+  // handle the remove image url event
   const removeImageUrl = (index: number) => {
     event?.preventDefault();
     event?.stopPropagation();
     setParsedImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // handle the file upload event
   const handleFileUpload = (filePaths: string[]) => {
     setUploadedFiles((prev) => [...new Set([...prev, ...filePaths])]);
     toast({
@@ -579,7 +600,7 @@ export function CustomPodcast() {
     });
   };
 
-  // Add this function before the return statement
+  // handle the download event
   const handleDownload = () => {
     if (audioUrl) {
       const link = document.createElement('a');

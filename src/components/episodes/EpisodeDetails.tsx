@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
 import { podcastsService, promptsService, transcriptsService } from "@/lib/services/database-service";
+import { storage, auth } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+// import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 /*
 import {
   Select,
@@ -25,6 +29,10 @@ import {
 } from "@/components/ui/select";
 */
 
+///////////////////////////////////////////////////////////////////////////////
+// EpisodeDetailsProps interface
+///////////////////////////////////////////////////////////////////////////////
+
 interface EpisodeDetailsProps {
   episode: Episode | null;
   onSave: (episode: Episode) => void;
@@ -33,12 +41,20 @@ interface EpisodeDetailsProps {
   isNew?: boolean;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// SelectDialogProps interface
+///////////////////////////////////////////////////////////////////////////////
+
 interface SelectDialogProps {
   title: string;
   items: Array<{ id: string; title: string }>;
   onSelect: (id: string) => void;
   trigger: React.ReactNode;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SelectDialog component
+///////////////////////////////////////////////////////////////////////////////
 
 function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +64,7 @@ function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // return the select dialog component
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -82,6 +99,10 @@ function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
   );
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// EpisodeDetails component
+///////////////////////////////////////////////////////////////////////////////
+
 export default function EpisodeDetails({
   episode,
   onSave,
@@ -89,22 +110,26 @@ export default function EpisodeDetails({
   onDelete,
   isNew = false,
 }: EpisodeDetailsProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<Episode>>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isTranscriptEditable, setIsTranscriptEditable] = useState(false);
   const [podcasts, setPodcasts] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
   const [transcripts, setTranscripts] = useState<Array<{ id: string; title: string }>>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (episode) {
       setFormData(episode);
       setHasChanges(false);
+      setIsTranscriptEditable(false);
     } else if (isNew) {
       setFormData({
         episode_id: crypto.randomUUID(),
-        episode_title: "Enter Episode Title",
-        episode_desc: "Enter Episode Description",
+        episode_title: "",
+        episode_desc: "",
         episode_number: 1,
         episode_duration: 0,
         episode_summary: "",
@@ -120,9 +145,11 @@ export default function EpisodeDetails({
         updated_at: new Date()
       });
       setHasChanges(true);
+      setIsTranscriptEditable(false);
     } else {
       setFormData({});
       setHasChanges(false);
+      setIsTranscriptEditable(false);
     }
   }, [episode, isNew]);
 
@@ -184,6 +211,7 @@ export default function EpisodeDetails({
     );
   }
 
+  // handle the change event
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -195,15 +223,73 @@ export default function EpisodeDetails({
     setHasChanges(true);
   };
 
-  const handleFileUpload = async (file: File) => {
-    const imageUrl = URL.createObjectURL(file);
+  // handle the title change event
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    // Convert title to slug format
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
     setFormData(prev => ({
       ...prev,
-      episode_image: imageUrl
+      episode_title: title,
+      episode_slug: slug
     }));
     setHasChanges(true);
   };
 
+  // handle the file upload event
+  const handleFileUpload = async (file: File) => {
+    try {
+      // Check if user is authenticated
+      if (!auth.currentUser) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to upload images",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setUploadingImage(true);
+      
+      // Create a unique filename using the episode ID and timestamp
+      const timestamp = Date.now();
+      const filename = `episodes/${formData.episode_id}/${timestamp}-${file.name}`;
+      const storageRef = ref(storage, filename);
+      
+      // Upload the file
+      await uploadBytes(storageRef, file);
+      
+      // Get the download URL
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      // Update the form data with the permanent URL
+      setFormData(prev => ({
+        ...prev,
+        episode_image: downloadUrl
+      }));
+      setHasChanges(true);
+      
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // return the episode details component
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between mb-4">
@@ -224,7 +310,7 @@ export default function EpisodeDetails({
             </Button>
           )}
           <Button type="submit" disabled={!hasChanges}>
-            {episode ? "Save Changes" : "Create Episode"}
+            {episode ? "Save Changes" : "Save Episode"}
           </Button>
         </div>
       </div>
@@ -257,8 +343,18 @@ export default function EpisodeDetails({
           <Input
             id="episode_title"
             name="episode_title"
+            placeholder="Enter Episode Title"
             value={formData.episode_title || ""}
-            onChange={handleChange}
+            onChange={handleTitleChange}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="episode_slug">Slug</Label>
+          <Input
+            id="episode_slug"
+            name="episode_slug"
+            value={formData.episode_slug || ""}
+            disabled
           />
         </div>
 
@@ -327,6 +423,7 @@ export default function EpisodeDetails({
           <Textarea
             id="episode_desc"
             name="episode_desc"
+            placeholder="Enter Episode Description"
             value={formData.episode_desc || ""}
             onChange={handleChange}
             className="min-h-[100px]"
@@ -338,6 +435,7 @@ export default function EpisodeDetails({
           <Textarea
             id="episode_summary"
             name="episode_summary"
+            placeholder="Enter Episode Summary"
             value={formData.episode_summary || ""}
             onChange={handleChange}
             className="min-h-[100px]"
@@ -345,13 +443,24 @@ export default function EpisodeDetails({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="episode_transcript">Transcript</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="episode_transcript">Generated Transcript Text</Label>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="is_editable" className="text-sm">Edit</Label>
+              <Switch
+                id="is_editable"
+                checked={isTranscriptEditable}
+                onCheckedChange={setIsTranscriptEditable}
+              />
+            </div>
+          </div>
           <Textarea
             id="episode_transcript"
             name="episode_transcript"
             value={formData.episode_transcript || ""}
             onChange={handleChange}
             className="min-h-[200px]"
+            disabled={!isTranscriptEditable}
           />
         </div>
 
@@ -394,6 +503,12 @@ export default function EpisodeDetails({
                 onFileSelect={handleFileUpload}
                 accept="image/*"
               />
+              {uploadingImage && (
+                <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading image...
+                </div>
+              )}
             </div>
           </div>
         </div>

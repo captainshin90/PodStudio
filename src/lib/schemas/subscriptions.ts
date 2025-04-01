@@ -1,3 +1,4 @@
+// Subscription schema version 0.2.0
 export interface Subscription {
   id: string; // Firestore Document ID (needed for Firestore)
   subscription_id: string; // Subscription ID

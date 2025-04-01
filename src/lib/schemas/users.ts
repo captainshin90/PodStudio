@@ -1,3 +1,4 @@
+// User schema version 0.2.0
 export interface User {
   id: string; // Firestore Document ID (needed for Firestore)
   user_id: string; // User ID
