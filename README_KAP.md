@@ -11,12 +11,14 @@ Quick Start:
 # To debug backend: 
 > Launch Python: Flask app.py
 # Test if server app.py is running
-> http://localhost:8080/api/test-env
+> http://localhost:8080/api/test-env      # local test
+> https://podstudio.fly.dev/api/test-env  # production test
 
 (.venv) > bun run build && ls # (to build for production)
 
 # Run front-end Vite app
 > http://localhost:5173/
+> https://podstudio.fly.dev/
 
 (.venv) > git add .
 (.venv) > git commit -m "fix file upload"
@@ -29,8 +31,6 @@ Quick Start:
 ### Key Info 
 
 Admin URL: https://fly.io/apps/podstudio
-
-Deployed site: https://podstudio.fly.dev/
 
 This project is running in local .venv (Windows) with Python 3.13.2. 
 Activate the venv (in Windows):

@@ -762,5 +762,5 @@ if __name__ == '__main__':
     socketio.run(app,
                  host='0.0.0.0',
                  port=port,
-                 debug=True,  # Set to False in production
+                 debug=False,  # Set to False in production
                  allow_unsafe_werkzeug=True)
