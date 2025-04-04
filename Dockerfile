@@ -12,6 +12,9 @@ ARG VITE_FIREBASE_MEASUREMENT_ID=G-BX1RB8DHVV
 ARG VITE_FIREBASE_USE_EMULATOR=false
 ARG VITE_FIRESTORE_DATABASE_ID=fourfreedoms-db1
 
+# App secret keys
+# ARG VITE_SECRET_KEY=four-legged-dog-1234567890
+
 # Install bun
 RUN npm install -g bun
 

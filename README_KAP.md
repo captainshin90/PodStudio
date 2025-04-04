@@ -271,6 +271,7 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - 03/28/25: git tag -a "v0.1.1-alpha" -m "version v0.1.1-alpha" - working version before adding content management features
 - 03/30/25: git tag -a "v0.2.0-alpha" -m "version v0.2.0-alpha" - added podcast, transcript, prompt, document management features
 - 04/01/25: git tag -a "v0.2.1-alpha" -m "version v0.2.1-alpha" - bug fixing
+- git tag -a "v.0.2.3-alpha" -m "version v0.2.3-alpha" - works in fly.dev
 
 ### Firebase
 - 4/1/25: Register app
@@ -289,3 +290,4 @@ https://bun.sh/blog/bun-lock-text-lockfile
 3/30/25: Fly secret - added VITE_ secret keys
 3/30/25: Firebase: add podstudio.fly.dev to authorized domains
 4/01/25: Fly deploy
+4/04/25: Fly deploy - works now, issue with secret keys that need to be defined in dockerfile and not Fly.io Secrets console. For SPA (Single Page App) like Vite, it needs the secret keys at build time. See bug notes in changes.md

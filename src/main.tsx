@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { initFirestore, initStorage } from "./lib/firebase";
+import { AccessControlDialog } from "./components/auth/AccessControlDialog";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Validate environment variables
@@ -40,9 +41,27 @@ async function bootstrap() {
       initStorage()
     ]);
     
+    // Create a wrapper component that includes the access control dialog
+    const AppWithAccessControl = () => {
+      const [accessGranted, setAccessGranted] = React.useState(false);
+      
+      return (
+        <>
+          {accessGranted ? (
+            <App />
+          ) : (
+            <AccessControlDialog 
+              isOpen={true} 
+              onAccessGranted={() => setAccessGranted(true)} 
+            />
+          )}
+        </>
+      );
+    };
+    
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
-        <App />
+        <AppWithAccessControl />
       </React.StrictMode>
     );
   } catch (error) {

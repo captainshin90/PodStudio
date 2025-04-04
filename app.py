@@ -755,6 +755,23 @@ def upload_files():
     return jsonify({'file_paths': file_paths})
 
 ### ------------------------------------------------------------------------------------------------
+### verify access code
+### ------------------------------------------------------------------------------------------------
+@app.route('/api/verify-access', methods=['POST'])
+def verify_access():
+    data = request.get_json()
+    access_code = data.get('accessCode', '')
+    
+    # Get the secret key from environment variables
+    secret_key = os.environ.get('SECRET_KEY', '')
+    
+    # Check if the access code matches the secret key
+    if access_code == secret_key:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid access code"}), 401
+
+### ------------------------------------------------------------------------------------------------
 ### run the app
 ### ------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -764,3 +781,4 @@ if __name__ == '__main__':
                  port=port,
                  debug=False,  # Set to False in production
                  allow_unsafe_werkzeug=True)
+

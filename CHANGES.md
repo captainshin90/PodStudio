@@ -373,4 +373,16 @@ x - CreateTranscript: processing logo is missing
 x - In all the detail panels, if closing the component but form data has changed, ask user to confirm discarding data.
 x - generate_podcast(transcript_only) is returning only file name
 x - app.py: Generate transcript returns text or filepath? Need text data.
+x - issue with Vite app not loading in fly.dev:
+Although I haven’t used React with Vite I believe the issue here is that vite builds its static files at what we call “build time”. Our secrets are only available at runtime (when you machine is started) so frontend apps such as NextJS need to have these envs as build args.
+Here’s the doc for NextJS build args: Run a NextJS App · Fly Docs
+https://fly.io/docs/js/frameworks/nextjs/#exposing-environment-variables-to-the-browser
+Roughly add this to your Dockerfile before the CMD part:
+ARG VITE_SUPABASE_API_URL="value"
+ARG VITE_SUPABASE_KEY="Other value"
+I can see that you defined these as secrets thinking about security. But I think that since this project is client-side react either way these secrets are going to be in your bundle.js anyway so I assume this is fine to not-be-a-secret (please someone with Supabase knowledge correct me if Im wrong)
+
+https://fly.io/docs/apps/build-secrets/#automate-the-inclusion-of-build-secrets-using-an-ephemeral-machine
+https://docs.docker.com/engine/swarm/secrets/
+
 
