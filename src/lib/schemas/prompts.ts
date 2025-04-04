@@ -8,7 +8,7 @@ export interface Prompt {
   prompt_desc: string; // Prompt Description
   created_by: string; // Created By user ID
   target_persona: string; // Target Persona
-  prompt_text: string; // Prompt Text
+  prompt_text: string; // Prompt Instructions
   prompt_audio?: string; // Prompt Audio
   is_long_form: boolean;
   word_count: number;
@@ -18,7 +18,6 @@ export interface Prompt {
   conversation_style: string[]; 
   dialogue_structure: string[];
   engagement_techniques: string[];
-  user_instructions?: string;
   system_instructions?: string;
   tts_model: TTSModel;
   voice_question: string;
@@ -51,7 +50,6 @@ export function convertToPrompt(data: any): Prompt {
     conversation_style: data.conversation_style,
     dialogue_structure: data.dialogue_structure,
     engagement_techniques: data.engagement_techniques,
-    user_instructions: data.user_instructions,
     system_instructions: data.system_instructions,
     tts_model: data.tts_model,
     voice_question: data.voice_question,

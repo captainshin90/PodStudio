@@ -1,32 +1,39 @@
 # CHANGES.md
 
 
-### Todo:
+### Todo Features:
     x - read API KEYs from .env file
     x - podcastfy: add support for different voices and multi-speaker in Gemini
     x - add option to set the length of the podcast in word count
     x - read default conversation_config.yaml file - not needed?
     x - create podcast from transcript
+    x - deploy to Netlify.dev (no) / Fly.dev (yes)
+    x - implement Firebase initStorage() to upload images to Firebase storage
+    x - store transcripts, podcasts, episodes in a database (check microfeed)
+    x - Document page: add button to "Extract Text from URL/Doc"
+    x - save and select from generated transcripts for each user
+    x - save and select advanced settings for each user
+    x - file manager UI for uploaded documents, URLs, transcripts 
+    x - integrate podcastfy code into PodStudio? - no need
+    x - choose voices and TTM model
+    x - Extract text: use podcastfy ContentExtractor 
+    x - Documents: Extract Text button just extracts text, not images or tables.
+    x - Transcripts page: "Create Transcript from Document" button to generate new transcript from a document.
+
+
     - podcastfy: Add Deepseek, Grok for content to transcript
     - podcastfy: Add Play.ht, Hume AI for transcript to speech
     - podcastfy: add support for local LLMs. Check langchain.
     - check why can't view the transcript: podcastify doesn't return file name
     - read default config.yaml file from project folder - what type of info?
-    - save and select from generated transcripts for each user
-    - save and select advanced settings for each user
-    - select voices from a drop down for each provider
-    - store transcripts, podcasts in a database
-    - file manager UI for uploaded documents, URLs, transcripts 
     - create and manage topics to group multiple transcripts, podcasts, episodes
+    - select voices from a drop down for each provider
     - store list of voices by provider, gender, language, model in a yaml file
     - add Type: newscast, sportscast, debate, interview, seminar, presentation, documentary  
-    - Handle duplicate file uploads
-    - integrate podcastfy code into PodStudio? - no need
-    x - deploy to Netlify.dev (no) / Fly.dev (yes)
+    - Handle duplicate and multiple file uploads
 
 - submit text file transcripts, youtube videos,
 - (nice to have - mp4 videos and have system transcribe)
-x - choose voices and TTM model
 x - Add intro title ("welcome to X, tagline Y")
 - structure the format like a newscast
 - less of 2 person podcast and more of news anchor introducing topic and second voice acts as reporter commenting
@@ -34,10 +41,9 @@ x - Add intro title ("welcome to X, tagline Y")
 - ability to change tone and style via prompt engineering
 
 ### Issues:
-WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead. Flask/Werkzeug is single threaded, not for production, use a production WSGI server. 
 
 ### 3/12/2025: Add drag and drop file upload (using Cursor AI)
-
 Can you help me add a drag and drop file upload component on this page? The uploaded files should be less than 10MB and stored in the data/uploads folder.  
 
 1. CustomPodcast.tsx (changes)
@@ -217,8 +223,89 @@ You'll need to ensure that the promptsService in your database service has the n
 
 ### Filter button shows a dropdown with fields that can be filtered, including Deleted true/false, Active true/false switches.
 
+### 4/1/25: In DocumentDetails, implement a handler for Extract Text button to call "extract_text" API service in app.py using socket.emit(). Use a payload object with these parameters: text, urls [], extract_tool, secret_key. Check if there is a uploaded file or source_url. Pass the uploaded file and/or doc_source_url in the url[] parameter. Set extract_tool to "podcastfy". You can see an example on how to call the service API using socket.io in CustomPodcast.tsx onSubmit handler. Wait for the result and set the result into the extracted_text field.  
 
+I've implemented the Extract Text button handler in DocumentDetails.tsx. Here's what the implementation does:
+Added the socket.io-client import to enable WebSocket communication.
+Added a new state variable isExtracting to track the extraction process.
+Implemented the handleExtractText function that:
+Validates that there's either a source URL or uploaded files to extract from
+Creates a WebSocket connection to the server
+Prepares the payload with:
+Empty text (since we're extracting from URLs)
+URLs array containing both the source URL and uploaded files
+extract_tool set to "podcastfy"
+secret_key from session storage
+Sets up event handlers for:
+connect: Emits the extract_text event with the payload
+progress: Logs progress messages
+error: Shows error toast messages
+disconnect: Cleans up the connection
+complete: Updates the form with the extracted text
+Updated the Extract Text button to:
+Call the new handleExtractText function
+Show a loading state with spinner while extracting
+Disable the button during extraction
+The implementation follows the same pattern as seen in CustomPodcast.tsx, but is focused specifically on text extraction. When the extraction is complete, the extracted text will be placed in the doc_extracted_text field of the form.
 
+### 4/2/25: Create Transcript:
+Help me create a CreateTranscript page triggered by "Create Transcript" tab item in App.tsx. There are 2 panels. On the left panel, which is similar in size as the EpisodeBrowser component, it shows the steps: "1. Select a Document" text with SelectDialog component right below to select a document from Documents database. Then it shows "2. Select a Prompt" text with similar SelectDialog to select a prompt. Then it shows "3. Generate Transcript" button.
+
+When a document and prompt are selected, show on the right panel a read-only DocumentDetails component on top and a PromptDetails component below filled with the selections. Hide the Cancel, Delete, and Save buttons.
+
+The "Generate Transcript" button calls "generate_podcast" service API implemented in app.py using socket.io similar to how it's done in onSubmit() in CustomPodcast.tsx.  In the Payload, pass these parameters with data from selected Document and Prompt:   
+
+        const payload: PodcastPayload = {
+          transcript_only: True
+          text: values.doc_extracted_text,
+          urls: [...parsedUrls],
+          name: values.doc_name,
+          tagline: values.doc_desc,
+          is_long_form: values.is_long_form,
+          word_count: values.word_count,
+          creativity: values.creativity,
+          conversation_style: values.conversation_style,
+          roles_person1: values.roles_person1,
+          roles_person2: values.roles_person2,
+          dialogue_structure: values.dialogue_structure,
+          user_instructions: values.user_instructions,
+          engagement_techniques: values.engagement_techniques,
+          ending_message: values.ending_message,
+          secret_key: sessionStorage.getItem("secret_key") || "",
+        }
+
+When the result comes back, show a TranscriptDetails component above DocumentDetail and PromptDetail components with an editable new Transcript record populated with the selected doc_id, prompt_id, and the result filled in transcript_text field. Show the Cancel and Save Transcript buttons. 
+
+### 4/3/25: I'd like to create a new component similar to CreateTranscript.tsx called CreatePodcast that is triggered by "Create Podcast" tab in App.tsx. There are 2 panels. On the left panel,  it shows the steps: 1. "Select a Podcast" text label with SelectDialog button to select a podcast from Podcasts database. "2. Select a Transcript" text with a SelectDialog component. Next a "3. Select a Prompt" text with a SelectDialog. Then it shows "Generate Podcast" button, similar to "Generate Transcript" button in CreateTranscript.tsx. 
+
+When a podcast, document and prompt are all selected, show on the right panel PodcastDetails, TranscriptDetails, and PromptDetails components filled with the selections. These components should be read-only. Hide the Cancel, Delete, and Save buttons. Hide the is_active and is_deleted fields.  
+
+The "Generate Podcast" button calls "generate_podcast" service API implemented in app.py using socket.io similar to how it's done in onSubmit() in CustomPodcast.tsx.  In the Payload, pass these parameters with data from selected Document and Prompt:   
+
+const payload: PodcastPayload = {
+          is_from_transcript: True,
+          transcript_only: False,
+          text: selectedTranscript.transcript_text,
+          name: selectedPodcast.podcast_title,
+          tagline: selectedPodcast.podcast_tagline,
+          is_long_form: selectedPrompt.is_long_form,
+          word_count: selectedPrompt.word_count,
+          creativity: selectedPrompt.creativity,
+          conversation_style: selectedPrompt.conversation_style,
+          roles_person1: selectedPrompt.roles_person1,
+          roles_person2: selectedPrompt.roles_person2,
+          dialogue_structure: selectedPrompt.dialogue_structure,
+          user_instructions: selectedPrompt.prompt_text,
+          engagement_techniques: selectedPrompt.engagement_techniques,
+          ending_message: selectedPrompt.ending_message,
+          tts_model: selectedPrompt.tts_model as TTSModel,
+          voice_question: selectedPrompt.voice_question,
+          voice_answer: selectedPrompt.voice_answer,
+          voice_model: selectedPrompt.voice_model,
+          secret_key: sessionStorage.getItem("secret_key") || "",
+        };
+
+When the result comes back, show an editable EpisodeDetails component above PodcastDetails, TranscriptDetails, and PromptDetails components with a new Episode record populated with the selected podcast_id, transcript_id, and prompt_id, along with Cancel and Save Changes buttons on top. Set new episode_url with the generated audio file. Also, copy SelectedTranscript.transcript_text to newEpisode.content_transcript, and copy SelectedPodcast.podcast_image to newEpisode.content_image.    
 
 
 ### Bug Fixes:
@@ -256,7 +343,6 @@ x - Try Bolt or Cursor to generate code for new features.
 x - clear url list and other fields on clear form button.
 x - Prompts: add podcastfy settings
 x - Filter: Deleted true/false 
-x - store transcripts, podcasts, episodes in a database (check microfeed)
 x - select voices from a drop down for each provider
 x - Transcript schema: add doc_id
 x - Podcasts/Episodes page: podcast_slug: from podcast_title, and episode_title
@@ -271,3 +357,20 @@ x - Prompts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
 x - Transcripts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
 x - Podcasts: test of view(yes), delete(yes), edit-save(save), new-save(yes)
 x - Documents: of test view(yes), delete, edit-save(yes), new-save(yes), 
+x - Podcasts/Episodes schema: need to update Four Freedoms schema
+x - Document upload: test document file upload
+x - app.py: check how API_TOKEN is used
+x - app.py: QUESTION: What does this do?
+socketio = SocketIO(app, cors_allowed_origins="*")
+This line initializes a WebSocket server using Flask-SocketIO with two important parameters:
+cors_allowed_origins="*": This parameter configures Cross-Origin Resource Sharing (CORS) settings for the WebSocket server:
+The "*" value means that the WebSocket server will accept connections from any origin (domain)
+This is particularly useful during development when your frontend and backend might be running on different ports (e.g., frontend on port 5173 and backend on port 8080)
+In production, you might want to restrict this to specific origins for security reasons
+x - DocumentDetail: uploaded file can't be read by app.py:extract_text - should be either file path or URL. If it's a local file, pass the file path. It's sending 2 entries in url[].
+x - If record has changed, ask user to save/cancel before exiting page
+x - CreateTranscript: processing logo is missing
+x - In all the detail panels, if closing the component but form data has changed, ask user to confirm discarding data.
+x - generate_podcast(transcript_only) is returning only file name
+x - app.py: Generate transcript returns text or filepath? Need text data.
+

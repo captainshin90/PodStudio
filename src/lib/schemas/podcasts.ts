@@ -7,6 +7,7 @@ export interface Podcast {
   podcast_id: string; // Podcast ID
   podcast_title: string; // Podcast Title
   podcast_slug: string; // Podcast Slug For when you need to refer to your podcast in a url.
+  podcast_tagline: string; // Podcast Tagline
   podcast_hosts: string[]; // Podcast Hosts
   podcast_image: string; // The image should be either jpg or png. Preferably 3000 x 3000, minimum 1400 x 1400 pixels.
   podcast_desc: string; // Podcast Description
@@ -30,6 +31,7 @@ export function convertToPodcast(data: any): Podcast {
     podcast_id: data.podcast_id = crypto.randomUUID(),
     podcast_title: data.podcast_title,
     podcast_slug: data.podcast_slug,
+    podcast_tagline: data.podcast_tagline,
     podcast_hosts: data.podcast_hosts,
     podcast_image: data.podcast_image,
     podcast_desc: data.podcast_desc,

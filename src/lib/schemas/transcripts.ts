@@ -1,10 +1,11 @@
-// Transcript schema version 0.2.0
+// Transcript schema version 0.2.2
 export type TranscriptType = 'interview' | 'meeting' | 'article' | 'petition';
 
 export interface Transcript {
   id: string; // Firestore Document ID (needed for Firestore)
   transcript_id: string; // Transcript ID
   doc_id: string; // Document ID
+  prompt_id: string; // Prompt ID
   transcript_title: string; // Transcript Title
   transcript_type: TranscriptType; // Transcript Type
   topic_tags: string[]; // Topic Tags should be IDs?
@@ -23,6 +24,7 @@ export function convertToTranscript(data: any): Transcript {
     id: data.id,
     transcript_id: data.transcript_id = crypto.randomUUID(),
     doc_id: data.doc_id || null,
+    prompt_id: data.prompt_id || null,
     transcript_title: data.transcript_title = "add transcript title here",
     transcript_type: data.transcript_type = "interview",
     topic_tags: data.topic_tags || [],

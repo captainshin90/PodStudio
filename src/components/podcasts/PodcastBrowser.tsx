@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Podcast } from "@/lib/schemas/podcasts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ export default function PodcastBrowser({
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setIsLoading] = useState(true);
+  const [_, setFocusedIndex] = useState<number>(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [filters, setFilters] = useState({
     podcast_type: "all",
     is_deleted: false,
@@ -75,6 +78,54 @@ export default function PodcastBrowser({
       podcast.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
+
+  // Update itemRefs when filteredPodcasts changes
+  useEffect(() => {
+    itemRefs.current = itemRefs.current.slice(0, filteredPodcasts.length);
+  }, [filteredPodcasts]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disabled) return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev < filteredPodcasts.length - 1 ? prev + 1 : prev;
+          if (nextIndex !== prev) {
+            onSelectPodcast(filteredPodcasts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev > 0 ? prev - 1 : 0;
+          if (nextIndex !== prev) {
+            onSelectPodcast(filteredPodcasts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredPodcasts, onSelectPodcast, disabled]);
+
+  // Reset focused index when search query or filters change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, filters]);
 
   // return the loading component
   if (loading) {
@@ -134,15 +185,24 @@ export default function PodcastBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1">
-        {filteredPodcasts.map((podcast) => (
+      <div className="space-y-1" ref={listRef}>
+        {filteredPodcasts.map((podcast, index) => (
           <div
             key={podcast.id}
+            ref={el => itemRefs.current[index] = el}
             className={`p-2 rounded-lg cursor-pointer transition-colors ${
               selectedPodcast?.id === podcast.id
-                ? "bg-secondary" : "hover:bg-muted"
+                ? "bg-secondary" 
+                : "hover:bg-muted"
             }`}
-            onClick={() => onSelectPodcast(podcast)}
+            onClick={() => {
+              onSelectPodcast(podcast);
+              setFocusedIndex(index);
+            }}
+            tabIndex={0}
+            role="option"
+            aria-selected={selectedPodcast?.id === podcast.id}
+            onFocus={() => setFocusedIndex(index)}
           >
             <div className="font-medium">{podcast.podcast_title}</div>
             <div className="text-xs opacity-80 mt-0.5">

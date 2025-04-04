@@ -12,6 +12,10 @@ import jwt
 from datetime import datetime, timedelta
 from pathlib import Path
 from werkzeug.utils import secure_filename
+from podcastfy.content_parser.content_extractor import ContentExtractor
+from podcastfy.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 # Load environment variables with explicit path and override
 env_path = Path('.') / '.env.local'
@@ -54,11 +58,13 @@ app = Flask(__name__,
     static_url_path='/static'
 )
 
-SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24))
+# SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24)) - why random number?
+SECRET_KEY = os.getenv('SECRET_KEY') 
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Load API token after ensuring .env is loaded
+# QUESTION: how is API_TOKEN used? used in generate-from-transcript
 API_TOKEN = os.getenv('API_TOKEN')
 if not API_TOKEN:
     raise ValueError("app.py: API_TOKEN must be set in .env file")
@@ -80,6 +86,8 @@ else:
             return send_from_directory(app.static_folder, path)
         return send_from_directory(app.static_folder, 'index.html')
 
+# QUESTION: What does this do?
+# Should restrict to specific origins for security reasons in production
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 ### ------------------------------------------------------------------------------------------------
@@ -120,6 +128,7 @@ def temporary_env(temp_env):
 
 ### ------------------------------------------------------------------------------------------------
 ### temporary env file
+### QUESTION: What is this used for?
 ### ------------------------------------------------------------------------------------------------
 @contextmanager
 def temporary_env_file(env_vars):
@@ -164,7 +173,83 @@ def handle_disconnect():
 
 
 ### ------------------------------------------------------------------------------------------------
+### Extract text from urls or files
+### ------------------------------------------------------------------------------------------------
+@socketio.on('extract_text')
+def handle_extract_text(data):
+    try:
+        print("\n=== Starting Extract Text ===")
+        emit('status', "Starting extract text...")
+
+        # Get the selected TTS model and secret key, default to gemini
+        text = data.get('text', '')   # just text to be combined with urls
+        urls = data.get('urls', [])   # url/file list
+        
+        # Ensure urls is a flat list of strings
+        if urls and isinstance(urls[0], list):
+            urls = urls[0]  # Take the first list if it's nested
+            
+        extract_tool = data.get('extract_tool') or os.getenv('DEFAULT_EXTRACT_TOOL')
+        secret_key = data.get('secret_key') # passed by the client
+        env_secret_key = os.getenv('SECRET_KEY') # from the server
+
+        # Validate secret key
+        if not secret_key == env_secret_key:
+            raise ValueError("app.py: Invalid secret key - please check your secret key")
+        
+        if extract_tool not in ['default', 'podcastfy']:
+            raise ValueError("app.py: Only default or podcastfy model supported for extract text")
+
+        # Initialize content_extractor if needed
+        content_extractor = None
+        if urls or text:
+            content_extractor = ContentExtractor()
+
+        combined_content = ""
+        
+        if urls:
+            logger.info(f"Processing {len(urls)} links")
+            # Process each URL individually
+            for url in urls:
+                try:
+                    # If the URL starts with http://localhost:8080/static/uploads/, extract the file path
+                    base_url = request.url_root
+                    if url.startswith(base_url):
+                        # Extract the file path from the URL
+                        file_path = url.replace(base_url, '')
+                        # Remove any double slashes
+                        file_path = file_path.replace('//', '/')
+                        # Add the static directory prefix
+                        file_path = os.path.join('.', file_path.lstrip('/'))
+                        logger.info(f"Processing local file: {file_path}")
+                        if not os.path.exists(file_path):
+                            raise FileNotFoundError(f"File not found: {file_path}")
+                        content = content_extractor.extract_content(file_path)
+                    else:
+                        content = content_extractor.extract_content(url)
+                    combined_content += f"\n\n{content}"
+                except Exception as e:
+                    logger.error(f"Error extracting content from {url}: {str(e)}")
+                    emit('error', {'message': f"Error extracting content from {url}: {str(e)}"}, room=request.sid)
+                    continue
+        if text:
+            combined_content += f"\n\n{text}"
+
+        emit('status', "Completed extracting text")
+        emit('complete', {'text': combined_content}, room=request.sid)
+
+        return combined_content
+    except Exception as e:
+        print(f"\nError in handle_extract_text: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        emit('error', {'message': str(e)}, room=request.sid)
+
+
+### ------------------------------------------------------------------------------------------------
 ### Generate custom podcast with payload as data parameter
+### Returns
 ### ------------------------------------------------------------------------------------------------
 @socketio.on('generate_podcast')
 def handle_generate_podcast(data):
@@ -174,6 +259,8 @@ def handle_generate_podcast(data):
 
         # Get the selected TTS model and secret key, default to gemini
         is_from_transcript = data.get('is_from_transcript')
+        transcript_only = data.get('transcript_only')
+        # transcript_file = data.get('transcript_file', None)
         tts_model = data.get('tts_model', 'gemini')
         secret_key = data.get('secret_key')
         env_secret_key = os.getenv('SECRET_KEY')
@@ -301,15 +388,26 @@ def handle_generate_podcast(data):
         # Add image_paths parameter if provided
         image_paths = data.get('image_urls', [])
 
-        if not is_from_transcript:
+        if transcript_only: # generate only a transcript, no audio
+            result = generate_podcast(
+                urls=data.get('urls', []),
+                text=data.get('text', ''),    # Kap: added support for text input
+                transcript_only=True,
+                conversation_config=conversation_config, 
+                # tts_model=tts_model, # tts_model is ignored if transcript_only is True
+                longform=bool(data.get('is_long_form', False)),
+                api_key_label=api_key_label,  # This tells podcastfy which env var to use
+                image_paths=image_paths if image_paths else None  # Only pass if not empty
+            )
+        elif not is_from_transcript: # generate a podcast from urls or text
             result = generate_podcast(
                 urls=data.get('urls', []),
                 text=data.get('text', ''),    # Kap: added support for text input
                 conversation_config=conversation_config,
                 tts_model=tts_model,
                 longform=bool(data.get('is_long_form', False)),
-            api_key_label=api_key_label,  # This tells podcastfy which env var to use
-            image_paths=image_paths if image_paths else None  # Only pass if not empty
+                api_key_label=api_key_label,  # This tells podcastfy which env var to use
+                image_paths=image_paths if image_paths else None  # Only pass if not empty
             )
         else:  # Generate the podcast from transcript
             urls = data.get('urls', [])
@@ -329,10 +427,10 @@ def handle_generate_podcast(data):
             print(f"Created temporary transcript file: {transcript_path}")
 
             result = generate_podcast(
-            transcript_file=transcript_path,
-            conversation_config=conversation_config,
-            tts_model=tts_model,
-            api_key_label=api_key_label
+                transcript_file=transcript_path,
+                conversation_config=conversation_config,
+                tts_model=tts_model,
+                api_key_label=api_key_label
             )
             # Clean up temporary file
             try:
@@ -340,31 +438,37 @@ def handle_generate_podcast(data):
                 print(f"Cleaned up temporary transcript file: {transcript_path}")
             except Exception as e:
                 print(f"Warning: Could not delete temporary file {transcript_path}: {e}")
-        
+        # End: Generate the podcast from transcript
 
-        emit('status', "Processing audio...")
-        emit('progress', {'progress': 90, 'message': 'Processing final audio...'})
+        if not transcript_only:
+            emit('status', "Processing audio...")
+            emit('progress', {'progress': 90, 'message': 'Processing final audio...'})
 
-        # Handle the result. Create a new file and copy the result to it.
-        if isinstance(result, str) and os.path.isfile(result):
-            filename = f"podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_DIR, filename)
-            shutil.copy2(result, output_path)
-            emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
+            # Handle the result. Create a new file and copy the result to it.
+            if isinstance(result, str) and os.path.isfile(result):
+                filename = f"podcast_{os.urandom(8).hex()}.mp3"
+                output_path = os.path.join(TEMP_DIR, filename)
+                shutil.copy2(result, output_path)
+                emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
+                emit('complete', {
+                    'audioUrl': f'{TEMP_DIR}/{filename}',
+                    'transcript': None
+                }, room=request.sid)
+            elif hasattr(result, 'audio_path'):
+                filename = f"podcast_{os.urandom(8).hex()}.mp3"
+                output_path = os.path.join(TEMP_DIR, filename)
+                shutil.copy2(result.audio_path, output_path)
+                emit('complete', {
+                    'audioUrl': f'/audio/{filename}',
+                    'transcript': result.details if hasattr(result, 'details') else None
+                }, room=request.sid)
+            else:
+                raise Exception('Invalid result format')
+        else: # transcript only
             emit('complete', {
-                'audioUrl': f'{TEMP_DIR}/{filename}',
-                'transcript': None
+                'audioUrl': None,
+                'transcript': open(result).read() if os.path.isfile(result) else None
             }, room=request.sid)
-        elif hasattr(result, 'audio_path'):
-            filename = f"podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_DIR, filename)
-            shutil.copy2(result.audio_path, output_path)
-            emit('complete', {
-                'audioUrl': f'/audio/{filename}',
-                'transcript': result.details if hasattr(result, 'details') else None
-            }, room=request.sid)
-        else:
-            raise Exception('Invalid result format')
 
     except Exception as e:
         print(f"\nError in handle_generate_podcast: {str(e)}")
@@ -654,9 +758,9 @@ def upload_files():
 ### run the app
 ### ------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8080))
+    port = int(os.getenv('API_PORT', 8080))
     socketio.run(app,
                  host='0.0.0.0',
                  port=port,
-                 debug=False,  # Set to False in production
+                 debug=True,  # Set to False in production
                  allow_unsafe_werkzeug=True)

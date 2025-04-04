@@ -10,10 +10,13 @@ Quick Start:
 > Launch Chrome against localhost
 # To debug backend: 
 > Launch Python: Flask app.py
+# Test if server app.py is running
+> http://localhost:8080/api/test-env
 
 (.venv) > bun run build && ls # (to build for production)
 
-# open http://localhost:5173/
+# Run front-end Vite app
+> http://localhost:5173/
 
 (.venv) > git add .
 (.venv) > git commit -m "fix file upload"
@@ -234,6 +237,15 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - use command: fly secrets set API_KEY=....
 - or use Fly.io admin console
 
+### Regarding PORT and API_PORT
+- vite dev server: http://localhost:5173
+- vite.config.ts: proxy: http://localhost:8080
+- .env.local: PORT=8080 / API_PORT=8080
+- Flask app.py server host=0.0.0.0 / API_PORT=8080
+- Fly.toml: internal_port=8080
+- Dockerfile: EXPOSE 8080
+- Fly.io Console>Secrets: API keys, API tokens
+
 ### (SKIP) XXX Deploy to Netlify - see Deploy to Fly.io
 - for Bun, the publishing site is "static"
 - pull from GitHub https://github.com/captainshin90/PodStudio
@@ -258,6 +270,17 @@ https://bun.sh/blog/bun-lock-text-lockfile
 ### Repo Versions 
 - 03/28/25: git tag -a "v0.1.1-alpha" -m "version v0.1.1-alpha" - working version before adding content management features
 - 03/30/25: git tag -a "v0.2.0-alpha" -m "version v0.2.0-alpha" - added podcast, transcript, prompt, document management features
+- 04/01/25: git tag -a "v0.2.1-alpha" -m "version v0.2.1-alpha" - bug fixing
+
+### Firebase
+- 4/1/25: Register app
+  apiKey: "AIzaSyDXWNn3Yv116yQvy1mx9d5v90e3RXaELHQ",
+  authDomain: "four-freedoms-451318.firebaseapp.com",
+  projectId: "four-freedoms-451318",
+  storageBucket: "four-freedoms-451318.firebasestorage.app",
+  messagingSenderId: "247945685434",
+  appId: "1:247945685434:web:19d1e834ae473217be5583",
+  measurementId: "G-BX1RB8DHVV"
 
 ### Deploys
 3/15/25: Fly deploy
@@ -265,3 +288,4 @@ https://bun.sh/blog/bun-lock-text-lockfile
 3/30/25: Fly deploy - content management features
 3/30/25: Fly secret - added VITE_ secret keys
 3/30/25: Firebase: add podstudio.fly.dev to authorized domains
+4/01/25: Fly deploy

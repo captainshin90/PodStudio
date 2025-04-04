@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Prompt } from "@/lib/schemas/prompts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ export default function PromptBrowser({
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setIsLoading] = useState(true);
+  const [_, setFocusedIndex] = useState<number>(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [filters, setFilters] = useState({
     is_deleted: false,
     is_active: true,
@@ -70,6 +73,54 @@ export default function PromptBrowser({
       prompt.prompt_desc.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
+  // Update itemRefs when filteredPrompts changes
+  useEffect(() => {
+    itemRefs.current = itemRefs.current.slice(0, filteredPrompts.length);
+  }, [filteredPrompts]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disabled) return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev < filteredPrompts.length - 1 ? prev + 1 : prev;
+          if (nextIndex !== prev) {
+            onSelectPrompt(filteredPrompts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev > 0 ? prev - 1 : 0;
+          if (nextIndex !== prev) {
+            onSelectPrompt(filteredPrompts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredPrompts, onSelectPrompt, disabled]);
+
+  // Reset focused index when search query or filters change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, filters]);
 
   if (loading) {
     return (
@@ -115,15 +166,24 @@ export default function PromptBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1">
-        {filteredPrompts.map((prompt) => (
+      <div className="space-y-1" ref={listRef}>
+        {filteredPrompts.map((prompt, index) => (
           <div
             key={prompt.id}
+            ref={el => itemRefs.current[index] = el}
             className={`p-2 rounded-lg cursor-pointer transition-colors ${
               selectedPrompt?.id === prompt.id
-                ? "bg-secondary" : "hover:bg-muted"
+                ? "bg-secondary" 
+                : "hover:bg-muted"
             }`}
-            onClick={() => onSelectPrompt(prompt)}
+            onClick={() => {
+              onSelectPrompt(prompt);
+              setFocusedIndex(index);
+            }}
+            tabIndex={0}
+            role="option"
+            aria-selected={selectedPrompt?.id === prompt.id}
+            onFocus={() => setFocusedIndex(index)}
           >
             <div className="font-medium">{prompt.prompt_name}</div>
             <div className="text-xs opacity-80 mt-0.5">

@@ -12,8 +12,6 @@ export interface Episode {
   episode_desc: string; // Episode Description
   episode_summary: string; // Episode Summary - string containing one or more descriptive sentences summarizing your episode for potential listeners. You can specify up to 4000 characters.
   episode_number: number; // Episode Number
-  episode_duration: number; // Episode Duration in seconds
-  episode_transcript: string; // Episode Transcript - this is the transcript of the episode copied from the transcript service.
   topic_tags: string[]; // Topic Tags
   views: number; // Views
   likes: number; // Likes
@@ -21,8 +19,10 @@ export interface Episode {
   created_by: string; // Created By
   publish_date: Date; // To Publish Date and Time
   expire_date?: Date; // To Expire Date and Time
-  episode_url: string; // Content URL - this is the url of the audio or video file.
-  episode_image: string; // Content Image - this is the image of the episode.
+  content_duration: number; // Episode Duration in seconds
+  content_transcript: string; // Episode Transcript - this is the transcript of the episode copied from the transcript service.
+  content_url: string; // Content URL - this is the url of the audio or video file.
+  content_image: string; // Content Image - this is the image of the episode.
   linklist: Array<{
     link_title: string;
     link_url: string;
@@ -64,13 +64,13 @@ export function convertToEpisode(data: any): Episode {
     episode_slug: data.episode_slug,
     episode_desc: data.episode_desc,
     episode_number: data.episode_number,
-    episode_duration: data.episode_duration,
     publish_date: data.publish_date?.toDate(),
     expire_date: data.expire_date?.toDate(),
-    episode_url: data.episode_url,
-    episode_image: data.episode_image,
+    content_duration: data.content_duration,
+    content_url: data.content_url,
+    content_image: data.content_image,
     episode_summary: data.episode_summary,
-    episode_transcript: data.episode_transcript,
+    content_transcript: data.content_transcript,
     topic_tags: data.topic_tags,
     views: data.views,
     likes: data.likes,

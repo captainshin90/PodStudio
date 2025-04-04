@@ -3,6 +3,8 @@
 // import { join } from 'path';
 // yaml file is not being used as it's not compatible with Vite.
 
+export type ExtractTool = "default" | "podcastfy";
+export type LLMModel = "gemini" | "geminimulti" | "edge" | "openai" | "anthropic";
 export type TTSModel = "gemini" | "geminimulti" | "edge" | "openai" | "elevenlabs" | "hume" | "playht";
 export type ConversationStyle = "Engaging" | "Fast-paced" | "Enthusiastic" | "Educational" | "Casual" | "Professional" | "Friendly";
 export type DialogueStructure = "Topic Introduction" | "Summary" | "Discussions" | "Q&A" | "Farewell";

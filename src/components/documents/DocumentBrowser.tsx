@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Document } from "@/lib/schemas/documents";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ export default function DocumentBrowser({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setIsLoading] = useState(true);
+  const [_, setFocusedIndex] = useState<number>(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [filters, setFilters] = useState({
     doc_type: "all",
     is_deleted: false,
@@ -75,6 +78,54 @@ export default function DocumentBrowser({
       document.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
+
+  // Update itemRefs when filteredDocuments changes
+  useEffect(() => {
+    itemRefs.current = itemRefs.current.slice(0, filteredDocuments.length);
+  }, [filteredDocuments]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disabled) return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev < filteredDocuments.length - 1 ? prev + 1 : prev;
+          if (nextIndex !== prev) {
+            onSelectDocument(filteredDocuments[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev > 0 ? prev - 1 : 0;
+          if (nextIndex !== prev) {
+            onSelectDocument(filteredDocuments[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredDocuments, onSelectDocument, disabled]);
+
+  // Reset focused index when search query or filters change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, filters]);
 
   if (loading) {
     return (
@@ -145,15 +196,24 @@ export default function DocumentBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1">
-        {filteredDocuments.map((document) => (
+      <div className="space-y-1" ref={listRef}>
+        {filteredDocuments.map((document, index) => (
           <div
             key={document.id}
+            ref={el => itemRefs.current[index] = el}
             className={`p-2 rounded-lg cursor-pointer transition-colors ${
               selectedDocument?.id === document.id
-                ? "bg-secondary" : "hover:bg-muted"
+                ? "bg-secondary" 
+                : "hover:bg-muted"
             }`}
-            onClick={() => onSelectDocument(document)}
+            onClick={() => {
+              onSelectDocument(document);
+              setFocusedIndex(index);
+            }}
+            tabIndex={0}
+            role="option"
+            aria-selected={selectedDocument?.id === document.id}
+            onFocus={() => setFocusedIndex(index)}
           >
             <div className="font-medium">{document.doc_name}</div>
             <div className="text-xs opacity-80 mt-0.5">

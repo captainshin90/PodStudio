@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Transcript } from "@/lib/schemas/transcripts";
 // import { transcriptsService } from "@/lib/services/database-service";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,9 @@ export default function TranscriptBrowser({
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setIsLoading] = useState(true);
+  const [_, setFocusedIndex] = useState<number>(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [filters, setFilters] = useState({
     transcript_type: "all",
     is_deleted: false,
@@ -71,6 +74,54 @@ export default function TranscriptBrowser({
       transcript.topic_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
+
+  // Update itemRefs when filteredTranscripts changes
+  useEffect(() => {
+    itemRefs.current = itemRefs.current.slice(0, filteredTranscripts.length);
+  }, [filteredTranscripts]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disabled) return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev < filteredTranscripts.length - 1 ? prev + 1 : prev;
+          if (nextIndex !== prev) {
+            onSelectTranscript(filteredTranscripts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev > 0 ? prev - 1 : 0;
+          if (nextIndex !== prev) {
+            onSelectTranscript(filteredTranscripts[nextIndex]);
+            // Focus the element
+            setTimeout(() => {
+              itemRefs.current[nextIndex]?.focus();
+            }, 0);
+          }
+          return nextIndex;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredTranscripts, onSelectTranscript, disabled]);
+
+  // Reset focused index when search query or filters change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, filters]);
 
   if (loading) {
     return (
@@ -131,15 +182,24 @@ export default function TranscriptBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1">
-        {filteredTranscripts.map((transcript) => (
+      <div className="space-y-1" ref={listRef}>
+        {filteredTranscripts.map((transcript, index) => (
           <div
             key={transcript.id}
+            ref={el => itemRefs.current[index] = el}
             className={`p-2 rounded-lg cursor-pointer transition-colors ${
               selectedTranscript?.id === transcript.id
-                ? "bg-secondary" : "hover:bg-muted"
+                ? "bg-secondary" 
+                : "hover:bg-muted"
             }`}
-            onClick={() => onSelectTranscript(transcript)}
+            onClick={() => {
+              onSelectTranscript(transcript);
+              setFocusedIndex(index);
+            }}
+            tabIndex={0}
+            role="option"
+            aria-selected={selectedTranscript?.id === transcript.id}
+            onFocus={() => setFocusedIndex(index)}
           >
             <div className="font-medium">{transcript.transcript_title}</div>
             <div className="text-xs opacity-80 mt-0.5">

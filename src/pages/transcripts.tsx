@@ -90,8 +90,8 @@ export default function TranscriptsPage() {
 
   // Render the page
   return (
-    <div className="container mx-auto py-2">
-      <h1 className="text-2xl font-bold mb-6">Transcripts Management</h1>
+    <div className="container mx-auto py-0 px-0">
+      <h1 className="text-2xl font-bold text-muted-foreground mb-6">Transcripts Management</h1>
       
       <div className="grid grid-cols-12 gap-6">
         {/* Left Panel - Transcript List */}
@@ -112,6 +112,7 @@ export default function TranscriptsPage() {
                 onSave={handleCreate}
                 onCancel={() => setShowNewTranscript(false)}
                 isNew={true}
+                isReadOnly={false}
               />
             </div>
           ) : (
@@ -130,6 +131,7 @@ export default function TranscriptsPage() {
                 onCancel={() => setSelectedTranscript(null)}
                 onDelete={() => setShowDeleteDialog(true)}
                 isNew={false}
+                isReadOnly={false}
               />
             </>
           )}

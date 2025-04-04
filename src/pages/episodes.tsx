@@ -105,8 +105,8 @@ export default function EpisodesPage() {
 
 
   return (
-    <div className="container mx-auto py-2">
-      <h1 className="text-2xl font-bold mb-6">Episodes Management</h1>
+    <div className="container mx-auto py-0 px-0" >
+      <h1 className="text-2xl font-bold text-muted-foreground mb-6">Episodes Management</h1>
       
       <div className="grid grid-cols-12 gap-6">
         {/* Left Panel - Podcast List */}

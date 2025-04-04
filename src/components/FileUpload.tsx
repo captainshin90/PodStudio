@@ -53,6 +53,7 @@ export const FileUpload = ({ onUpload }: FileUploadProps) => {
 
         // get the file paths from the response
         const data = await response.json();
+        console.log("FileUpload.tsx: response data", data);
         onUpload(data.file_paths);
       } catch (error: any) {
         toast({

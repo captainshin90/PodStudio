@@ -15,9 +15,9 @@ export const config = {
   apiPort: env.VITE_API_PORT || 3001,
   apiBaseUrl: env.VITE_API_BASE_URL || 'http://localhost:3001/api', 
   
-  defaultLlmProvider: env.VITE_DEFAULT_LLM_PROVIDER || 'gemini',
-  defaultTtsProvider: env.VITE_DEFAULT_TTS_PROVIDER || 'elevenlabs',
-
+  defaultLLMProvider: env.VITE_DEFAULT_LLM_PROVIDER || 'gemini',
+  defaultTTSProvider: env.VITE_DEFAULT_TTS_PROVIDER || 'elevenlabs',
+  defaultExtractTool: env.VITE_DEFAULT_EXTRACT_TOOL || 'podcastfy',
   // OpenAI configuration
   openai: {
     apiKey: env.VITE_OPENAI_API_KEY || '',
@@ -29,7 +29,7 @@ export const config = {
   // Google Gemini configuration
   gemini: {
     apiKey: env.VITE_GEMINI_API_KEY || '',
-    llmModel: env.VITE_GEMINI_LLM_MODEL || 'gemini-pro',
+    llmModel: env.VITE_GEMINI_LLM_MODEL || 'gemini',
     maxTokens: env.VITE_GEMINI_MAX_TOKENS || 1000,
     temperature: env.VITE_GEMINI_TEMPERATURE || 0.7,
   },

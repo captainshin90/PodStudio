@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CustomPodcast } from "@/components/create/CustomPodcast";
+import CreatePodcast from "@/components/create/CreatePodcast";
 import { TopicPodcast } from "@/components/create/TopicPodcast";
 import EpisodesPage from "@/pages/episodes";
 import DocumentsPage from "@/pages/documents";
@@ -15,8 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Megaphone } from "lucide-react";
 import { APIKeys } from "@/components/settings/APIKeys";
+import CreateTranscript from "@/components/create/CreateTranscript";
 
 ///////////////////////////////////////////////////////////////////////////////
 // App component
@@ -29,7 +30,10 @@ export default function App() {
     <div className="min-h-screen w-full bg-background">
       <header className="border-b">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Four Freedoms Studio</h1>
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-8 w-8 text-red-700" />
+            <h1 className="text-3xl font-light from-accent-foreground font-['Times']">Four Freedoms Studio</h1>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -45,27 +49,32 @@ export default function App() {
         </div>
       </header>
 
-      <main className="container mx-auto py-0 px-4">
+      <main className="container mx-auto py-0 px-6">
         <Tabs value={activeMainTab} onValueChange={setActiveMainTab}>
-          <TabsList className="w-full border-b mb-6">
-            <TabsTrigger value="create">Create</TabsTrigger>
-            <TabsTrigger value="episodes">Episodes</TabsTrigger>
-            <TabsTrigger value="podcasts">Podcasts</TabsTrigger>
-            <TabsTrigger value="prompts">Prompts</TabsTrigger>
-            <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsList className="w-full border-b mb-3">
+            <TabsTrigger value="create" className="text-lg font-bold data-[state=active]:text-red-700">Create</TabsTrigger>
+            <div className="h-6 w-px bg-border mx-2 self-center"></div>
+            <TabsTrigger value="episodes" className="text-md data-[state=active]:text-red-700">Episodes</TabsTrigger>
+            <TabsTrigger value="podcasts" className="text-md data-[state=active]:text-red-700">Podcasts</TabsTrigger>
+            <TabsTrigger value="prompts" className="text-md data-[state=active]:text-red-700">Prompts</TabsTrigger>
+            <TabsTrigger value="transcripts" className="text-md data-[state=active]:text-red-700">Transcripts</TabsTrigger>
+            <TabsTrigger value="documents" className="text-md data-[state=active]:text-red-700">Documents</TabsTrigger>
           </TabsList>
 
           {/* Podcasts Section */}
           <TabsContent value="create">
             {/* <Tabs value={activePodcastTab} onValueChange={setActivePodcastTab} */}
-            <Tabs>
+            <Tabs defaultValue="podcast" className="py-0">
             <TabsList className="mb-4">
-                <TabsTrigger value="custom">Custom Podcast</TabsTrigger>
-                <TabsTrigger value="topic">Topic Research</TabsTrigger>
+                <TabsTrigger value="podcast" className="data-[state=active]:text-red-700">Create Podcast</TabsTrigger>
+                <TabsTrigger value="transcript" className="data-[state=active]:text-red-700">Create Transcript</TabsTrigger>
+                <TabsTrigger value="topic" className="data-[state=active]:text-red-700">Research Topic</TabsTrigger>
               </TabsList>
-              <TabsContent value="custom">
-                <CustomPodcast />
+              <TabsContent value="podcast">
+                <CreatePodcast />
+              </TabsContent>
+              <TabsContent value="transcript">
+                <CreateTranscript />
               </TabsContent>
               <TabsContent value="topic">
                 <TopicPodcast />

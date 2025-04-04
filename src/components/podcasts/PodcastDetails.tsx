@@ -15,6 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PodcastDetailsProps {
   podcast: Podcast | null;
@@ -22,6 +32,7 @@ interface PodcastDetailsProps {
   onCancel: () => void;
   onDelete?: () => void;
   isNew?: boolean;
+  isReadOnly?: boolean;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,11 +45,13 @@ export default function PodcastDetails({
   onCancel,
   onDelete,
   isNew = false,
+  isReadOnly = false,
 }: PodcastDetailsProps) {
   const [formData, setFormData] = useState<Partial<Podcast>>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [episodes, setEpisodes] = useState<any[]>([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (podcast) {
@@ -51,6 +64,7 @@ export default function PodcastDetails({
         podcast_id: crypto.randomUUID(),
         podcast_title: "",
         podcast_slug: "",
+        podcast_tagline: "",
         podcast_hosts: [],
         podcast_image: "",
         podcast_desc: "",
@@ -70,7 +84,9 @@ export default function PodcastDetails({
     }
   }, [podcast, isNew]);
 
+  ///////////////////////////////////////////////////////////////////////////////
   // load the episodes for the podcast
+  ///////////////////////////////////////////////////////////////////////////////
   const loadEpisodes = async (podcastId: string) => {
     try {
       const loadedEpisodes = await episodesService.getAllEpisodes(podcastId);
@@ -82,14 +98,19 @@ export default function PodcastDetails({
     }
   };
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // render the podcast details component
+  ///////////////////////////////////////////////////////////////////////////////
   if (!podcast && !isNew && !formData.podcast_id) {
-    return <div className="flex items-center gap-2 text-muted-foreground">
+    return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select a podcast to view details or create a new podcast
     </div>;
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
   // handle the submit event
+  ///////////////////////////////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -109,7 +130,9 @@ export default function PodcastDetails({
     );
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
   // handle the change event
+  ///////////////////////////////////////////////////////////////////////////////
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -121,7 +144,9 @@ export default function PodcastDetails({
     setHasChanges(true);
   };
 
+  ///////////////////////////////////////////////////////////////////////////////
   // handle the title change event
+  ///////////////////////////////////////////////////////////////////////////////
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     // Convert title to slug format
@@ -138,7 +163,9 @@ export default function PodcastDetails({
     setHasChanges(true);
   };
 
+  ///////////////////////////////////////////////////////////////////////////////
   // handle the file upload event
+  ///////////////////////////////////////////////////////////////////////////////
   const handleFileUpload = async (file: File) => {
     // Here you would typically upload the file to your storage service
     // and get back a URL. For now, we'll just use a placeholder
@@ -150,36 +177,52 @@ export default function PodcastDetails({
     setHasChanges(true);
   };
 
-  // return the podcast details component
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        {isNew && (
-          <h2 className="text-xl font-semibold">New Podcast</h2>
-        )}
-        <div className="flex gap-2 ml-auto">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          {podcast && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={onDelete}
-            >
-              Delete
-            </Button>
-          )}
-          <Button type="submit" disabled={!hasChanges}>
-            {podcast ? "Save Changes" : "Save Podcast"}
-          </Button>
-        </div>
-      </div>
+  ///////////////////////////////////////////////////////////////////////////////
+  // handle the cancel event
+  ///////////////////////////////////////////////////////////////////////////////
+  const handleCancel = () => {
+    if (hasChanges) {
+      setShowCancelDialog(true);
+    } else {
+      onCancel();
+    }
+  };
 
-      <div className="space-y-4">
+  ///////////////////////////////////////////////////////////////////////////////
+  // return the podcast details component
+  ///////////////////////////////////////////////////////////////////////////////
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+     {/* Header section: Cancel, Delete, Save buttons */}
+      {!isReadOnly && (
+        <div className="flex items-center justify-between mb-4">
+          {isNew && (
+            <h2 className="text-xl font-semibold">New Podcast</h2>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            {podcast && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onDelete}
+              >
+                Delete
+              </Button>
+            )}
+            <Button type="submit" disabled={!hasChanges}>
+              {podcast ? "Save Changes" : "Save Podcast"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="podcast_id">Podcast ID</Label>
+          <div className="space-y-1">
+            <Label htmlFor="podcast_id" className="text-muted-foreground/70">Podcast ID</Label>
             <Input
               id="podcast_id"
               name="podcast_id"
@@ -187,14 +230,15 @@ export default function PodcastDetails({
               disabled
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="podcast_type">Type</Label>
+          <div className="space-y-1">
+            <Label htmlFor="podcast_type" className="text-muted-foreground/70">Type</Label>
             <Select
               value={formData.podcast_type || "summary"}
               onValueChange={(value: PodcastType) => {
                 setFormData({ ...formData, podcast_type: value });
                 setHasChanges(true);
               }}
+              disabled={isReadOnly}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
@@ -208,28 +252,42 @@ export default function PodcastDetails({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="podcast_title">Title</Label>
+        <div className="space-y-1">
+          <Label htmlFor="podcast_title" className="text-muted-foreground/70">Title</Label>
           <Input
             id="podcast_title"
             name="podcast_title"
             placeholder="Enter Podcast Title"
             value={formData.podcast_title || ""}
             onChange={handleTitleChange}
+            disabled={isReadOnly}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="podcast_slug">Slug</Label>
+        <div className="space-y-1">
+          {/*<Label htmlFor="podcast_slug" className="text-muted-foreground/70">Slug</Label>*/}
           <Input
             id="podcast_slug"
             name="podcast_slug"
             value={formData.podcast_slug || ""}
             disabled
+            className="bg-muted text-foreground"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="podcast_hosts">Hosts</Label>
+        <div className="space-y-1">
+          <Label htmlFor="podcast_tagline" className="text-muted-foreground/70">Tagline</Label>
+          <Input
+            id="podcast_tagline"
+            name="podcast_tagline"
+            placeholder="Enter Podcast Tagline"
+            value={formData.podcast_tagline || ""}
+            onChange={handleChange}
+            disabled={isReadOnly}
+          />
+        </div>
+              
+        <div className="space-y-1">
+          <Label htmlFor="podcast_hosts" className="text-muted-foreground/70">Hosts</Label>
           <Input
             id="podcast_hosts"
             name="podcast_hosts"
@@ -241,11 +299,12 @@ export default function PodcastDetails({
               });
               setHasChanges(true);
             }}
+            disabled={isReadOnly}
           />
         </div>
 
-        {isNew && (
-          <div className="space-y-2">
+        {isNew && !isReadOnly && (
+          <div className="space-y-1">
             <Label>Podcast Image</Label>
             <div className="flex items-start gap-4">
               {formData.podcast_image && (
@@ -267,8 +326,8 @@ export default function PodcastDetails({
           </div>
         )}
 
-        {!isNew && (
-          <div className="space-y-2">
+        {!isNew && !isReadOnly && (
+          <div className="space-y-1">
             <Label>Podcast Image</Label>
             <div className="flex items-start gap-4">
               {formData.podcast_image && (
@@ -290,8 +349,21 @@ export default function PodcastDetails({
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="podcast_desc">Description</Label>
+        {isReadOnly && formData.podcast_image && (
+          <div className="space-y-1">
+            <Label>Podcast Image</Label>
+            <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
+              <img
+                src={formData.podcast_image}
+                alt="Podcast preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <Label htmlFor="podcast_desc" className="text-muted-foreground/70">Description</Label>
           <Textarea
             id="podcast_desc"
             name="podcast_desc"
@@ -299,18 +371,20 @@ export default function PodcastDetails({
             value={formData.podcast_desc || ""}
             onChange={handleChange}
             className="min-h-[100px]"
+            disabled={isReadOnly}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="podcast_format">Format</Label>
+          <div className="space-y-1">
+            <Label htmlFor="podcast_format" className="text-muted-foreground/70">Format</Label>
             <Select
               value={formData.podcast_format || "html"}
               onValueChange={(value: PodcastFormat) => {
                 setFormData({ ...formData, podcast_format: value });
                 setHasChanges(true);
               }}
+              disabled={isReadOnly}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
@@ -322,14 +396,15 @@ export default function PodcastDetails({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="subscription_type">Subscription Type</Label>
+          <div className="space-y-1">
+            <Label htmlFor="subscription_type" className="text-muted-foreground/70">Subscription Type</Label>
             <Select
               value={formData.subscription_type || "free"}
               onValueChange={(value: "free" | "premium") => {
                 setFormData({ ...formData, subscription_type: value });
                 setHasChanges(true);
               }}
+              disabled={isReadOnly}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select subscription type" />
@@ -342,8 +417,8 @@ export default function PodcastDetails({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="topic_tags">Topic Tags</Label>
+        <div className="space-y-1">
+          <Label htmlFor="topic_tags" className="text-muted-foreground/70">Topic Tags (#topic/place/people/org/event. Lower case, no spaces, max 30 characters)</Label>
           <Input
             id="topic_tags"
             name="topic_tags"
@@ -355,45 +430,53 @@ export default function PodcastDetails({
               });
               setHasChanges(true);
             }}
+            disabled={isReadOnly}
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="is_active"
-            checked={formData.is_active || false}
-            onCheckedChange={(checked) => {
-              setFormData({ ...formData, is_active: checked });
-              setHasChanges(true);
-            }}
-          />
-          <Label htmlFor="is_active">Active</Label>
-        </div>
+        {!isReadOnly && (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={formData.is_active || false}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_active: checked });
+                  setHasChanges(true);
+                }}
+                disabled={isReadOnly}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="is_deleted"
-            checked={formData.is_deleted}
-            onCheckedChange={(checked) => {
-              setFormData({ ...formData, is_deleted: checked });
-              setHasChanges(true);
-            }}
-          />
-          <Label htmlFor="is_deleted">Deleted</Label>
-        </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_deleted"
+                checked={formData.is_deleted}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_deleted: checked });
+                  setHasChanges(true);
+                }}
+                disabled={isReadOnly}
+              />
+              <Label htmlFor="is_deleted">Deleted</Label>
+            </div>
+          </div>
+        )}
 
         {podcast && episodes.length > 0 && (
-          <div className="space-y-4 mt-8">
-            <h3 className="text-lg font-semibold">Episodes</h3>
-            <div className="space-y-2">
+          <div className="space-y-3 mt-8 border-t pt-4">
+            <h3 className="text-lg font-bold">Episodes</h3>
+            <div className="space-y-1">
               {episodes.map((episode) => (
                 <div
                   key={episode.id}
                   className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
                 >
                   <div className="font-medium">{episode.episode_title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(episode.publish_datetime).toLocaleDateString()}
+                  <div className="text-sm text-muted-foreground truncate">
+                  {episode.episode_desc}
+                  {/* new Date(episode.publish_date).toLocaleDateString() */}
                   </div>
                 </div>
               ))}
@@ -401,6 +484,23 @@ export default function PodcastDetails({
           </div>
         )}
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to discard them?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={onCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 } 

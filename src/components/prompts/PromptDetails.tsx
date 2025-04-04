@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
@@ -23,6 +23,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   TTSModel,
   ConversationStyle,
   DialogueStructure,
@@ -39,6 +49,7 @@ interface PromptDetailsProps {
   onCancel: () => void;
   onDelete?: () => void;
   isNew?: boolean;
+  isReadOnly?: boolean;
 }
 
 // AddCustomValue component
@@ -115,13 +126,14 @@ export default function PromptDetails({
   onCancel,
   onDelete,
   isNew = false,
+  isReadOnly = false
 }: PromptDetailsProps) {
   const [formData, setFormData] = useState<Partial<Prompt>>({});
-  const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [customConversationStyles, setCustomConversationStyles] = useState<ConversationStyle[]>(conversationStyles);
   const [customDialogueStructures, setCustomDialogueStructures] = useState<DialogueStructure[]>(dialogueStructures);
   const [customEngagementTechniques, setCustomEngagementTechniques] = useState<EngagementTechnique[]>(engagementTechniques);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (prompt) {
@@ -159,7 +171,7 @@ export default function PromptDetails({
   }, [prompt, isNew]);
 
   if (!prompt && !isNew && !formData.prompt_id) {
-    return <div className="flex items-center gap-2 text-muted-foreground">
+    return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select a prompt to view details or create a new prompt
     </div>;
@@ -167,22 +179,9 @@ export default function PromptDetails({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await onSave(formData as Prompt);
-      setHasChanges(false);
-    } finally {
-      setLoading(false);
-    }
+    await onSave(formData as Prompt);
+    setHasChanges(false);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -195,39 +194,49 @@ export default function PromptDetails({
     setHasChanges(true);
   };
 
+  const handleCancel = () => {
+    if (hasChanges) {
+      setShowCancelDialog(true);
+    } else {
+      onCancel();
+    }
+  };
+
   //////////////////////////////////////////////////////////////////////////////
   // return the prompt details component
   //////////////////////////////////////////////////////////////////////////////
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-2">
       {/* Header section: Cancel, Delete, Save buttons */}
-      <div className="flex items-center justify-between mb-4">
-        {isNew && (
-          <h2 className="text-xl font-semibold">New Prompt</h2>
-        )}
-        <div className="flex gap-2 ml-auto">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          {prompt && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={onDelete}
-            >
-              Delete
-            </Button>
+      {!isReadOnly && (
+        <div className="flex items-center justify-between mb-4">
+          {isNew && (
+            <h2 className="text-xl font-semibold">New Prompt</h2>
           )}
-          <Button type="submit" disabled={!hasChanges}>
-            {prompt ? "Save Changes" : "Save Prompt"}
-          </Button>
+          <div className="flex gap-2 ml-auto">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            {prompt && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onDelete}
+              >
+                Delete
+              </Button>
+            )}
+            <Button type="submit" disabled={!hasChanges}>
+              {prompt ? "Save Changes" : "Save Prompt"}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Prompt details section */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="prompt_id">Prompt ID</Label>
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="prompt_id" className="text-muted-foreground/70">Prompt ID</Label>
           <Input
             id="prompt_id"
             name="prompt_id"
@@ -236,8 +245,8 @@ export default function PromptDetails({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="prompt_name">Name</Label>
+        <div className="space-y-1">
+          <Label htmlFor="prompt_name" className="text-muted-foreground/70">Name</Label>
           <Input
             id="prompt_name"
             name="prompt_name"
@@ -245,209 +254,206 @@ export default function PromptDetails({
             value={formData.prompt_name || ""}
             onChange={handleChange}
             required
+            disabled={isReadOnly}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="prompt_desc">Description</Label>
+        <div className="space-y-1">
+          <Label htmlFor="prompt_desc" className="text-muted-foreground/70">Description</Label>
           <Textarea
             id="prompt_desc"
             name="prompt_desc"
             placeholder="Enter Prompt Description"
             value={formData.prompt_desc || ""}
             onChange={handleChange}
+            disabled={isReadOnly}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="prompt_text">Prompt Instructions</Label>
+        <div className="space-y-1">
+          <Label htmlFor="prompt_text" className="text-muted-foreground/70">Prompt Instructions</Label>
           <Textarea
             id="prompt_text"
             name="prompt_text"
             placeholder="Enter Prompt Instructions"
             value={formData.prompt_text || ""}
             onChange={handleChange}
-            className="min-h-[200px]"
+            className="min-h-[200px] font-mono text-sm"
+            disabled={isReadOnly}
           />
         </div>
 
         {/* Prompt customization settings section */}
-        <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center space-x-4">
-                <Switch
-                  id="long-form"
-                  checked={formData.is_long_form || false}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_long_form: checked })
-                  }
-                />
-                <Label htmlFor="long-form">Long-form Content</Label>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="word_count">Word Count</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          Target number of words for the generated podcast (100-10000)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                  <Input
-                    id="word_count"
-                    type="number"
-                    min={100}
-                    max={10000}
-                    step={10}
-                    className="w-30"
-                    value={formData.word_count || 250}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>
-                    Creativity Level ({formData.creativity})
-                  </Label>
-                  <Slider
-                    value={[formData.creativity || 0.7]}
-                    onValueChange={([value]) =>
-                      setFormData({ ...formData, creativity: value })
-                    }
-                    max={1}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label>Interviewer Role</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            Define the role of the first speaker (e.g.,
-                            Host, Moderator, Journalist)
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Input 
-                    id="roles_person1"
-                    name="roles_person1"
-                    value={formData.roles_person1 || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label>Expert Role</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            Define the role of the second speaker (e.g.,
-                            Guest Expert, Specialist, Researcher)
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Input 
-                    id="roles_person2" 
-                    name="roles_person2" 
-                    value={formData.roles_person2 || ""} 
-                    onChange={handleChange} 
-                  />
-                </div>
-              </div>
-
-            <div className="space-y-2">
-              <Label>Conversation Style</Label>
-              <div className="flex flex-wrap gap-2">
-                {customConversationStyles.map((style) => (
-                  <Badge
-                    key={style}
-                    variant={
-                      formData.conversation_style?.includes(style)
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer"
-                    onClick={() => {
-                      const current = formData.conversation_style || [];
-                      if (current.includes(style)) {
-                        setFormData({
-                          ...formData,
-                          conversation_style: current.filter((s) => s !== style)
-                        });
-                      } else {
-                        setFormData({
-                          ...formData,
-                          conversation_style: [
-                            ...current,
-                            style,
-                          ],
-                        });
-                      }
-                    }}
-                  >
-                    {style}
-                  </Badge>
-                ))}
-                <AddCustomValue
-                  onAdd={(value) => {
-                    setCustomConversationStyles((prev) => [
-                      ...prev,
-                      value as ConversationStyle,
-                    ]);
-                    const current = formData.conversation_style || [];
-                    if (!current.includes(value)) {
-                      setFormData({
-                        ...formData,
-                        conversation_style: [
-                          ...current,
-                        value,
-                      ],
-                    });
-                  }
-                  }}
-                  placeholder="Enter custom style"
-                />
-              </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex items-center space-x-4">
+              <Switch
+                id="long-form"
+                disabled={isReadOnly}
+                checked={formData.is_long_form || false}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, is_long_form: checked })
+                }
+              />
+              <Label htmlFor="long-form" className="text-muted-foreground/70">Long-form Content</Label>
             </div>
 
-          <div className="space-y-2">
-            <Label>Dialogue Structure</Label>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="word_count" className="text-muted-foreground/70">Word Count</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Target number of words for the generated podcast (100-10000)
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="word_count"
+                type="number"
+                min={100}
+                max={10000}
+                step={10}
+                className="w-30"
+                value={formData.word_count || 250}
+                onChange={handleChange}
+                disabled={isReadOnly}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>
+                Creativity Level ({formData.creativity})
+              </Label>
+              <Slider
+                value={[formData.creativity || 0.7]}
+                onValueChange={([value]) =>
+                  setFormData({ ...formData, creativity: value })
+                }
+                max={1}
+                step={0.1}
+                className="w-full"
+                disabled={isReadOnly}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">Interviewer Role</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Define the role of the first speaker (e.g., Host, Moderator, Journalist)
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input 
+                id="roles_person1"
+                name="roles_person1"
+                value={formData.roles_person1 || ""}
+                onChange={handleChange}
+                disabled={isReadOnly}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">Expert Role</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Define the role of the second speaker (e.g., Guest Expert, Specialist, Researcher)
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input 
+                id="roles_person2" 
+                name="roles_person2" 
+                value={formData.roles_person2 || ""} 
+                onChange={handleChange}
+                disabled={isReadOnly}
+                />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">Conversation Style</Label>
+            <div className="flex flex-wrap gap-2">
+              {customConversationStyles.map((style) => (
+                <Badge
+                  key={style}
+                  variant={
+                    formData.conversation_style?.includes(style)
+                      ? "secondary"
+                      : "outline"
+                  }
+                  className={`cursor-pointer ${!formData.conversation_style?.includes(style) ? "text-muted-foreground/70" : ""}`}
+                  onClick={() => {
+                    const current = formData.conversation_style || [];
+                    if (current.includes(style)) {
+                      setFormData({
+                        ...formData,
+                        conversation_style: current.filter((s) => s !== style)
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        conversation_style: [...current, style],
+                      });
+                    }
+                  }}
+                >
+                  {style}
+                </Badge>
+              ))}
+              <AddCustomValue
+                onAdd={(value) => {
+                  setCustomConversationStyles((prev) => [...prev, value as ConversationStyle]);
+                  const current = formData.conversation_style || [];
+                  if (!current.includes(value)) {
+                    setFormData({
+                      ...formData,
+                      conversation_style: [...current, value],
+                    });
+                  }
+                }}
+                placeholder="Enter custom style"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">Dialogue Structure</Label>
             <div className="flex flex-wrap gap-2">
               {customDialogueStructures.map((structure) => (
                 <Badge
                   key={structure}
                   variant={
                     formData.dialogue_structure?.includes(structure)
-                      ? "default"
+                      ? "secondary"
                       : "outline"
                   }
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${!formData.dialogue_structure?.includes(structure) ? "text-muted-foreground/70" : ""}`}
                   onClick={() => {
                     const current = formData.dialogue_structure || [];
                     if (current.includes(structure)) {
@@ -455,14 +461,10 @@ export default function PromptDetails({
                         ...formData,
                         dialogue_structure: current.filter((s) => s !== structure)
                       });
-                        current.filter((s) => s !== structure)
                     } else {
                       setFormData({
                         ...formData,
-                        dialogue_structure: [
-                          ...current,
-                          structure,
-                        ],
+                        dialogue_structure: [...current, structure],
                       });
                     }
                   }}
@@ -472,18 +474,12 @@ export default function PromptDetails({
               ))}
               <AddCustomValue
                 onAdd={(value) => {
-                  setCustomDialogueStructures((prev) => [
-                    ...prev,
-                    value as DialogueStructure,
-                  ]);
+                  setCustomDialogueStructures((prev) => [...prev, value as DialogueStructure]);
                   const current = formData.dialogue_structure || [];
                   if (!current.includes(value)) {
                     setFormData({
                       ...formData,
-                      dialogue_structure: [
-                        ...current,
-                        value,
-                      ],
+                      dialogue_structure: [...current, value],
                     });
                   }
                 }}
@@ -492,18 +488,18 @@ export default function PromptDetails({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Engagement Techniques</Label>
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">Engagement Techniques</Label>
             <div className="flex flex-wrap gap-2">
               {customEngagementTechniques.map((technique) => (
                 <Badge
                   key={technique}
                   variant={
                     formData.engagement_techniques?.includes(technique)
-                      ? "default"
+                      ? "secondary"
                       : "outline"
                   }
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${!formData.engagement_techniques?.includes(technique) ? "text-muted-foreground/70" : ""}`}
                   onClick={() => {
                     const current = formData.engagement_techniques || [];
                     if (current.includes(technique)) {
@@ -514,10 +510,7 @@ export default function PromptDetails({
                     } else {
                       setFormData({
                         ...formData,
-                        engagement_techniques: [
-                          ...current,
-                          technique,
-                        ],
+                        engagement_techniques: [...current, technique],
                       });
                     }
                   }}
@@ -525,21 +518,15 @@ export default function PromptDetails({
                   {technique}
                 </Badge>
               ))}
-              <AddCustomValue 
+              <AddCustomValue
                 onAdd={(value) => {
-                  setCustomEngagementTechniques((prev) => [
-                    ...prev,
-                    value as EngagementTechnique,
-                  ]);
+                  setCustomEngagementTechniques((prev) => [...prev, value as EngagementTechnique]);
                   const current = formData.engagement_techniques || [];
                   if (!current.includes(value)) {
                     setFormData({
                       ...formData,
-                      engagement_techniques: [
-                        ...current,
-                        value,
-                      ],
-                    }); 
+                      engagement_techniques: [...current, value],
+                    });
                   }
                 }}
                 placeholder="Enter custom technique"
@@ -547,9 +534,9 @@ export default function PromptDetails({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Label htmlFor="ending_message">Ending Message</Label>
+              <Label htmlFor="ending_message" className="text-muted-foreground/70">Ending Message</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -569,58 +556,31 @@ export default function PromptDetails({
               value={formData.ending_message || ""}
               onChange={handleChange}
               placeholder="Enter the ending message for your podcast"
+              disabled={isReadOnly}
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <Label>Text-to-Speech Model</Label>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label className="text-muted-foreground/70">Text-to-Speech Model</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      className="h-6 w-6 p-0"
-                    >
-                      <InfoCircledIcon className="h-4 w-4" />
-                    </Button>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-sm">
-                    <div className="space-y-2 text-sm">
-                      <p className="font-semibold">
-                        API Key Setup Instructions:
-                      </p>
-                      <p>
-                        <strong>Google Gemini:</strong>
-                      </p>
+                    <div className="space-y-1 text-sm">
+                      <p className="font-semibold">API Key Setup Instructions:</p>
+                      <p><strong>Google Gemini:</strong></p>
                       <ol className="list-decimal pl-4 space-y-1">
                         <li>Go to Google Cloud Console</li>
-                        <li>
-                          Enable both "Vertex AI API" and "Cloud
-                          Text-to-Speech API"
-                        </li>
-                        <li>
-                          Create an API key with access to these APIs
-                        </li>
-                        <li>
-                          Add Cloud Text-to-Speech API permission to
-                          the key
-                        </li>
+                        <li>Enable both "Vertex AI API" and "Cloud Text-to-Speech API"</li>
+                        <li>Create an API key with access to these APIs</li>
+                        <li>Add Cloud Text-to-Speech API permission to the key</li>
                       </ol>
-                      <p>
-                        <strong>OpenAI:</strong> Get your API key from
-                        OpenAI dashboard
-                      </p>
-                      <p>
-                        <strong>ElevenLabs:</strong> Get your API key
-                        from ElevenLabs dashboard
-                      </p>
-                      <p>
-                        <strong>Edge TTS:</strong> No API key required
-                        - free to use
-                      </p>
+                      <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
+                      <p><strong>ElevenLabs: </strong>Get your API key from ElevenLabs dashboard</p>
+                      <p><strong>Edge TTS: </strong>No API key required - free to use</p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -631,41 +591,28 @@ export default function PromptDetails({
               onValueChange={(value: TTSModel) =>
                 setFormData({ ...formData, tts_model: value })
               }
+              disabled={isReadOnly}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select TTS model" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="gemini">
-                  Google Gemini
-                </SelectItem>
-                <SelectItem value="geminimulti">
-                  Google Gemini Live Multi-Speaker English-only
-                </SelectItem>
-                <SelectItem value="edge">
-                  Microsoft Edge TTS
-                </SelectItem>
-                <SelectItem value="openai">
-                  OpenAI TTS
-                </SelectItem>
-                <SelectItem value="elevenlabs">
-                  ElevenLabs
-                </SelectItem>
-                <SelectItem value="hume">
-                  Hume AI
-                </SelectItem>
-                <SelectItem value="playht">
-                  Play HT
-                </SelectItem>
+                <SelectItem value="gemini">Google Gemini</SelectItem>
+                <SelectItem value="geminimulti">Google Gemini Live Multi-Speaker English-only</SelectItem>
+                <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
+                <SelectItem value="openai">OpenAI TTS</SelectItem>
+                <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                <SelectItem value="hume">Hume AI</SelectItem>
+                <SelectItem value="playht">Play HT</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-3 mt-4">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label>Question Voice</Label>
+                <div className="flex items-center gap-2 space-y-0">
+                  <Label className="text-muted-foreground/70">Question Voice</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -699,56 +646,80 @@ export default function PromptDetails({
                   value={formData.voice_question || ""}
                   onChange={handleChange}
                   placeholder="Voice for questions"
+                  disabled={isReadOnly}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Answer Voice</Label>
+              <div className="space-y-0">
+                <Label className="text-muted-foreground/70">Answer Voice</Label>
                 <Input
                   id="voice_answer"
                   name="voice_answer"
                   value={formData.voice_answer || ""}
                   onChange={handleChange}
                   placeholder="Voice for answers"
+                  disabled={isReadOnly}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Voice Model</Label>
+              <div className="space-y-0">
+                <Label className="text-muted-foreground/70">Voice Model</Label>
                 <Input
                   id="voice_model"
                   name="voice_model"
                   value={formData.voice_model || ""}
                   onChange={handleChange}
                   placeholder="Voice model"
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="is_active"
-            checked={formData.is_active || false}
-            onCheckedChange={(checked) => {
-              setFormData({ ...formData, is_active: checked });
-              setHasChanges(true);
-            }}
-          />
-          <Label htmlFor="is_active">Active</Label>
-        </div>
+        {!isReadOnly && (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={formData.is_active || false}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_active: checked });
+                  setHasChanges(true);
+                }}
+              />
+              <Label htmlFor="is_active" className="text-muted-foreground/70">Active</Label>
+            </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="is_deleted"
-            checked={formData.is_deleted}
-            onCheckedChange={(checked) => {
-              setFormData({ ...formData, is_deleted: checked });
-              setHasChanges(true);
-            }}
-          />
-          <Label htmlFor="is_deleted">Deleted</Label>
-        </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_deleted"
+                checked={formData.is_deleted}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_deleted: checked });
+                  setHasChanges(true);
+                }}
+              />
+              <Label htmlFor="is_deleted" className="text-muted-foreground/70">Deleted</Label>
+            </div>
+          </div>
+        )}
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to discard them?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={onCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 } 
