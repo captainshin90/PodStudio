@@ -386,4 +386,6 @@ I can see that you defined these as secrets thinking about security. But I think
 https://fly.io/docs/apps/build-secrets/#automate-the-inclusion-of-build-secrets-using-an-ephemeral-machine
 https://docs.docker.com/engine/swarm/secrets/
 
+x - Bun run build deletes /static folder
+x - use /public folder to store content
 

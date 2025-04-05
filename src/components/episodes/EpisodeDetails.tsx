@@ -146,7 +146,11 @@ export default function EpisodeDetails({
       setIsTranscriptEditable(false);
     } else if (isNew) {
       setFormData({
-        episode_id: crypto.randomUUID(),
+        id: crypto.randomUUID(), 
+        episode_id: formData.id,
+        podcast_id: "",
+        transcript_id: "",
+        prompt_id: "",
         episode_title: "",
         episode_desc: "",
         episode_number: 1,
@@ -628,7 +632,7 @@ export default function EpisodeDetails({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="audio_player" className="text-muted-foreground/70">Audio Player</Label>
+            <Label htmlFor="audio_player" className="text-muted-foreground/70">Play Audio</Label>
             <div className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
               <audio
                 id="audio_player"
@@ -732,7 +736,20 @@ export default function EpisodeDetails({
                 }}
                 disabled={isReadOnly}
               />
-              <Label htmlFor="is_deleted">Deleted</Label>
+              <Label htmlFor="is_deleted" className="text-muted-foreground/70">Deleted</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Label className="text-muted-foreground/70">Created:</Label>
+              <span className="text-sm">
+                {formData.created_at 
+                  ? (formData.created_at instanceof Date 
+                      ? formData.created_at.toLocaleString() 
+                      : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
+                        ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
             </div>
           </div>
         )}

@@ -37,7 +37,7 @@ export default function EpisodesPage() {
           description: "Episode updated successfully",
         });
       } else {
-        await episodesService.createEpisode(updatedEpisode);
+        await episodesService.createEpisode(updatedEpisode.id, updatedEpisode);
         toast({
           title: "Success",
           description: "Episode created successfully",
@@ -58,14 +58,12 @@ export default function EpisodesPage() {
   // Handle create episode  
   const handleCreate = async (newEpisode: Episode) => {
     try {
-      const episodeId = await episodesService.createEpisode(newEpisode);
-      if (episodeId) {
-        toast({
-          title: "Success",
+      await episodesService.createEpisode(newEpisode.episode_id, newEpisode);
+      toast({
+        title: "Success",
           description: "Episode created successfully",
-        });
-        setShowNewEpisode(false);
-      }
+      });
+      setShowNewEpisode(false);
     } catch (error) {
       console.error("Error creating episode:", error);  
       toast({

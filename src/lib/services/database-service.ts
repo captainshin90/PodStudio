@@ -365,8 +365,9 @@ export const subscriptionsService = {
     else return null;
   },
   
-  async createSubscription(subscriptionData: any): Promise<string | null> {
-    return databaseService.create('subscriptions', subscriptionData);
+  async createSubscription(subscriptionId: string, subscriptionData: any): Promise<void> {
+//    return databaseService.create('subscriptions', subscriptionData);
+    return databaseService.createWithId('subscriptions', subscriptionId, subscriptionData);
   },
   
   async updateSubscription(id: string, subscriptionData: any): Promise<void> {
@@ -651,10 +652,8 @@ export const episodesService = {
     }
   },
 
-  // why need both podcastId and episodeId?
-  async getEpisodeById(/*podcastId: string,*/ episodeId: string): Promise<DocumentData | null> {
+  async getEpisodeById(episodeId: string): Promise<DocumentData | null> {
     const episodes = await databaseService.query('episodes', [
-//      { field: 'podcast_id', operator: '==', value: podcastId },
       { field: 'episode_id', operator: '==', value: episodeId }
     ]);
     if (episodes)
@@ -662,8 +661,8 @@ export const episodesService = {
     else return null;
   },
   
-  async createEpisode(episodeData: any): Promise<string | null> {
-    return databaseService.create('episodes', episodeData);
+  async createEpisode(id: string, episodeData: any): Promise<void> {
+    return databaseService.createWithId('episodes', id, episodeData);
   },
   
   async updateEpisode(id: string, episodeData: any): Promise<void> {

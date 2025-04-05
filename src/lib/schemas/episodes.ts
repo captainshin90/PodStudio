@@ -1,6 +1,6 @@
 // import { Podcast } from "@/lib/schemas/podcasts";
 
-// Episode schema version 0.2.0
+  // Episode schema version 0.2.0
 export interface Episode {
   id: string; // Firestore Document ID (needed for Firestore)
   episode_id: string; // Episode ID

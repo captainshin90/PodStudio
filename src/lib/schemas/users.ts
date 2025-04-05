@@ -1,4 +1,4 @@
-// User schema version 0.2.0
+// User schema version 0.2.5
 export interface User {
   id: string; // Firestore Document ID (needed for Firestore)
   user_id: string; // User ID
@@ -88,8 +88,8 @@ export function convertToUser(data: any): User {
     card_cvv: data.card_cvv,
     card_city: data.card_city,
     is_active: data.is_active = true,
+    is_deleted: data.is_deleted = false, // updated by the database service
     created_at: data.created_at?.toDate(),    // updated by the database service
     updated_at: data.updated_at?.toDate(),    // updated by the database service
-    is_deleted: data.is_deleted = false // updated by the database service
   };
 }

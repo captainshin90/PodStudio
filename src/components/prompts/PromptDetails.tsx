@@ -40,7 +40,8 @@ import {
   ttsVoiceDefaults,
   conversationStyles,
   dialogueStructures,
-  engagementTechniques
+  engagementTechniques,
+  LLMModel
 } from '@/config/podcast-config';
 
 interface PromptDetailsProps {
@@ -153,6 +154,7 @@ export default function PromptDetails({
         conversation_style: ["Engaging", "Fast-paced", "Enthusiastic"],
         dialogue_structure: ["Discussions"], 
         engagement_techniques: ["Questions"],
+        llm_model: "gemini",
         tts_model: "gemini",
         voice_question: ttsVoiceDefaults.gemini.question,
         voice_answer: ttsVoiceDefaults.gemini.answer,
@@ -291,9 +293,10 @@ export default function PromptDetails({
                 id="long-form"
                 disabled={isReadOnly}
                 checked={formData.is_long_form || false}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_long_form: checked })
-                }
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_long_form: checked });
+                  setHasChanges(true);
+                }}
               />
               <Label htmlFor="long-form" className="text-muted-foreground/70">Long-form Content</Label>
             </div>
@@ -333,9 +336,10 @@ export default function PromptDetails({
               </Label>
               <Slider
                 value={[formData.creativity || 0.7]}
-                onValueChange={([value]) =>
-                  setFormData({ ...formData, creativity: value })
-                }
+                onValueChange={([value]) => {
+                  setFormData({ ...formData, creativity: value });
+                  setHasChanges(true);
+                }}
                 max={1}
                 step={0.1}
                 className="w-full"
@@ -415,11 +419,13 @@ export default function PromptDetails({
                         ...formData,
                         conversation_style: current.filter((s) => s !== style)
                       });
+                      setHasChanges(true);
                     } else {
                       setFormData({
                         ...formData,
                         conversation_style: [...current, style],
                       });
+                      setHasChanges(true);
                     }
                   }}
                 >
@@ -434,7 +440,8 @@ export default function PromptDetails({
                     setFormData({
                       ...formData,
                       conversation_style: [...current, value],
-                    });
+                      });
+                    setHasChanges(true);
                   }
                 }}
                 placeholder="Enter custom style"
@@ -461,11 +468,13 @@ export default function PromptDetails({
                         ...formData,
                         dialogue_structure: current.filter((s) => s !== structure)
                       });
+                      setHasChanges(true);
                     } else {
                       setFormData({
                         ...formData,
                         dialogue_structure: [...current, structure],
                       });
+                      setHasChanges(true);
                     }
                   }}
                 >
@@ -481,6 +490,7 @@ export default function PromptDetails({
                       ...formData,
                       dialogue_structure: [...current, value],
                     });
+                    setHasChanges(true);
                   }
                 }}
                 placeholder="Enter custom structure"
@@ -507,11 +517,13 @@ export default function PromptDetails({
                         ...formData,
                         engagement_techniques: current.filter((t) => t !== technique)
                       });
+                      setHasChanges(true);
                     } else {
                       setFormData({
                         ...formData,
                         engagement_techniques: [...current, technique],
                       });
+                      setHasChanges(true);
                     }
                   }}
                 >
@@ -527,6 +539,7 @@ export default function PromptDetails({
                       ...formData,
                       engagement_techniques: [...current, value],
                     });
+                    setHasChanges(true);
                   }
                 }}
                 placeholder="Enter custom technique"
@@ -560,52 +573,96 @@ export default function PromptDetails({
             />
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Label className="text-muted-foreground/70">Text-to-Speech Model</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-sm">
-                    <div className="space-y-1 text-sm">
-                      <p className="font-semibold">API Key Setup Instructions:</p>
-                      <p><strong>Google Gemini:</strong></p>
-                      <ol className="list-decimal pl-4 space-y-1">
-                        <li>Go to Google Cloud Console</li>
-                        <li>Enable both "Vertex AI API" and "Cloud Text-to-Speech API"</li>
-                        <li>Create an API key with access to these APIs</li>
-                        <li>Add Cloud Text-to-Speech API permission to the key</li>
-                      </ol>
-                      <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
-                      <p><strong>ElevenLabs: </strong>Get your API key from ElevenLabs dashboard</p>
-                      <p><strong>Edge TTS: </strong>No API key required - free to use</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">LLM Model</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <div className="space-y-1 text-sm">
+                        <p className="font-semibold">API Key Setup Instructions:</p>
+                        <p><strong>Google Gemini:</strong></p>
+                        <ol className="list-decimal pl-4 space-y-1">
+                          <li>Go to Google Cloud Console</li>
+                          <li>Create an API key with access to these APIs</li>
+                        </ol>
+                        <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select
+                value={formData.llm_model}
+                onValueChange={(value: LLMModel) => {
+                  setFormData({ ...formData, llm_model: value });
+                  setHasChanges(true);
+                }}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select LLM model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
+                  <SelectItem value="openai">OpenAI TTS</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={formData.tts_model}
-              onValueChange={(value: TTSModel) =>
-                setFormData({ ...formData, tts_model: value })
-              }
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select TTS model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gemini">Google Gemini</SelectItem>
-                <SelectItem value="geminimulti">Google Gemini Live Multi-Speaker English-only</SelectItem>
-                <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
-                <SelectItem value="openai">OpenAI TTS</SelectItem>
-                <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
-                <SelectItem value="hume">Hume AI</SelectItem>
-                <SelectItem value="playht">Play HT</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">Text-to-Speech Model</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <div className="space-y-1 text-sm">
+                        <p className="font-semibold">API Key Setup Instructions:</p>
+                        <p><strong>Google Gemini:</strong></p>
+                        <ol className="list-decimal pl-4 space-y-1">
+                          <li>Go to Google Cloud Console</li>
+                          <li>Enable both "Vertex AI API" and "Cloud Text-to-Speech API"</li>
+                          <li>Create an API key with access to these APIs</li>
+                          <li>Add Cloud Text-to-Speech API permission to the key</li>
+                        </ol>
+                        <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
+                        <p><strong>ElevenLabs: </strong>Get your API key from ElevenLabs dashboard</p>
+                        <p><strong>Edge TTS: </strong>No API key required - free to use</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select
+                value={formData.tts_model}
+                onValueChange={(value: TTSModel) => {
+                  setFormData({ ...formData, tts_model: value });
+                  setHasChanges(true);
+                }}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select TTS model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="geminimulti">Google Gemini Live Multi-Speaker English-only</SelectItem>
+                  <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
+                  <SelectItem value="openai">OpenAI TTS</SelectItem>
+                  <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                  <SelectItem value="hume">Hume AI</SelectItem>
+                  <SelectItem value="playht">Play HT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-3 mt-4">
@@ -699,6 +756,19 @@ export default function PromptDetails({
                 }}
               />
               <Label htmlFor="is_deleted" className="text-muted-foreground/70">Deleted</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Label className="text-muted-foreground/70">Created:</Label>
+              <span className="text-sm">
+                {formData.created_at 
+                  ? (formData.created_at instanceof Date 
+                      ? formData.created_at.toLocaleString() 
+                      : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
+                        ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
-import { TTSModel } from "@/config/podcast-config";
+import { LLMModel, TTSModel } from "@/config/podcast-config";
 
-// Prompt schema version 0.2.0
+// Prompt schema version 0.2.5
 export interface Prompt {
   id: string; // Firestore Document ID (needed for Firestore)
   prompt_id: string; // Prompt ID
@@ -19,6 +19,7 @@ export interface Prompt {
   dialogue_structure: string[];
   engagement_techniques: string[];
   system_instructions?: string;
+  llm_model: LLMModel;
   tts_model: TTSModel;
   voice_question: string;
   voice_answer: string;
@@ -51,6 +52,7 @@ export function convertToPrompt(data: any): Prompt {
     dialogue_structure: data.dialogue_structure,
     engagement_techniques: data.engagement_techniques,
     system_instructions: data.system_instructions,
+    llm_model: data.llm_model,
     tts_model: data.tts_model,
     voice_question: data.voice_question,
     voice_answer: data.voice_answer,

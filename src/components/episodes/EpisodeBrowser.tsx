@@ -94,7 +94,10 @@ export default function EpisodeBrowser({
     return () => unsubscribe();
   }, [filters, selectedEpisode, onSelectEpisode]);
 
+  ///////////////////////////////////////////////////////////////////////////////
   // filter the episodes
+  ///////////////////////////////////////////////////////////////////////////////
+
   const filteredEpisodes = episodes.filter((episode) => {
     return (
       episode.episode_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,12 +105,18 @@ export default function EpisodeBrowser({
     );
   });
 
-  // Update itemRefs when filteredEpisodes changes
+  ///////////////////////////////////////////////////////////////////////////////
+  // update itemRefs when filteredEpisodes changes
+  ///////////////////////////////////////////////////////////////////////////////
+
   useEffect(() => {
     itemRefs.current = itemRefs.current.slice(0, filteredEpisodes.length);
   }, [filteredEpisodes]);
 
-  // Handle keyboard navigation
+  ///////////////////////////////////////////////////////////////////////////////
+  // Handle keyboard navigation 
+  ///////////////////////////////////////////////////////////////////////////////
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (disabled) return;
@@ -145,12 +154,18 @@ export default function EpisodeBrowser({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filteredEpisodes, onSelectEpisode, disabled]);
 
-  // Reset focused index when search query or filters change
+  ///////////////////////////////////////////////////////////////////////////////
+  // reset focused index when search query or filters change
+  ///////////////////////////////////////////////////////////////////////////////
+
   useEffect(() => {
     setFocusedIndex(-1);
   }, [searchQuery, filters]);
 
+  ///////////////////////////////////////////////////////////////////////////////
   // return the loading component
+  ///////////////////////////////////////////////////////////////////////////////
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -159,7 +174,10 @@ export default function EpisodeBrowser({
     );
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
   // return the episode browser component
+  ///////////////////////////////////////////////////////////////////////////////
+
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex gap-2">

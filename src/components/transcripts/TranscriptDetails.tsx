@@ -453,6 +453,19 @@ export default function TranscriptDetails({
               />
               <Label htmlFor="is_deleted" className="text-muted-foreground/70">Deleted</Label>
             </div>
+
+            <div className="flex items-center space-x-2">
+              <Label className="text-muted-foreground/70">Created:</Label>
+              <span className="text-sm">
+                {formData.created_at 
+                  ? (formData.created_at instanceof Date 
+                      ? formData.created_at.toLocaleString() 
+                      : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
+                        ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
+            </div>
           </div>
         )}
       </div>

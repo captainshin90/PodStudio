@@ -327,7 +327,7 @@ export default function CreatePodcast() {
   //////////////////////////////////////////////////////////////////////////////
   const handleSaveEpisode = async (episode: Episode) => {
     try {
-      await episodesService.createEpisode(episode);
+      await episodesService.createEpisode(episode.episode_id, episode);
       toast({
         title: "Success",
         description: "Episode saved successfully",

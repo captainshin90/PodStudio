@@ -1,7 +1,8 @@
 import { Timestamp } from "firebase/firestore";
 import { PlayerEpisode } from "./episodes";
 
-// Chat schema version 0.2.0
+// Chat schema version 0.2.5
+// Created by the FourFreodoms Podcast Chat app
 export interface Chat {
   id: string; // Firestore Document ID
   chat_id: string; // Chat ID
@@ -10,10 +11,10 @@ export interface Chat {
   chat_text: string; // Chat Text
   conversation_id: string; // Conversation ID for LLM
   podcast_data?: PlayerEpisode; // Store podcast data for podcast messages
+  is_deleted: boolean | false; // Is Deleted
   created_at: Date | null;  // updated by the database service
   updated_at: Date | null;  // updated by the database service
   deleted_at: Date | null;  // updated by the database service
-  is_deleted: boolean | false; // Is Deleted
 }
 
 export type ChatMessage = { // Message type for chat history
@@ -22,7 +23,7 @@ export type ChatMessage = { // Message type for chat history
   conversation_id?: string;
   content: string;
   sender: "user" | "assistant" | "podcast" | "system";
-  timestamp: Date | Timestamp;
+  timestamp: Date | Timestamp;    // why either Date or Timestamp?
   player_episode?: PlayerEpisode;
 };
 
@@ -45,9 +46,9 @@ export function convertToChat(data: any): Chat {
     chat_text: data.content || "",
     conversation_id: data.conversation_id || null,
     podcast_data: data.player_episode || null,
+    is_deleted: data.is_deleted || false,
     deleted_at: data.deleted_at?.toDate() || null, // updated by the database service
     created_at: data.timestamp?.toDate() || null,  // updated by the database service
     updated_at: data.timestamp?.toDate() || null,  // updated by the database service
-    is_deleted: data.is_deleted || false,
   };
 }

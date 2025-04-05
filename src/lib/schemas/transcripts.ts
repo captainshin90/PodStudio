@@ -1,4 +1,4 @@
-// Transcript schema version 0.2.2
+// Transcript schema version 0.2.5
 export type TranscriptType = 'interview' | 'meeting' | 'article' | 'petition';
 
 export interface Transcript {
@@ -12,9 +12,9 @@ export interface Transcript {
   transcript_model: string; // Transcript Model
   transcript_text: string; // Transcript Text
   is_active: boolean; // Is Active
+  is_deleted: boolean; // Is Deleted - updated by the database service
   created_at: Date; // Created Date and Time - updated by the database service
   updated_at: Date; // Updated Date and Time - updated by the database service
-  is_deleted: boolean; // Is Deleted - updated by the database service
 }
 
 
@@ -31,8 +31,8 @@ export function convertToTranscript(data: any): Transcript {
     transcript_model: data.transcript_model = "gemini",
     transcript_text: data.transcript_text = "add transcript text here",
     is_active: data.is_active = true,
+    is_deleted: data.is_deleted = false, // updated by the database service
     created_at: data.created_at?.toDate(), // updated by the database service
     updated_at: data.updated_at?.toDate(), // updated by the database service
-    is_deleted: data.is_deleted = false // updated by the database service
   };
 }

@@ -1,4 +1,4 @@
-// Podcast schema version 0.2.0
+// Podcast schema version 0.2.5
 export type PodcastType = 'summary' | 'audio_podcast' | 'video_podcast';
 export type PodcastFormat = 'html' | 'mp3' | 'mp4';
 
@@ -18,9 +18,9 @@ export interface Podcast {
   topic_tags: string[]; // Topic Tags (names not IDs)
   subscription_type: 'free' | 'premium'; // Subscription Type
   is_active: boolean; // Is Active
+  is_deleted: boolean; // Is Deleted - updated by the database service
   created_at: Date; // Created Date and Time - updated by the database service
   updated_at: Date; // Updated Date and Time - updated by the database service
-  is_deleted: boolean; // Is Deleted - updated by the database service
 }
 
 
@@ -42,8 +42,8 @@ export function convertToPodcast(data: any): Podcast {
     subscription_type: data.subscription_type,
     followed_by_users: data.followed_by_users,
     is_active: data.is_active = true,
+    is_deleted: data.is_deleted = false, // updated by the database service
     created_at: data.created_at?.toDate(), // updated by the database service
     updated_at: data.updated_at?.toDate(), // updated by the database service
-    is_deleted: data.is_deleted = false // updated by the database service
   };
 }
