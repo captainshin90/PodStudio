@@ -86,7 +86,6 @@ export default function CreateTranscript() {
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [generatedTranscript, setGeneratedTranscript] = useState<Transcript | null>(null);
   const [hasGeneratedTranscript, setHasGeneratedTranscript] = useState(false);
-//  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadSelectionData();
@@ -250,8 +249,7 @@ export default function CreateTranscript() {
           created_at: new Date(),
           updated_at: new Date()
         };
-        console.log("Transcript generation complete");
-        
+        console.log("Transcript generation complete");        
         setGeneratedTranscript(newTranscript);
         setHasGeneratedTranscript(true);
         cleanup();

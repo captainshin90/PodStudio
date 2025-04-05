@@ -137,7 +137,12 @@ export default function EpisodeDetails({
   useEffect(() => {
     if (episode) {
       setFormData(episode);
-      setHasChanges(true);
+      // If this is a newly generated episode (has episode_id but no id), treat it as a new record
+      if (episode.episode_id && !episode.id) {
+        setHasChanges(true);
+      } else {
+        setHasChanges(false);
+      }
       setIsTranscriptEditable(false);
     } else if (isNew) {
       setFormData({
@@ -247,6 +252,8 @@ export default function EpisodeDetails({
     try {
       await onSave(formData as Episode);
       setHasChanges(false);
+    } catch (error) {
+      console.error("Error saving episode:", error);
     } finally {
       setLoading(false);
     }
@@ -400,7 +407,7 @@ export default function EpisodeDetails({
                 Delete
               </Button>
             )}
-            <Button type="submit" disabled={!hasChanges}>
+            <Button type="submit" disabled={!hasChanges && !isNew}>
               {episode ? "Save Changes" : "Save Episode"}
             </Button>
           </div>

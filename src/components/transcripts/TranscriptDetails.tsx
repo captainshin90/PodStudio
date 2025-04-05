@@ -112,6 +112,7 @@ export default function TranscriptDetails({
   const [documents, setDocuments] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [_, setLoading] = useState(false);
 
   // Add beforeunload event listener
   useEffect(() => {
@@ -144,7 +145,12 @@ export default function TranscriptDetails({
   useEffect(() => {
     if (transcript) {
       setFormData(transcript);
-      setHasChanges(true);
+      // If this is a newly generated transcript (has transcript_id but no id), treat it as a new record
+      if (transcript.transcript_id && !transcript.id) {
+        setHasChanges(true);
+      } else {
+        setHasChanges(false);
+      }
       setIsEditable(false);
     } else if (isNew) {
       setFormData({
@@ -209,11 +215,14 @@ export default function TranscriptDetails({
   ///////////////////////////////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await onSave(formData as Transcript);
       setHasChanges(false);
     } catch (error) {
       console.error("Error saving transcript:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -266,7 +275,7 @@ export default function TranscriptDetails({
                 Delete
               </Button>
             )}
-            <Button type="submit" disabled={!hasChanges}>
+            <Button type="submit" disabled={!hasChanges && !isNew}>  
               {transcript ? "Save Changes" : "Save Transcript"}
             </Button>
           </div>

@@ -5,6 +5,7 @@ import App from "./App";
 import "./index.css";
 import { initFirestore, initStorage } from "./lib/firebase";
 import { AccessControlDialog } from "./components/auth/AccessControlDialog";
+import { Toaster } from "@/components/ui/toaster";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Validate environment variables
@@ -55,6 +56,7 @@ async function bootstrap() {
               onAccessGranted={() => setAccessGranted(true)} 
             />
           )}
+          <Toaster />
         </>
       );
     };

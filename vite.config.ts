@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////////////////////////
+// Vite server build configuration
+///////////////////////////////////////////////////////////////////////////////
+
 import path from "path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -12,20 +16,20 @@ export default defineConfig({
   server: {
     proxy: {
       "/socket.io": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_API_BASE_URL || "http://localhost:8080",
         ws: true,
         changeOrigin: true,
       },
       "/api": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_API_BASE_URL || "http://localhost:8080",
         changeOrigin: true,
       },
       "/audio": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_API_BASE_URL || "http://localhost:8080",
         changeOrigin: true,
       },
       "/static": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_API_BASE_URL || "http://localhost:8080",
         changeOrigin: true,
       },
     },

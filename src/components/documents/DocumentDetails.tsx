@@ -302,6 +302,9 @@ export default function DocumentDetails({
     }
   }; // handle the extract text event
 
+  //////////////////////////////////////////////////////////////////////////////
+  // This is the main component for the document details
+  //////////////////////////////////////////////////////////////////////////////
   const handleCancel = () => {
     if (hasChanges) {
       setShowCancelDialog(true);
@@ -310,7 +313,9 @@ export default function DocumentDetails({
     }
   };
 
-  // return the document details component  
+  //////////////////////////////////////////////////////////////////////////////
+  // This is the main component for the document details
+  //////////////////////////////////////////////////////////////////////////////
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       {/* Header section: Cancel, Delete, Save buttons */}  

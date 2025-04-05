@@ -175,10 +175,12 @@ export default function PromptBrowser({
               selectedPrompt?.id === prompt.id
                 ? "bg-secondary" 
                 : "hover:bg-muted"
-            }`}
+            } focus:outline focus:outline-2 focus:outline-primary/30 focus:outline-offset-2`}
             onClick={() => {
               onSelectPrompt(prompt);
               setFocusedIndex(index);
+              // Ensure the element gets focus when clicked
+              itemRefs.current[index]?.focus();
             }}
             tabIndex={0}
             role="option"

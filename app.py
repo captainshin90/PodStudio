@@ -18,7 +18,7 @@ from podcastfy.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 # Load environment variables with explicit path and override
-env_path = Path('.') / '.env.local'
+env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path, override=True)
 
 # Create required directories
@@ -30,14 +30,20 @@ load_dotenv(dotenv_path=env_path, override=True)
 # Flask uses the static folder for static files like images, css, and js
 # Fly.io doesn't allow access to the root directory, 
 # so we need to use the static folder for the temp and upload directories
-STATIC_DIR = './static'
-TEMP_DIR = './static/tmp'
-UPLOAD_FOLDER = './static/uploads'
-AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
-TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
+# STATIC_DIR = './static'
+# TEMP_DIR = './static/tmp'
+# UPLOAD_FOLDER = './static/uploads'
+# AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
+# TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
 # STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 # UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'public/uploads')
 # TEMP_DIR = os.path.join(os.path.dirname(__file__), 'public/tmp/audio')
+
+STATIC_DIR = './public'
+TEMP_DIR = './public/tmp/audio'
+UPLOAD_FOLDER = './public/uploads'
+AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
+TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
@@ -776,9 +782,10 @@ def verify_access():
 ### ------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     port = int(os.getenv('API_PORT', 8080))
+    debug = os.getenv('DEBUG', 'False')
     socketio.run(app,
                  host='0.0.0.0',
                  port=port,
-                 debug=False,  # Set to False in production
+                 debug=debug,  # Set to False in production
                  allow_unsafe_werkzeug=True)
 

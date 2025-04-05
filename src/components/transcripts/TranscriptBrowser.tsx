@@ -191,10 +191,12 @@ export default function TranscriptBrowser({
               selectedTranscript?.id === transcript.id
                 ? "bg-secondary" 
                 : "hover:bg-muted"
-            }`}
+            } focus:outline focus:outline-2 focus:outline-primary/30 focus:outline-offset-2`}
             onClick={() => {
               onSelectTranscript(transcript);
               setFocusedIndex(index);
+              // Ensure the element gets focus when clicked
+              itemRefs.current[index]?.focus();
             }}
             tabIndex={0}
             role="option"

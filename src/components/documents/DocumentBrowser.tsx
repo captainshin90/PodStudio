@@ -135,6 +135,9 @@ export default function DocumentBrowser({
     );
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // This is the main component for the document browser
+  //////////////////////////////////////////////////////////////////////////////
   // return the document browser component
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -205,10 +208,12 @@ export default function DocumentBrowser({
               selectedDocument?.id === document.id
                 ? "bg-secondary" 
                 : "hover:bg-muted"
-            }`}
+            } focus:outline focus:outline-2 focus:outline-primary/30 focus:outline-offset-2`}
             onClick={() => {
               onSelectDocument(document);
               setFocusedIndex(index);
+              // Ensure the element gets focus when clicked
+              itemRefs.current[index]?.focus();
             }}
             tabIndex={0}
             role="option"

@@ -293,7 +293,6 @@ export default function CreatePodcast() {
           dislikes: 0,
           created_by: "system", // Default to system
           publish_date: new Date(), // Default to now
-          expire_date: undefined, // No expiration by default
           linklist: [],
           is_active: true,
           is_deleted: false,
@@ -322,6 +321,9 @@ export default function CreatePodcast() {
 
   //////////////////////////////////////////////////////////////////////////////
   // This is a helper function to handle the episode saving
+  // Question: There's a lot of code in the EpisodeDetails component that is
+  //           similar to this. Should I refactor to put the common logic in a 
+  //           helper function?
   //////////////////////////////////////////////////////////////////////////////
   const handleSaveEpisode = async (episode: Episode) => {
     try {

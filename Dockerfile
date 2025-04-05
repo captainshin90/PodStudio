@@ -1,7 +1,11 @@
 # Use Node.js for frontend build
 FROM node:20-slim as frontend-builder
 
-# Firebase Configuration
+# Production environment variables (see development environment variables in .env)
+# Vite requires these to be set at build time to create the production build
+# Run-time production environment variables (e.g. LLM API keys) are set in fly.io Secrets console
+ARG VITE_API_BASE_URL=http://localhost:8080
+ARG VITE_SECRET_KEY=four-legged-dog-1234567890
 ARG VITE_FIREBASE_API_KEY=AIzaSyDXWNn3Yv116yQvy1mx9d5v90e3RXaELHQ
 ARG VITE_FIREBASE_AUTH_DOMAIN=four-freedoms-451318.firebaseapp.com
 ARG VITE_FIREBASE_PROJECT_ID=four-freedoms-451318
@@ -11,9 +15,6 @@ ARG VITE_FIREBASE_APP_ID=1:247945685434:web:19d1e834ae473217be5583
 ARG VITE_FIREBASE_MEASUREMENT_ID=G-BX1RB8DHVV
 ARG VITE_FIREBASE_USE_EMULATOR=false
 ARG VITE_FIRESTORE_DATABASE_ID=fourfreedoms-db1
-
-# App secret keys
-# ARG VITE_SECRET_KEY=four-legged-dog-1234567890
 
 # Install bun
 RUN npm install -g bun

@@ -16,6 +16,9 @@ interface AccessControlDialogProps {
   onAccessGranted: () => void;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// This is the main component for the access control dialog
+//////////////////////////////////////////////////////////////////////////////  
 export function AccessControlDialog({ isOpen, onAccessGranted }: AccessControlDialogProps) {
   const [accessCode, setAccessCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,12 +32,17 @@ export function AccessControlDialog({ isOpen, onAccessGranted }: AccessControlDi
     }
   }, [onAccessGranted]);
 
+  //////////////////////////////////////////////////////////////////////////////
+  // This is the main component for the access control dialog
+  //////////////////////////////////////////////////////////////////////////////  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Check if the access code matches the VITE_SECRET_KEY
+      console.log("Submitting access code:", accessCode);
+      
+      // Check if the access code matches the SECRET_KEY
       const response = await fetch("/api/verify-access", {
         method: "POST",
         headers: {
@@ -43,7 +51,12 @@ export function AccessControlDialog({ isOpen, onAccessGranted }: AccessControlDi
         body: JSON.stringify({ accessCode }),
       });
 
-      if (response.ok) {
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Access verification response:", data);
+
+      if (response.ok && data.success) {
+        console.log("Access granted");
         // Save the access code to session storage
         sessionStorage.setItem("secret_key", accessCode);
         toast({
@@ -52,24 +65,31 @@ export function AccessControlDialog({ isOpen, onAccessGranted }: AccessControlDi
         });
         onAccessGranted();
       } else {
+        console.log("Access denied, showing toast");
+        // Show error message from server or default message
         toast({
           title: "Access Denied",
-          description: "The access code you entered is incorrect.",
-          variant: "destructive",
+          description: data.message || "The access code you entered is incorrect.",
         });
+        // Clear the input field for better UX
+        setAccessCode("");
       }
     } catch (error) {
       console.error("Error verifying access:", error);
       toast({
         title: "Error",
         description: "An error occurred while verifying your access code.",
-        variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      // Clear the input field for better UX
+      setAccessCode("");
     }
+
+    setIsLoading(false);
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // This is the main component for the access control dialog
+  //////////////////////////////////////////////////////////////////////////////    
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md">

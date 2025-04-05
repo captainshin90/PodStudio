@@ -19,6 +19,7 @@
     x - Extract text: use podcastfy ContentExtractor 
     x - Documents: Extract Text button just extracts text, not images or tables.
     x - Transcripts page: "Create Transcript from Document" button to generate new transcript from a document.
+    x - simple access control with secret_key: only permitted users
 
 
     - podcastfy: Add Deepseek, Grok for content to transcript

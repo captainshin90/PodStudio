@@ -11,9 +11,9 @@
 const env = import.meta.env;
 
 export const config = {
-  port: env.VITE_PORT || 3000,
+  port: env.VITE_PORT || 3001,
   apiPort: env.VITE_API_PORT || 3001,
-  apiBaseUrl: env.VITE_API_BASE_URL || 'http://localhost:3001/api', 
+  apiBaseUrl: env.VITE_API_BASE_URL || 'http://localhost:3001', 
   
   defaultLLMProvider: env.VITE_DEFAULT_LLM_PROVIDER || 'gemini',
   defaultTTSProvider: env.VITE_DEFAULT_TTS_PROVIDER || 'elevenlabs',
