@@ -59,7 +59,8 @@ COPY . .
 COPY --from=frontend-builder /app/static ./static
 
 # Create necessary directories
-RUN mkdir -p static/audio static/transcripts data/audio data/transcripts
+# RUN mkdir -p static/audio static/transcripts data/audio data/transcripts
+RUN mkdir -p public/audio public/transcripts data/audio data/transcripts
 
 # Expose port
 EXPOSE 8080

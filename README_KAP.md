@@ -292,6 +292,7 @@ https://bun.sh/blog/bun-lock-text-lockfile
 3/16/25: Fly deploy - working version
 3/30/25: Fly deploy - content management features
 3/30/25: Fly secret - added VITE_ secret keys
-3/30/25: Firebase: add podstudio.fly.dev to authorized domains
+3/30/25: Firebase - add podstudio.fly.dev to authorized domains
 4/01/25: Fly deploy
 4/04/25: Fly deploy - works now, issue with secret keys that need to be defined in dockerfile and not Fly.io Secrets console. For SPA (Single Page App) like Vite, it needs the secret keys at build time. See bug notes in changes.md
+4/06/25: Fly deploy - podcast generation with episode URL pointing to correct place, schema cleaned up

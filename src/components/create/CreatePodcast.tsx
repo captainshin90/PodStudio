@@ -275,8 +275,6 @@ export default function CreatePodcast() {
       socket.on("complete", async (data: { audioUrl: string; transcript: string }) => {
         const newEpisode: Episode = {
           id: "episode_" + nanoid(20),  
-          // id: crypto.randomUUID(),  
-          // episode_id: episodeId,
           podcast_id: selectedPodcast.id,
           transcript_id: selectedTranscript.id,
           prompt_id: selectedPrompt.id,

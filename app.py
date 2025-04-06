@@ -38,12 +38,14 @@ load_dotenv(dotenv_path=env_path, override=True)
 # STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 # UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'public/uploads')
 # TEMP_DIR = os.path.join(os.path.dirname(__file__), 'public/tmp/audio')
+# AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
+# TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
 
-STATIC_DIR = './public'
+STATIC_DIR = './static' 
 TEMP_DIR = './public/tmp/audio'
 UPLOAD_FOLDER = './public/uploads'
-AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
-TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
+AUDIO_DIR = './public/audio'
+TRANSCRIPT_DIR = './public/transcripts'
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
@@ -60,10 +62,10 @@ os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__,
-#    static_folder='static',
-#    static_url_path='/static'
-    static_folder='public',
-    static_url_path='/public'
+    static_folder='static',
+    static_url_path='/static'
+    # static_folder='public',    # this fails on fly.dev
+    # static_url_path='/public'  # this fails on fly.dev
 )
 
 # SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24)) - why random number?
@@ -220,7 +222,7 @@ def handle_extract_text(data):
             # Process each URL individually
             for url in urls:
                 try:
-                    # If the URL starts with http://localhost:8080/static/uploads/, extract the file path
+                    # If the URL starts with http://localhost:8080/public/uploads/, extract the file path
                     base_url = request.url_root
                     if url.startswith(base_url):
                         # Extract the file path from the URL
@@ -759,12 +761,11 @@ def upload_files():
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
             # in local windows dev, a full os.path (e.g. C:/) doesn't work
-            # file_paths.append(f'./static/uploads/{filename}')
+            # file_paths.append(f'./public/uploads/{filename}')
             # file_paths.append(filepath)
             # try returning a URL instead
             # get the base URL
             base_url = request.url_root
-#            file_paths.append(f'{base_url}/static/uploads/{filename}')
             file_paths.append(f'{base_url}/public/uploads/{filename}')
             print(f"Uploaded: {filepath}")
             print(f"File URL: {file_paths[-1]}")

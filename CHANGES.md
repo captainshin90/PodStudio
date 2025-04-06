@@ -394,4 +394,7 @@ x - Prompts: add llm_model, created_at
 x - only need id, not id and episode_id, in all collections
 x - Database record id must be same document ID
 x - Create Podcast: error saving new episode created on 4/5, other save works
-
+x - Create Podcast: not saving to right folder in fly.dev: should be /audio
+x - Create Podcast: saved content url is tmp/audio -> should be /audio
+x - app.py: generate_podcast - return audio path without '/public'
+x - CreateTranscript.tsx: add a switch to pass either source_urls or extracted_text or source_urls from Document, not both.
