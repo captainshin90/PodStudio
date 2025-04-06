@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { nanoid } from "nanoid";
 
 interface PodcastDetailsProps {
   podcast: Podcast | null;
@@ -58,10 +59,11 @@ export default function PodcastDetails({
       setFormData(podcast);
       setHasChanges(false);
       // Load episodes for this podcast
-      loadEpisodes(podcast.podcast_id);
+      loadEpisodes(podcast.id);
     } else if (isNew) {
       setFormData({
-        podcast_id: crypto.randomUUID(),
+        id: "podcast_" + nanoid(20),
+        // podcast_id: crypto.randomUUID(),
         podcast_title: "",
         podcast_slug: "",
         podcast_tagline: "",
@@ -101,7 +103,7 @@ export default function PodcastDetails({
   ///////////////////////////////////////////////////////////////////////////////
   // render the podcast details component
   ///////////////////////////////////////////////////////////////////////////////
-  if (!podcast && !isNew && !formData.podcast_id) {
+  if (!podcast && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select a podcast to view details or create a new podcast
@@ -222,11 +224,11 @@ export default function PodcastDetails({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="podcast_id" className="text-muted-foreground/70">Podcast ID</Label>
+            <Label htmlFor="id" className="text-muted-foreground/70">Podcast ID</Label>
             <Input
-              id="podcast_id"
-              name="podcast_id"
-              value={formData.podcast_id || ""}
+              id="id"
+              name="id"
+              value={formData.id || ""}
               disabled
             />
           </div>

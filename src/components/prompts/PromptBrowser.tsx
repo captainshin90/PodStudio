@@ -132,8 +132,8 @@ export default function PromptBrowser({
 
   // return the prompt browser component
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <div className="flex gap-2">
+    <div className={`flex flex-col h-[calc(80vh-3rem)] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className="flex gap-2 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -166,7 +166,7 @@ export default function PromptBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1" ref={listRef}>
+      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2" ref={listRef}>
         {filteredPrompts.map((prompt, index) => (
           <div
             key={prompt.id}
@@ -175,7 +175,7 @@ export default function PromptBrowser({
               selectedPrompt?.id === prompt.id
                 ? "bg-secondary" 
                 : "hover:bg-muted"
-            } focus:outline focus:outline-2 focus:outline-primary/30 focus:outline-offset-2`}
+            } focus:outline focus:outline-2 focus:outline-primary/30 focus:outline-offset-0`}
             onClick={() => {
               onSelectPrompt(prompt);
               setFocusedIndex(index);

@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { nanoid } from "nanoid";
 
 interface DocumentDetailsProps {
   document: Document | null;
@@ -36,11 +37,12 @@ interface DocumentDetailsProps {
   isReadOnly?: boolean;
 }
 
+//////////////////////////////////////////////////////////////////////////////
 // DocumentDetails component
 // This component allows the user to view and edit the details of a document
 // It uses the Document component to display the details of the document
 // It also uses the Button component to save and cancel the changes
-
+//////////////////////////////////////////////////////////////////////////////
 export default function DocumentDetails({
   document,
   onSave,
@@ -68,13 +70,14 @@ export default function DocumentDetails({
       setIsEditable(false);
     } else if (isNew) {
       setFormData({
-        doc_id: crypto.randomUUID(),
+        id: "document_" + nanoid(20),
+        // doc_id: crypto.randomUUID(),
         doc_name: "",
         doc_desc: "",
         doc_type: "article" as DocumentType,
         topic_tags: [],
         doc_source_format: "txt" as DocumentSourceFormat,
-        doc_source_url: "https://",
+        doc_source_urls: [],
         doc_extracted_text: "",
         is_active: true,
         is_deleted: false,
@@ -108,19 +111,34 @@ export default function DocumentDetails({
     }
   };
 
+  const validateUrls = (urls: string[]): { isValid: boolean; invalidUrls: string[] } => {
+    if (!urls?.length) return { isValid: true, invalidUrls: [] };
+    
+    const invalidUrls = urls.filter(url => url.trim() && !validateUrl(url.trim()));
+    return {
+      isValid: invalidUrls.length === 0,
+      invalidUrls
+    };
+  };
+
+  //////////////////////////////////////////////////////////////////////////////
   // handle the submit event
+  //////////////////////////////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate URL before submission
-    if (formData.doc_source_url && !validateUrl(formData.doc_source_url)) {
-      setUrlError("Please enter a valid URL");
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid URL for the Source URL field",
-        variant: "destructive",
-      });
-      return;
+    // Validate URLs before submission
+    if (formData.doc_source_urls?.length) {
+      const { isValid, invalidUrls } = validateUrls(formData.doc_source_urls);
+      if (!isValid) {
+        setUrlError(`Invalid URL${invalidUrls.length > 1 ? 's' : ''} found: ${invalidUrls.join(', ')}`);
+        toast({
+          title: "Validation Error",
+          description: `Please enter valid URLs. Found ${invalidUrls.length} invalid URL${invalidUrls.length > 1 ? 's' : ''}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -141,42 +159,51 @@ export default function DocumentDetails({
     );
   }
   
+  //////////////////////////////////////////////////////////////////////////////
   // handle the change of the document details
+  //////////////////////////////////////////////////////////////////////////////
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setHasChanges(true);
 
-    // Validate URL on change
-    if (name === "doc_source_url") {
-      if (value && !validateUrl(value)) {
-        setUrlError("Please enter a valid URL");
+    // Special handling for doc_source_urls
+    if (name === "doc_source_urls") {
+      const urls = value.split('\n').map(url => url.trim()).filter(url => url);
+      const { isValid, invalidUrls } = validateUrls(urls);
+      
+      if (!isValid) {
+        setUrlError(`Invalid URL${invalidUrls.length > 1 ? 's' : ''} found: ${invalidUrls.join(', ')}`);
       } else {
         setUrlError(null);
       }
+
+      setFormData(prev => ({
+        ...prev,
+        [name]: urls
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
+    
+    setHasChanges(true);
   };
 
+  //////////////////////////////////////////////////////////////////////////////
   // handle the file upload event
+  //////////////////////////////////////////////////////////////////////////////
   const handleFileUpload = async (filePaths: string[]) => {
     setUploadedFiles((prev) => [...new Set([...prev, ...filePaths])]);
     
-    // Simulate text extraction - in a real app, you'd process the file here
-    // const simulatedExtractedText = "Extracted text from uploaded document...";
-
     // Update form with extracted text and detected format
     setFormData(prev => ({
       ...prev,
-      // doc_extracted_text: simulatedExtractedText,
       doc_source_format: detectFileFormat(filePaths[0]),
-      doc_source_url: filePaths[0]
+      doc_source_urls: [...(prev.doc_source_urls || []), filePaths[0]]
     }));
-    setHasChanges(true);
 
     toast({
       title: "Files Uploaded",
@@ -195,9 +222,11 @@ export default function DocumentDetails({
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
   // handle the extract text event
+  //////////////////////////////////////////////////////////////////////////////
   const handleExtractText = async () => {
-    if (!formData.doc_source_url && uploadedFiles.length === 0) {
+    if (!formData.doc_source_urls && uploadedFiles.length === 0) {
       toast({
         title: "No Source",
         description: "Please provide a source URL or upload a file to extract text from",
@@ -206,15 +235,18 @@ export default function DocumentDetails({
       return;
     }
 
-    // Validate URL if provided
-    if (formData.doc_source_url && !validateUrl(formData.doc_source_url)) {
-      setUrlError("Please enter a valid URL");
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid URL for the Source URL field",
-        variant: "destructive",
-      });
-      return;
+    // Validate URLs if provided
+    if (formData.doc_source_urls?.length) {
+      const { isValid, invalidUrls } = validateUrls(formData.doc_source_urls);
+      if (!isValid) {
+        setUrlError(`Invalid URL${invalidUrls.length > 1 ? 's' : ''} found: ${invalidUrls.join(', ')}`);
+        toast({
+          title: "Validation Error",
+          description: `Please enter valid URLs. Found ${invalidUrls.length} invalid URL${invalidUrls.length > 1 ? 's' : ''}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsExtracting(true);
@@ -242,15 +274,16 @@ export default function DocumentDetails({
 
         // Prepare URLs array with both source URL and uploaded files
         // Don't send both source URL and uploaded files
-        const urls: string[] = [];
-        if (formData.doc_source_url) {
-          urls.push(formData.doc_source_url);
-        }
-        // urls.push(...uploadedFiles); - it's duplicate of formData.doc_source_url
+        // or add the uploaded files to the formData.doc_source_urls
+        //const urls: string[] = [];
+        //if (formData.doc_source_urls) {
+        //  urls.push(...formData.doc_source_urls);
+        //}
+        // urls.push(...uploadedFiles); - it's duplicate of formData.doc_source_urls
 
         const payload = {
           text: "", // Empty text as we're extracting from URLs
-          urls: urls,
+          urls: formData.doc_source_urls || [],
           extract_tool: "podcastfy",
           secret_key: sessionStorage.getItem("secret_key") || "",
         };
@@ -364,11 +397,13 @@ export default function DocumentDetails({
           </div>
           <div className="flex items-end gap-2">
             <div className="space-y-2 flex-1">
-              <Label htmlFor="doc_source_url" className="text-muted-foreground/70">Source URL</Label>
-              <Input 
-                id="doc_source_url"
-                name="doc_source_url"
-                value={formData.doc_source_url || ""}
+              <Label htmlFor="doc_source_urls" className="text-muted-foreground/70">
+              Source URLs (one per line)
+              </Label>
+              <Textarea 
+                id="doc_source_urls"
+                name="doc_source_urls"
+                value={formData.doc_source_urls?.join("\n") || ""}
                 onChange={handleChange}
                 className={urlError ? "border-red-500" : ""}
               />
@@ -399,11 +434,11 @@ export default function DocumentDetails({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="doc_id" className="text-muted-foreground/70">Document ID</Label>
+            <Label htmlFor="id" className="text-muted-foreground/70">Document ID</Label>
             <Input
-              id="doc_id"
-              name="doc_id"
-              value={formData.doc_id || ""}
+              id="id"
+              name="id"
+              value={formData.id || ""}
               disabled
             />
           </div>    
@@ -501,11 +536,13 @@ export default function DocumentDetails({
         </div>
         {!isNew && (
           <div className="space-y-1">
-            <Label htmlFor="doc_source_url" className="text-muted-foreground/70">Source URL</Label>
-            <Input
-              id="doc_source_url"
-              name="doc_source_url"
-              value={formData.doc_source_url || ""}
+            <Label htmlFor="doc_source_urls" className="text-muted-foreground/70">
+            Source URLs (one per line)
+            </Label>
+            <Textarea 
+              id="doc_source_urls"
+              name="doc_source_urls"
+              value={formData.doc_source_urls?.join("\n") || ""}
               onChange={handleChange}
               className={urlError ? "border-red-500" : ""}
               disabled={isReadOnly}

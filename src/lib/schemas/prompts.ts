@@ -2,8 +2,8 @@ import { LLMModel, TTSModel } from "@/config/podcast-config";
 
 // Prompt schema version 0.2.5
 export interface Prompt {
-  id: string; // Firestore Document ID (needed for Firestore)
-  prompt_id: string; // Prompt ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // prompt_id: string; // Prompt ID
   prompt_name: string; // Prompt Name
   prompt_desc: string; // Prompt Description
   created_by: string; // Created By user ID
@@ -36,7 +36,7 @@ export interface Prompt {
 export function convertToPrompt(data: any): Prompt {
   return {
     id: data.id,
-    prompt_id: data.prompt_id = crypto.randomUUID(),
+    // prompt_id: data.prompt_id = crypto.randomUUID(),
     prompt_name: data.prompt_name,
     prompt_desc: data.prompt_desc,
     created_by: data.created_by,

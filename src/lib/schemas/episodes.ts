@@ -2,8 +2,8 @@
 
   // Episode schema version 0.2.0
 export interface Episode {
-  id: string; // Firestore Document ID (needed for Firestore)
-  episode_id: string; // Episode ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // episode_id: string; // Episode ID
   podcast_id: string; // Podcast ID
   transcript_id: string; // Transcript ID
   prompt_id: string; // Prompt ID
@@ -55,7 +55,7 @@ export interface PlayerEpisode {
 export function convertToEpisode(data: any): Episode {
   return {
     id: data.id,
-    episode_id: data.episode_id = crypto.randomUUID(),
+    // episode_id: data.episode_id = crypto.randomUUID(),
     podcast_id: data.podcast_id,
     transcript_id: data.transcript_id,
     prompt_id: data.prompt_id,

@@ -44,14 +44,12 @@ export default function PodcastsPage() {
   // Handle create podcast  
   const handleCreate = async (newPodcast: Podcast) => {
     try {
-      const podcastId = await podcastsService.createPodcast(newPodcast);
-      if (podcastId) {
-        toast({
-          title: "Success",
-          description: "Podcast created successfully",
-        });
-        setShowNewPodcast(false);
-      }
+      await podcastsService.createPodcast(newPodcast.id, newPodcast);
+      toast({
+        title: "Success",
+        description: "Podcast created successfully",
+      });
+      setShowNewPodcast(false);
     } catch (error) { 
       console.error("Error creating podcast:", error);
       toast({

@@ -48,14 +48,12 @@ export default function TranscriptsPage() {
   // Handle create transcript
   const handleCreate = async (newTranscript: Transcript) => {
     try {
-      const transcriptId = await transcriptsService.createTranscript(newTranscript);
-      if (transcriptId) {
-        toast({
-          title: "Success", 
-          description: "Transcript created successfully",
-        });
-        setShowNewTranscript(false);
-      }
+      await transcriptsService.createTranscript(newTranscript.id, newTranscript);
+      toast({
+        title: "Success", 
+        description: "Transcript created successfully",
+      });
+      setShowNewTranscript(false);
     } catch (error) {
       console.error("Error creating transcript:", error); 
       toast({
@@ -144,7 +142,7 @@ export default function TranscriptsPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action will delete the transcript
-              "{selectedTranscript?.transcript_id}".
+              "{selectedTranscript?.id}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

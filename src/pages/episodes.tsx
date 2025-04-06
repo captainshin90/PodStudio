@@ -58,7 +58,7 @@ export default function EpisodesPage() {
   // Handle create episode  
   const handleCreate = async (newEpisode: Episode) => {
     try {
-      await episodesService.createEpisode(newEpisode.episode_id, newEpisode);
+      await episodesService.createEpisode(newEpisode.id, newEpisode);
       toast({
         title: "Success",
           description: "Episode created successfully",

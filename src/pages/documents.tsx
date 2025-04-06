@@ -54,14 +54,12 @@ export default function DocumentsPage() {
   // Handle create document
   const handleCreate = async (newDocument: Document) => {
     try {
-      const documentId = await documentsService.createDocument(newDocument);
-      if (documentId) {
-        toast({ 
-          title: "Success",
-          description: "Document created successfully",
-        });
-        setShowNewDocUpload(false);
-      }
+      await documentsService.createDocument(newDocument.id, newDocument);
+      toast({ 
+        title: "Success",
+        description: "Document created successfully",
+      });
+      setShowNewDocUpload(false);
     } catch (error) { 
       console.error("Error creating document:", error); 
       toast({

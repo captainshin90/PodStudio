@@ -3,8 +3,8 @@ export type PodcastType = 'summary' | 'audio_podcast' | 'video_podcast';
 export type PodcastFormat = 'html' | 'mp3' | 'mp4';
 
 export interface Podcast {
-  id: string; // Firestore Document ID (needed for Firestore)
-  podcast_id: string; // Podcast ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // podcast_id: string; // Podcast ID
   podcast_title: string; // Podcast Title
   podcast_slug: string; // Podcast Slug For when you need to refer to your podcast in a url.
   podcast_tagline: string; // Podcast Tagline
@@ -28,7 +28,7 @@ export interface Podcast {
 export function convertToPodcast(data: any): Podcast {
   return {
     id: data.id,
-    podcast_id: data.podcast_id = crypto.randomUUID(),
+    // podcast_id: data.podcast_id = crypto.randomUUID(),
     podcast_title: data.podcast_title,
     podcast_slug: data.podcast_slug,
     podcast_tagline: data.podcast_tagline,

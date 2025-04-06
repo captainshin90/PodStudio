@@ -60,8 +60,10 @@ os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__,
-    static_folder='static',
-    static_url_path='/static'
+#    static_folder='static',
+#    static_url_path='/static'
+    static_folder='public',
+    static_url_path='/public'
 )
 
 # SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24)) - why random number?
@@ -230,9 +232,13 @@ def handle_extract_text(data):
                         logger.info(f"Processing local file: {file_path}")
                         if not os.path.exists(file_path):
                             raise FileNotFoundError(f"File not found: {file_path}")
-                        content = content_extractor.extract_content(file_path)
+                        ## just a text file, so read it
+                        if file_path.lower().endswith('.txt'):
+                            content = open(file_path, 'r').read()
+                        else:
+                            content = content_extractor.extract_content(file_path)
                     else:
-                        content = content_extractor.extract_content(url)
+                          content = content_extractor.extract_content(url)
                     combined_content += f"\n\n{content}"
                 except Exception as e:
                     logger.error(f"Error extracting content from {url}: {str(e)}")
@@ -405,7 +411,7 @@ def handle_generate_podcast(data):
                 api_key_label=api_key_label,  # This tells podcastfy which env var to use
                 image_paths=image_paths if image_paths else None  # Only pass if not empty
             )
-        elif not is_from_transcript: # generate a podcast from urls or text
+        elif not is_from_transcript: # generate a audio podcast from urls or text
             result = generate_podcast(
                 urls=data.get('urls', []),
                 text=data.get('text', ''),    # Kap: added support for text input
@@ -415,7 +421,7 @@ def handle_generate_podcast(data):
                 api_key_label=api_key_label,  # This tells podcastfy which env var to use
                 image_paths=image_paths if image_paths else None  # Only pass if not empty
             )
-        else:  # Generate the podcast from transcript
+        else:  # Generate the audio podcast from transcript
             urls = data.get('urls', [])
             transcript_file = urls[0] if len(urls) > 0 else None
             transcript = data.get('text') if len(data.get('text', '')) > 0 else None
@@ -452,25 +458,29 @@ def handle_generate_podcast(data):
 
             # Handle the result. Create a new file and copy the result to it.
             if isinstance(result, str) and os.path.isfile(result):
-                filename = f"podcast_{os.urandom(8).hex()}.mp3"
-                output_path = os.path.join(TEMP_DIR, filename)
-                shutil.copy2(result, output_path)
+                # filename = f"podcast_{os.urandom(8).hex()}.mp3"
+                # output_path = os.path.join(TEMP_DIR, filename)
+                # shutil.copy2(result, output_path)
+                # just return the path to the audio file, not temp dir
+                # remove /public from the path
+                audio_url = result.replace('/public', '')
                 emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
                 emit('complete', {
-                    'audioUrl': f'{TEMP_DIR}/{filename}',
+                    # 'audioUrl': f'{TEMP_DIR}/{filename}',
+                    'audioUrl': audio_url,   
                     'transcript': None
                 }, room=request.sid)
             elif hasattr(result, 'audio_path'):
                 filename = f"podcast_{os.urandom(8).hex()}.mp3"
                 output_path = os.path.join(TEMP_DIR, filename)
                 shutil.copy2(result.audio_path, output_path)
-                emit('complete', {
+                emit('complete', { # return the audio file and the transcript as text data
                     'audioUrl': f'/audio/{filename}',
                     'transcript': result.details if hasattr(result, 'details') else None
                 }, room=request.sid)
             else:
                 raise Exception('Invalid result format')
-        else: # transcript only
+        else: # transcript only - return the transcript as text data
             emit('complete', {
                 'audioUrl': None,
                 'transcript': open(result).read() if os.path.isfile(result) else None
@@ -754,7 +764,8 @@ def upload_files():
             # try returning a URL instead
             # get the base URL
             base_url = request.url_root
-            file_paths.append(f'{base_url}/static/uploads/{filename}')
+#            file_paths.append(f'{base_url}/static/uploads/{filename}')
+            file_paths.append(f'{base_url}/public/uploads/{filename}')
             print(f"Uploaded: {filepath}")
             print(f"File URL: {file_paths[-1]}")
 

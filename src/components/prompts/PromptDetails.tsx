@@ -43,6 +43,7 @@ import {
   engagementTechniques,
   LLMModel
 } from '@/config/podcast-config';
+import { nanoid } from "nanoid";
 
 interface PromptDetailsProps {
   prompt: Prompt | null;
@@ -142,7 +143,8 @@ export default function PromptDetails({
       setHasChanges(false);
     } else if (isNew) {
       setFormData({
-        prompt_id: crypto.randomUUID(),
+        id: "prompt_" + nanoid(20),
+        // prompt_id: crypto.randomUUID(),
         prompt_name: "",
         prompt_desc: "",
         prompt_text: "",
@@ -172,7 +174,7 @@ export default function PromptDetails({
     }
   }, [prompt, isNew]);
 
-  if (!prompt && !isNew && !formData.prompt_id) {
+  if (!prompt && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select a prompt to view details or create a new prompt
@@ -238,11 +240,11 @@ export default function PromptDetails({
       {/* Prompt details section */}
       <div className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="prompt_id" className="text-muted-foreground/70">Prompt ID</Label>
+          <Label htmlFor="id" className="text-muted-foreground/70">Prompt ID</Label>
           <Input
-            id="prompt_id"
-            name="prompt_id"
-            value={formData.prompt_id || ""}
+            id="id"
+            name="id"
+            value={formData.id || ""}
             disabled
           />
         </div>

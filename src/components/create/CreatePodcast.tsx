@@ -12,6 +12,7 @@ import TranscriptDetails from "@/components/transcripts/TranscriptDetails";
 import PromptDetails from "@/components/prompts/PromptDetails";
 import EpisodeDetails from "@/components/episodes/EpisodeDetails";
 import { useToast } from "@/hooks/use-toast";
+import { nanoid } from "nanoid";
 import {
   Dialog,
   DialogContent,
@@ -107,17 +108,17 @@ export default function CreatePodcast() {
       if (loadedPodcasts) {
         setPodcasts(loadedPodcasts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.podcast_id, title: p.podcast_title })));
+          .map(p => ({ id: p.id, title: p.podcast_title })));
       }
       if (loadedTranscripts) {
         setTranscripts(loadedTranscripts
           .filter(t => t.is_active && !t.is_deleted)
-          .map(t => ({ id: t.transcript_id, title: t.transcript_title })));
+          .map(t => ({ id: t.id, title: t.transcript_title })));
       }
       if (loadedPrompts) {
         setPrompts(loadedPrompts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.prompt_id, title: p.prompt_name })));
+          .map(p => ({ id: p.id, title: p.prompt_name })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
@@ -202,7 +203,7 @@ export default function CreatePodcast() {
     setStatusMessage("Connecting to server...");
 
     try {
-      const episodeId = crypto.randomUUID();
+      // const episodeId = crypto.randomUUID();
       const socket = io({
         path: "/socket.io",
         reconnection: true,
@@ -273,11 +274,12 @@ export default function CreatePodcast() {
       // handle the complete event
       socket.on("complete", async (data: { audioUrl: string; transcript: string }) => {
         const newEpisode: Episode = {
-          id: episodeId,  // set by the database service
-          episode_id: episodeId,
-          podcast_id: selectedPodcast.podcast_id,
-          transcript_id: selectedTranscript.transcript_id,
-          prompt_id: selectedPrompt.prompt_id,
+          id: "episode_" + nanoid(20),  
+          // id: crypto.randomUUID(),  
+          // episode_id: episodeId,
+          podcast_id: selectedPodcast.id,
+          transcript_id: selectedTranscript.id,
+          prompt_id: selectedPrompt.id,
           episode_title: `${selectedPodcast.podcast_title} - ${selectedTranscript.transcript_title}`,
           episode_slug: `${selectedPodcast.podcast_slug}-${selectedTranscript.transcript_title.toLowerCase().replace(/\s+/g, '-')}`,
           episode_desc: selectedPodcast.podcast_desc,
@@ -327,7 +329,7 @@ export default function CreatePodcast() {
   //////////////////////////////////////////////////////////////////////////////
   const handleSaveEpisode = async (episode: Episode) => {
     try {
-      await episodesService.createEpisode(episode.episode_id, episode);
+      await episodesService.createEpisode(episode.id, episode);
       toast({
         title: "Success",
         description: "Episode saved successfully",
@@ -347,7 +349,9 @@ export default function CreatePodcast() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
   // This is a helper function to handle the episode cancellation
+  //////////////////////////////////////////////////////////////////////////////
   const handleCancel = () => {
     setGeneratedEpisode(null);
     setSelectedPodcast(null);
@@ -454,6 +458,7 @@ export default function CreatePodcast() {
               onSave={handleSaveEpisode}
               onCancel={handleCancel}
               isNew={true}
+              isGenerated={true}
               isReadOnly={false}
             />
             <div className="border-t pt-4">

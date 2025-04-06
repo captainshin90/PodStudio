@@ -4,8 +4,8 @@
 
 // Topic schema version 0.2.5
 export interface Topic {
-  id: string; // Firestore Document ID (needed for Firestore)
-  topic_id: string; // Topic ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // topic_id: string; // Topic ID
   topic_name: string; // Topic Name
   topic_image?: string; // Topic Image
 //  topic_type: TopicType;
@@ -24,7 +24,7 @@ export interface Topic {
 export function convertToTopic(data: any): Topic {
   return {
     id: data.id,
-    topic_id: data.topic_id = crypto.randomUUID(),
+    // topic_id: data.topic_id = crypto.randomUUID(),
     topic_name: data.topic_name,
     topic_image: data.topic_image,
     topic_type: data.topic_type,

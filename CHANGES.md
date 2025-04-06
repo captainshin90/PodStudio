@@ -20,6 +20,8 @@
     x - Documents: Extract Text button just extracts text, not images or tables.
     x - Transcripts page: "Create Transcript from Document" button to generate new transcript from a document.
     x - simple access control with secret_key: only permitted users
+    x - DocumentDetails: make Source URL a list to support multiple sources.
+    x - DocumentDetails: support multiple file uploads, text extract support multiple documents for text extraction. 
 
 
     - podcastfy: Add Deepseek, Grok for content to transcript
@@ -388,4 +390,8 @@ https://docs.docker.com/engine/swarm/secrets/
 
 x - Bun run build deletes /static folder
 x - use /public folder to store content
+x - Prompts: add llm_model, created_at
+x - only need id, not id and episode_id, in all collections
+x - Database record id must be same document ID
+x - Create Podcast: error saving new episode created on 4/5, other save works
 

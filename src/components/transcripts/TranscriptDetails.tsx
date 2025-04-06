@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { documentsService, promptsService } from "@/lib/services/database-service";
+import { nanoid } from "nanoid";
 
 interface TranscriptDetailsProps {
   transcript: Transcript | null;
@@ -38,6 +39,7 @@ interface TranscriptDetailsProps {
   onCancel: () => void;
   onDelete?: () => void;
   isNew?: boolean;
+  isGenerated?: boolean;
   isReadOnly?: boolean;
 }
 
@@ -104,6 +106,7 @@ export default function TranscriptDetails({
   onCancel,
   onDelete,
   isNew = false,
+  isGenerated = false,
   isReadOnly = false,
 }: TranscriptDetailsProps) {
   const [formData, setFormData] = useState<Partial<Transcript>>({});
@@ -114,47 +117,24 @@ export default function TranscriptDetails({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [_, setLoading] = useState(false);
 
-  // Add beforeunload event listener
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasChanges) {
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasChanges]);
-
-  // Add navigation guard for tab switching
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && hasChanges) {
-        // Show confirmation dialog when switching tabs
-        setShowCancelDialog(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasChanges]);
-
+  
   ///////////////////////////////////////////////////////////////////////////////
   // Handle Transcript
   ///////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     if (transcript) {
       setFormData(transcript);
-      // If this is a newly generated transcript (has transcript_id but no id), treat it as a new record
-      if (transcript.transcript_id && !transcript.id) {
+      // If this is a newly generated transcript (has id), treat it as a new record
+      if (transcript.id && isGenerated) { // new generated transcript
         setHasChanges(true);
-      } else {
+        setIsEditable(true);
+      } else {  // existing transcript record
         setHasChanges(false);
+        setIsEditable(false);
       }
-      setIsEditable(false);
-    } else if (isNew) {
+    } else if (isNew) { // new blank transcript
       setFormData({
-        transcript_id: crypto.randomUUID(),
+        id: "transcript_" + nanoid(20),
         transcript_title: "",
         transcript_type: "interview",
         topic_tags: [],
@@ -167,16 +147,45 @@ export default function TranscriptDetails({
       });
       setHasChanges(true);
       setIsEditable(true);
-    } else {
+    } else { // no transcript
       setFormData({});
       setHasChanges(false);
       setIsEditable(false);
-    }
-  }, [transcript, isNew]);
+     }
+  }, [transcript, isNew, isGenerated]);
 
   useEffect(() => {
     loadSelectionData();
   }, []);
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // Handle Before Unload and Visibility Change
+  ///////////////////////////////////////////////////////////////////////////////
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // Handle Visibility Change
+  ///////////////////////////////////////////////////////////////////////////////
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && hasChanges) {
+        // Show confirmation dialog when switching tabs
+        setShowCancelDialog(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [hasChanges]);
 
   ///////////////////////////////////////////////////////////////////////////////
   // Load Selection Data
@@ -191,19 +200,19 @@ export default function TranscriptDetails({
       if (loadedDocuments) {
         setDocuments(loadedDocuments
           .filter(d => d.is_active && !d.is_deleted)
-          .map(d => ({ id: d.doc_id, title: d.doc_name })));
+          .map(d => ({ id: d.id, title: d.doc_name })));
       }
       if (loadedPrompts) {
         setPrompts(loadedPrompts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.prompt_id, title: p.prompt_name })));
+          .map(p => ({ id: p.id, title: p.prompt_name })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
     }
   };
 
-  if (!transcript && !isNew && !formData.transcript_id) {
+  if (!transcript && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select a transcript to view details or create a new transcript
@@ -286,11 +295,11 @@ export default function TranscriptDetails({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="transcript_id" className="text-muted-foreground/70">Transcript ID</Label>
+            <Label htmlFor="id" className="text-muted-foreground/70">Transcript ID</Label>
             <Input
-              id="transcript_id"
-              name="transcript_id"
-              value={formData.transcript_id || ""}
+              id="id"
+              name="id"
+              value={formData.id || ""}
               disabled
             />
           </div>

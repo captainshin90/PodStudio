@@ -1,7 +1,7 @@
 // Subscription schema version 0.2.5
 export interface Subscription {
-  id: string; // Firestore Document ID (needed for Firestore)
-  subscription_id: string; // Subscription ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // subscription_id: string; // Subscription ID
   subscription_type: string; // Subscription Type
   subscription_name: string; // Subscription Name
   subscription_desc: string; // Subscription Description
@@ -18,7 +18,7 @@ export interface Subscription {
 export function convertToSubscription(data: any): Subscription {
   return {
     id: data.id,
-    subscription_id: data.subscription_id = crypto.randomUUID(),
+    // subscription_id: data.subscription_id = crypto.randomUUID(),
     subscription_type: data.subscription_type,
     subscription_name: data.subscription_name,
     subscription_desc: data.subscription_desc,

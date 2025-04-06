@@ -266,12 +266,16 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - 3/28/25: npm install @radix-ui/react-dropdown-menu
 - 3/28/25: npm install clsx tailwind-merge
 - 3/28/25: npm install dotenv
+- 4/05/25: npm install nanoid
 
 ### Repo Versions 
 - 03/28/25: git tag -a "v0.1.1-alpha" -m "version v0.1.1-alpha" - working version before adding content management features
 - 03/30/25: git tag -a "v0.2.0-alpha" -m "version v0.2.0-alpha" - added podcast, transcript, prompt, document management features
 - 04/01/25: git tag -a "v0.2.1-alpha" -m "version v0.2.1-alpha" - bug fixing
 - git tag -a "v.0.2.3-alpha" -m "version v0.2.3-alpha" - works in fly.dev
+- git tag -a "v.0.2.6-alpha" -m "version v0.2.6-alpha" - before refactoring id in all the collections
+- git tag -a "v.0.2.8-alpha" -m "version v0.2.8-alpha" - factored id in all the collections, support multiple URLs, play audio correctly
+
 
 ### Firebase
 - 4/1/25: Register app

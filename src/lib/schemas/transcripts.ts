@@ -2,8 +2,8 @@
 export type TranscriptType = 'interview' | 'meeting' | 'article' | 'petition';
 
 export interface Transcript {
-  id: string; // Firestore Document ID (needed for Firestore)
-  transcript_id: string; // Transcript ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // transcript_id: string; // Transcript ID
   doc_id: string; // Document ID
   prompt_id: string; // Prompt ID
   transcript_title: string; // Transcript Title
@@ -22,7 +22,7 @@ export interface Transcript {
 export function convertToTranscript(data: any): Transcript {
   return {
     id: data.id,
-    transcript_id: data.transcript_id = crypto.randomUUID(),
+    // transcript_id: data.transcript_id = crypto.randomUUID(),
     doc_id: data.doc_id || null,
     prompt_id: data.prompt_id || null,
     transcript_title: data.transcript_title = "add transcript title here",

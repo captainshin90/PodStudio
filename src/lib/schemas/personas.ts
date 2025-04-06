@@ -2,8 +2,8 @@
 export type PersonaType = 'resident' | 'student' | 'official' | 'lobbyst' | 'politician';
 
 export interface Persona {
-  id: string; // Firestore Document ID (needed for Firestore)
-  persona_id: string; // Persona ID
+  id: string; // Unique ID, same as Firestore Document ID
+  // persona_id: string; // Persona ID
   persona_name: string; // Persona Name
   persona_type: PersonaType; // Persona Type
   persona_description?: string; // Persona Description
@@ -18,7 +18,7 @@ export interface Persona {
 export function convertToPersona(data: any): Persona {
   return {
     id: data.id,
-    persona_id: data.persona_id = crypto.randomUUID(),
+    // persona_id: data.persona_id = crypto.randomUUID(),
     persona_name: data.persona_name,
     persona_type: data.persona_type,
     persona_description: data.persona_description,

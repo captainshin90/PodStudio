@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@radix-ui/react-progress";
+import { nanoid } from "nanoid";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface SelectDialogProps {
   title: string;
@@ -86,6 +92,7 @@ export default function CreateTranscript() {
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [generatedTranscript, setGeneratedTranscript] = useState<Transcript | null>(null);
   const [hasGeneratedTranscript, setHasGeneratedTranscript] = useState(false);
+  const [sourceType, setSourceType] = useState("text"); // 'urls' or 'text'
 
   useEffect(() => {
     loadSelectionData();
@@ -102,12 +109,12 @@ export default function CreateTranscript() {
       if (loadedDocuments) {
         setDocuments(loadedDocuments
           .filter(d => d.is_active && !d.is_deleted)
-          .map(d => ({ id: d.doc_id, title: d.doc_name })));
+          .map(d => ({ id: d.id, title: d.doc_name })));
       }
       if (loadedPrompts) {
         setPrompts(loadedPrompts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.prompt_id, title: p.prompt_name })));
+          .map(p => ({ id: p.id, title: p.prompt_name })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
@@ -159,22 +166,37 @@ export default function CreateTranscript() {
   // This is a helper function to handle the transcript generation
   //////////////////////////////////////////////////////////////////////////////
   const handleGenerateTranscript = async () => {
-    // validate that we have a document and a prompt
     if (!selectedDocument || !selectedPrompt) return;
+
+    // validate either text or urls are present
+    if (sourceType === 'text' && !selectedDocument.doc_extracted_text) {
+      toast({
+        title: "Error",
+        description: "No extracted text found",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (sourceType === 'urls' && (!selectedDocument.doc_source_urls || selectedDocument.doc_source_urls.length === 0)) {
+      toast({
+        title: "Error",
+        description: "No source URLs or files found",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsGenerating(true);
     setProgress(0);
     setStatusMessage("Connecting to server...");
 
     try {
-      const transcriptId = crypto.randomUUID();
       const socket = io({
         path: "/socket.io",
         reconnection: true,
         timeout: 10000,
       });
 
-      // handle cleanup
       const cleanup = () => {
         console.log("Cleaning up socket connection...");
         socket.disconnect();
@@ -186,11 +208,10 @@ export default function CreateTranscript() {
         console.log("Socket connected successfully");
         setStatusMessage("Connected to server");
 
-        // TODO: pass only extracted text for now, not URLs
         const payload = {
           transcript_only: true,
-          text: selectedDocument.doc_extracted_text,
-          // urls: selectedDocument.doc_source_url ? [selectedDocument.doc_source_url] : [],
+          text: sourceType === 'text' ? (selectedDocument.doc_extracted_text || "") : "", 
+          urls: sourceType === 'urls' ? (selectedDocument.doc_source_urls || []) : [],
           name: selectedDocument.doc_name,
           tagline: selectedDocument.doc_desc,
           is_long_form: selectedPrompt.is_long_form,
@@ -235,10 +256,10 @@ export default function CreateTranscript() {
       // handle the complete event
       socket.on("complete", async (data: {transcript: string }) => {
         const newTranscript: Transcript = {
-          id: transcriptId,  // set by the database service
-          transcript_id: transcriptId, 
-          doc_id: selectedDocument.doc_id,
-          prompt_id: selectedPrompt.prompt_id,
+          id: "transcript_" + nanoid(20),  
+          // transcript_id: transcriptId, 
+          doc_id: selectedDocument.id,
+          prompt_id: selectedPrompt.id,
           transcript_title: `${selectedDocument.doc_name} - ${selectedPrompt.prompt_name}`,
           transcript_type: "interview",
           topic_tags: selectedDocument.topic_tags,
@@ -273,7 +294,7 @@ export default function CreateTranscript() {
   //////////////////////////////////////////////////////////////////////////////
   const handleSaveTranscript = async (transcript: Transcript) => {
     try {
-      await transcriptsService.createTranscript(transcript);
+      await transcriptsService.createTranscript(transcript.id, transcript);
       toast({
         title: "Success",
         description: "Transcript saved successfully",
@@ -310,19 +331,30 @@ export default function CreateTranscript() {
         <div className="space-y-6">
           <div className="mt-4">
             <h3 className="text-lg font-medium mb-2 text-muted-foreground pl-3">1. Select a Document</h3>
-            <SelectDialog
-              title="Select Document"
-              items={documents}
-              onSelect={handleDocumentSelect}
-              trigger={
-                <Button variant="outline" className="w-full justify-between pl-7">
-                  <span className="truncate mr-2 max-w-[calc(100%-24px)]">
-                    {selectedDocument ? selectedDocument.doc_name : "Select Document"}
-                  </span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                </Button>
-              }
-            />
+            <div className="space-y-2">
+              <SelectDialog
+                title="Select Document"
+                items={documents}
+                onSelect={handleDocumentSelect}
+                trigger={
+                  <Button variant="outline" className="w-full justify-between pl-7">
+                    <span className="truncate mr-2 max-w-[calc(100%-24px)]">
+                      {selectedDocument ? selectedDocument.doc_name : "Select Document"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  </Button>
+                }
+              />
+              <div className="pl-7 pr-4">
+                <div className="text-md font-medium text-muted-foreground mb-1">Use:</div>
+                <Tabs defaultValue="text" value={sourceType} onValueChange={setSourceType} className="w-full">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="text" className="flex-1">Extracted Text</TabsTrigger>
+                    <TabsTrigger value="urls" className="flex-1">Source URLs</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
           </div>
 
           <div>

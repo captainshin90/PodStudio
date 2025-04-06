@@ -43,14 +43,12 @@ export default function PromptsPage() {
 
   const handleCreate = async (newPrompt: Prompt) => {
     try {
-      const promptId = await promptsService.createPrompt(newPrompt);
-      if (promptId) {
-        toast({
-          title: "Success",
-          description: "Prompt created successfully",
-        });
-        setShowNewPrompt(false);
-      }
+      await promptsService.createPrompt(newPrompt.id, newPrompt);
+      toast({
+        title: "Success",
+        description: "Prompt created successfully",
+      });
+      setShowNewPrompt(false);
     } catch (error) {
       console.error("Error creating prompt:", error);
       toast({

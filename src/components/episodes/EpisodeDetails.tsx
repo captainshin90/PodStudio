@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/alert-dialog";
 // import { toast } from "@/components/ui/use-toast";
 import { useToast } from "@/hooks/use-toast";
+import { nanoid } from "nanoid";
+
 /*
 import {
   Select,
@@ -49,6 +51,7 @@ interface EpisodeDetailsProps {
   onCancel: () => void;
   onDelete?: () => void;
   isNew?: boolean;
+  isGenerated?: boolean;
   isReadOnly?: boolean;
 }
 
@@ -120,6 +123,7 @@ export default function EpisodeDetails({
   onCancel, 
   onDelete, 
   isNew = false,
+  isGenerated = false,
   isReadOnly = false 
 }: EpisodeDetailsProps) {
   const { toast } = useToast();
@@ -137,17 +141,19 @@ export default function EpisodeDetails({
   useEffect(() => {
     if (episode) {
       setFormData(episode);
-      // If this is a newly generated episode (has episode_id but no id), treat it as a new record
-      if (episode.episode_id && !episode.id) {
+      // If this is a newly generated episode (has id), treat it as a new record
+      if (episode.id && isGenerated) { // new generated episode
         setHasChanges(true);
-      } else {
+        setIsTranscriptEditable(true);
+      } else {  // existing episode record
         setHasChanges(false);
+        setIsTranscriptEditable(false);
       }
-      setIsTranscriptEditable(false);
-    } else if (isNew) {
+    } else if (isNew) { // new blank episode
       setFormData({
-        id: crypto.randomUUID(), 
-        episode_id: formData.id,
+        id: "episode_" + nanoid(20),
+        // id: crypto.randomUUID(), 
+        // episode_id: formData.id,
         podcast_id: "",
         transcript_id: "",
         prompt_id: "",
@@ -169,12 +175,12 @@ export default function EpisodeDetails({
       });
       setHasChanges(true);
       setIsTranscriptEditable(true);
-    } else {
+    } else { // no episode
       setFormData({});
       setHasChanges(false);
       setIsTranscriptEditable(false);
     }
-  }, [episode, isNew]);
+  }, [episode, isNew, isGenerated]);
 
   useEffect(() => {
     loadSelectionData();
@@ -223,24 +229,24 @@ export default function EpisodeDetails({
       if (loadedPodcasts) {
         setPodcasts(loadedPodcasts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.podcast_id, title: p.podcast_title })));
+          .map(p => ({ id: p.id, title: p.podcast_title })));
       }
       if (loadedPrompts) {
         setPrompts(loadedPrompts
           .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.prompt_id, title: p.prompt_name })));
+          .map(p => ({ id: p.id, title: p.prompt_name })));
       }
       if (loadedTranscripts) {
         setTranscripts(loadedTranscripts
           .filter(t => t.is_active && !t.is_deleted)
-          .map(t => ({ id: t.transcript_id, title: t.transcript_title })));
+          .map(t => ({ id: t.id, title: t.transcript_title })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
     }
   };
 
-  if (!episode && !isNew && !formData.episode_id) {
+  if (!episode && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
       Select an episode to view details or create a new episode
@@ -345,7 +351,7 @@ export default function EpisodeDetails({
       
       // Create a unique filename using the episode ID and timestamp
       const timestamp = Date.now();
-      const filename = `episodes/${formData.episode_id}/${timestamp}-${file.name}`;
+      const filename = `episodes/${formData.id}/${timestamp}-${file.name}`;
       const storageRef = ref(storage, filename);
       
       // Upload the file
@@ -421,11 +427,11 @@ export default function EpisodeDetails({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="episode_id" className="text-muted-foreground/70">Episode ID</Label>
+            <Label htmlFor="id" className="text-muted-foreground/70">Episode ID</Label>
             <Input
-              id="episode_id"
-              name="episode_id"
-              value={formData.episode_id || ""}
+              id="id"
+              name="id"
+              value={formData.id || ""}
               disabled
             />
           </div>
@@ -585,7 +591,7 @@ export default function EpisodeDetails({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>Content Image</Label>
+            <Label>Episode Image</Label>
             <div className="flex items-start gap-4">
               {formData.content_image && (
                 <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
@@ -615,13 +621,13 @@ export default function EpisodeDetails({
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="episode_url">Content URL</Label>
+          <Label htmlFor="episode_url">Episode Audio URL</Label>
           <Input
             id="content_url"
             name="content_url"
             value={formData.content_url || ""}
             onChange={handleChange}
-            placeholder="https://example.com"
+            placeholder="https://podstudio.fly.dev/audio/example.mp3"
             className={urlError ? "border-red-500" : ""}
             disabled={isReadOnly}
           />
