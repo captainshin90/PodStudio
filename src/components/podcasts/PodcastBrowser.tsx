@@ -188,7 +188,7 @@ export default function PodcastBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2" ref={listRef}>
+      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2 pt-1" ref={listRef}>
         {filteredPodcasts.map((podcast, index) => (
           <div
             key={podcast.id}

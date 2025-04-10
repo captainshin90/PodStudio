@@ -33,7 +33,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  TTSModel,
   ConversationStyle,
   DialogueStructure,
   EngagementTechnique,
@@ -41,9 +40,13 @@ import {
   conversationStyles,
   dialogueStructures,
   engagementTechniques,
-  LLMModel
+  LLMModel,
+  llmModelOptions,
+  TTSModel,
+  ttsModelOptions
 } from '@/config/podcast-config';
 import { nanoid } from "nanoid";
+import { config } from "@/config/config";
 
 interface PromptDetailsProps {
   prompt: Prompt | null;
@@ -150,14 +153,17 @@ export default function PromptDetails({
         prompt_text: "",
         is_long_form: false,
         word_count: 250,
+        max_tokens: 1000,
         creativity: 0.7,
         roles_person1: "Interviewer",
         roles_person2: "Subject matter expert",
         conversation_style: ["Engaging", "Fast-paced", "Enthusiastic"],
         dialogue_structure: ["Discussions"], 
         engagement_techniques: ["Questions"],
-        llm_model: "gemini",
-        tts_model: "gemini",
+        llm_model: config.defaultLLMProvider as LLMModel,
+        llm_model_name: config[config.defaultLLMProvider as keyof typeof config].llmModel,
+        tts_model: config.defaultTTSProvider as TTSModel,
+        tts_model_name: config[config.defaultTTSProvider as keyof typeof config].ttsModel,
         voice_question: ttsVoiceDefaults.gemini.question,
         voice_answer: ttsVoiceDefaults.gemini.answer,
         voice_model: ttsVoiceDefaults.gemini.model,
@@ -239,16 +245,18 @@ export default function PromptDetails({
 
       {/* Prompt details section */}
       <div className="space-y-3">
-        <div className="space-y-1">
-          <Label htmlFor="id" className="text-muted-foreground/70">Prompt ID</Label>
-          <Input
-            id="id"
-            name="id"
-            value={formData.id || ""}
-            disabled
-          />
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="id" className="text-muted-foreground/70 whitespace-nowrap">Prompt ID:</Label>
+            <Input
+              id="id"
+              name="id"
+              value={formData.id || ""}
+              disabled
+              className="flex-1"
+            />
+          </div>
         </div>
-
         <div className="space-y-1">
           <Label htmlFor="prompt_name" className="text-muted-foreground/70">Name</Label>
           <Input
@@ -271,6 +279,11 @@ export default function PromptDetails({
             value={formData.prompt_desc || ""}
             onChange={handleChange}
             disabled={isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
@@ -284,6 +297,11 @@ export default function PromptDetails({
             onChange={handleChange}
             className="min-h-[200px] font-mono text-sm"
             disabled={isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
@@ -575,7 +593,7 @@ export default function PromptDetails({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4"> 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label className="text-muted-foreground/70">LLM Model</Label>
@@ -610,13 +628,29 @@ export default function PromptDetails({
                   <SelectValue placeholder="Select LLM model" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gemini">Google Gemini</SelectItem>
-                  <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
-                  <SelectItem value="openai">OpenAI TTS</SelectItem>
+                  {llmModelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">LLM Model Name</Label>
+              </div>
+              <Input
+                id="llm_model_name"
+                name="llm_model_name"
+                value={formData.llm_model_name || ""}
+                onChange={handleChange}
+                placeholder="LLM Model Name"
+                disabled={isReadOnly}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label className="text-muted-foreground/70">Text-to-Speech Model</Label>
@@ -637,6 +671,8 @@ export default function PromptDetails({
                         </ol>
                         <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
                         <p><strong>ElevenLabs: </strong>Get your API key from ElevenLabs dashboard</p>
+                        <p><strong>Hume AI: </strong>Get your API key from Hume AI dashboard</p>
+                        <p><strong>Play.ai: </strong>Get your API key from Play.ai dashboard</p>
                         <p><strong>Edge TTS: </strong>No API key required - free to use</p>
                       </div>
                     </TooltipContent>
@@ -655,15 +691,26 @@ export default function PromptDetails({
                   <SelectValue placeholder="Select TTS model" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gemini">Google Gemini</SelectItem>
-                  <SelectItem value="geminimulti">Google Gemini Live Multi-Speaker English-only</SelectItem>
-                  <SelectItem value="edge">Microsoft Edge TTS</SelectItem>
-                  <SelectItem value="openai">OpenAI TTS</SelectItem>
-                  <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
-                  <SelectItem value="hume">Hume AI</SelectItem>
-                  <SelectItem value="playht">Play HT</SelectItem>
+                  {ttsModelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-muted-foreground/70">TTS Model Name</Label>
+              </div>
+              <Input
+                id="tts_model_name"
+                name="tts_model_name"
+                value={formData.tts_model_name || ""}
+                onChange={handleChange}
+                placeholder="TTS Model Name"
+                disabled={isReadOnly}
+              />
             </div>
           </div>
 
@@ -769,6 +816,16 @@ export default function PromptDetails({
                       : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
                         ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
                         : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
+              <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
+              <span className="text-sm">
+                {formData.updated_at 
+                  ? (formData.updated_at instanceof Date 
+                      ? formData.updated_at.toLocaleString() 
+                      : typeof formData.updated_at === 'object' && 'seconds' in formData.updated_at
+                        ? new Date((formData.updated_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.updated_at as any).toLocaleString())
                   : ""}
               </span>
             </div>

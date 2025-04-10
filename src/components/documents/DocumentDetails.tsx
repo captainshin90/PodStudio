@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { FileUpload } from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { useToast } from "@/hooks/use-toast";
 import { io } from "socket.io-client";
 import {
@@ -100,19 +100,28 @@ export default function DocumentDetails({
     </div>;
   }
 
-  // validate the url
+  // validate single url
   const validateUrl = (url: string): boolean => {
     if (!url) return true; // Allow empty URLs
     try {
-      new URL(url);
-      return true;
+    // validate either local file or remote url
+      if (url.startsWith('http')) {
+        new URL(url);
+        return true;
+      } else if (url.startsWith('/')) {
+        return true;
+      } else {
+        return false;
+      }
     } catch {
       return false;
-    }
+    } 
   };
 
+  // validate the urls
   const validateUrls = (urls: string[]): { isValid: boolean; invalidUrls: string[] } => {
     if (!urls?.length) return { isValid: true, invalidUrls: [] };
+
     
     const invalidUrls = urls.filter(url => url.trim() && !validateUrl(url.trim()));
     return {
@@ -202,7 +211,8 @@ export default function DocumentDetails({
     setFormData(prev => ({
       ...prev,
       doc_source_format: detectFileFormat(filePaths[0]),
-      doc_source_urls: [...(prev.doc_source_urls || []), filePaths[0]]
+      doc_source_urls: [...(prev.doc_source_urls || []), filePaths[0]],
+      doc_name: filePaths[0].split('/').pop() || ""
     }));
 
     toast({
@@ -315,7 +325,7 @@ export default function DocumentDetails({
         console.log("Text extraction complete");
         setFormData(prev => ({
           ...prev,
-          doc_extracted_text: data.text
+          doc_extracted_text: data.text.trim()
         }));
         setHasChanges(true);
         cleanup();
@@ -398,7 +408,7 @@ export default function DocumentDetails({
           <div className="flex items-end gap-2">
             <div className="space-y-2 flex-1">
               <Label htmlFor="doc_source_urls" className="text-muted-foreground/70">
-              Source URLs (one per line)
+              Source URLs or relative paths (one per line)
               </Label>
               <Textarea 
                 id="doc_source_urls"
@@ -413,7 +423,7 @@ export default function DocumentDetails({
             </div>
             <Button 
               type="button" 
-              variant="outline" 
+              variant="default" 
               onClick={handleExtractText}
               disabled={isExtracting}
             >
@@ -432,14 +442,15 @@ export default function DocumentDetails({
 
       {/* Document details section */}
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="id" className="text-muted-foreground/70">Document ID</Label>
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="id" className="text-muted-foreground/70 whitespace-nowrap">Document ID:</Label>
             <Input
               id="id"
               name="id"
               value={formData.id || ""}
               disabled
+              className="flex-1"
             />
           </div>    
         </div>
@@ -468,9 +479,9 @@ export default function DocumentDetails({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="doc_type" className="text-muted-foreground/70">Document Type</Label>
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="doc_type" className="text-muted-foreground/70 whitespace-nowrap">Document Type:</Label>
             <Select
               value={formData.doc_type}
               onValueChange={(value: DocumentType) => {
@@ -479,7 +490,7 @@ export default function DocumentDetails({
               }}
               disabled={isReadOnly}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select document type" />
               </SelectTrigger>
               <SelectContent>
@@ -495,8 +506,8 @@ export default function DocumentDetails({
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="doc_source_format" className="text-muted-foreground/70">Source Format</Label>
+          <div className="col-span-2 flex items-center justify-end gap-2">
+            <Label htmlFor="doc_source_format" className="text-muted-foreground/70 whitespace-nowrap">Source Format:</Label>
             <Select
               value={formData.doc_source_format}
               onValueChange={(value: DocumentSourceFormat) => {
@@ -505,8 +516,8 @@ export default function DocumentDetails({
               }}
               disabled={isReadOnly}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select source format" />
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Select format" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="txt">Text</SelectItem>
@@ -546,6 +557,12 @@ export default function DocumentDetails({
               onChange={handleChange}
               className={urlError ? "border-red-500" : ""}
               disabled={isReadOnly}
+              onKeyDown={(e) => {
+                // Prevent form from capturing arrow keys when editing the textarea
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.stopPropagation();
+                }
+              }}  
             />
             {urlError && (
               <p className="text-sm text-red-500">{urlError}</p>
@@ -575,18 +592,25 @@ export default function DocumentDetails({
             onChange={handleChange}
             className={`min-h-[200px] font-mono text-sm ${!isEditable ? "bg-muted text-foreground" : ""}`}
             disabled={!isEditable}
+            onKeyDown={(e) => {
+              // Prevent form from capturing arrow keys when editing the textarea
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
         {!isReadOnly && (
           <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="extract_tool" className="text-muted-foreground/70">Extract Tool</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="extract_tool" className="text-muted-foreground/70 whitespace-nowrap">Extract Tool:</Label>
               <Input
                 id="extract_tool"
                 name="extract_tool"
                 value={formData.extract_tool || ""}
                 onChange={handleChange}
+                className="w-1/3"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -624,6 +648,16 @@ export default function DocumentDetails({
                       : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
                         ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
                         : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
+              <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
+              <span className="text-sm">
+                {formData.updated_at 
+                  ? (formData.updated_at instanceof Date 
+                      ? formData.updated_at.toLocaleString() 
+                      : typeof formData.updated_at === 'object' && 'seconds' in formData.updated_at
+                        ? new Date((formData.updated_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.updated_at as any).toLocaleString())
                   : ""}
               </span>
             </div>

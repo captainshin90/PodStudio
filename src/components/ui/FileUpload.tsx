@@ -76,6 +76,11 @@ export const FileUpload = ({ onUpload }: FileUploadProps) => {
       'text/html': ['.html'],
       'application/pdf': ['.pdf'],
       'application/json': ['.json'],
+      'application/xml': ['.xml'],
+      'application/excel': ['.xlsx'],
+      'application/powerpoint': ['.pptx'],
+      'application/word': ['.docx'],
+      
     },
     maxSize: 10 * 1024 * 1024,  // max size of 10MB
   });

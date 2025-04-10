@@ -101,7 +101,8 @@ export default function EpisodeBrowser({
   const filteredEpisodes = episodes.filter((episode) => {
     return (
       episode.episode_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      episode.podcast_title?.toLowerCase().includes(searchQuery.toLowerCase())
+      episode.podcast_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      episode.topic_tags?.join(", ").toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
@@ -213,7 +214,7 @@ export default function EpisodeBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2" ref={listRef}>
+      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2 pt-1" ref={listRef}>
         {filteredEpisodes.map((episode, index) => (
           <div
             key={episode.id}
@@ -237,6 +238,9 @@ export default function EpisodeBrowser({
             <div className="font-medium">{episode.episode_title}</div>
             <div className="text-xs opacity-80 mt-0.5">
               {episode.podcast_title || "No podcast selected"}
+            </div>
+            <div className="text-xs opacity-80 mt-0.5">
+              {episode.topic_tags?.join(", ") || "No topic tags"}
             </div>
           </div>
         ))}

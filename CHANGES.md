@@ -398,3 +398,24 @@ x - Create Podcast: not saving to right folder in fly.dev: should be /audio
 x - Create Podcast: saved content url is tmp/audio -> should be /audio
 x - app.py: generate_podcast - return audio path without '/public'
 x - CreateTranscript.tsx: add a switch to pass either source_urls or extracted_text or source_urls from Document, not both.
+x - Podcast/EpisodeDetails: image and upload component layout issue
+x - PodcastDetails > Episodes list: add desc, publish_date, edit button, compact audio player
+x - make llm_model_name configurable: "gemini-1.5-pro-latest"
+URL vs Filepath: 
+- "Files in the public directory are served at the root path." 
+- Instead of /public/images/filename.jpg, use /images/filename.jpg.
+- File paths for uploads, images: show as /public/uploads or /public/images
+- For now, only show filename 
+- Issue: if saving in Windows, it saves url as '\public\uploads\', which may be different for 
+- Better to hide /public, /uploads, /images on the app UI. Just show relative path (e.g. /uploads/filename)
+- Handle duplicate files (should create an internal filename or add a counter)
+- Rule for uploaded files: store storage_location (localhost, fly.dev, firebase, cloudfare) and relative path (e.g. /uploads, /images)
+- e.g. /upload/filename, /images/filename), but actual path is ./public/upload
+- Does <audio> component work if content_url=/audio/filename.mp3 or must be /public/audio/filename.mp3?
+- How about episode/podcast image?  
+- Has to be /public/images/name.jpg or /images/name.jpg?
+- <CDN>/upload/filename 
+- app.py/generate_podcast: how to handle filepaths, urls gracefully. Removing '/public' from audio url may cause other problems, should use relative paths and make the storage location (base_url = request.url_root) flexible. Maybe need both "Url" and "filePath"
+x - Play button hover on the episode image 
+x - Get more podcast types from Open Notebook in plugins/podcast.py
+x - Make LLM/TTS model version database configurable 

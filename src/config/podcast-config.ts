@@ -2,13 +2,38 @@
 // import { readFileSync } from 'fs';
 // import { join } from 'path';
 // yaml file is not being used as it's not compatible with Vite.
+// import { config } from '@/config/config';
 
 export type ExtractTool = "default" | "podcastfy";
-export type LLMModel = "gemini" | "geminimulti" | "edge" | "openai" | "anthropic";
-export type TTSModel = "gemini" | "geminimulti" | "edge" | "openai" | "elevenlabs" | "hume" | "playht";
+export type LLMModel = "gemini" | "geminimulti" | "edge" | "openai" | "anthropic" | "xai" | "deepseek";
+export type TTSModel = "gemini" | "geminimulti" | "edge" | "openai" | "elevenlabs" | "hume" | "playai";
 export type ConversationStyle = "Engaging" | "Fast-paced" | "Enthusiastic" | "Educational" | "Casual" | "Professional" | "Friendly";
 export type DialogueStructure = "Topic Introduction" | "Summary" | "Discussions" | "Q&A" | "Farewell";
 export type EngagementTechnique = "Questions" | "Testimonials" | "Quotes" | "Anecdotes" | "Analogies" | "Humor";
+
+
+// Define the LLM model options array
+// TODO: Add the LLM models to database and fetch from there
+export const llmModelOptions: { value: LLMModel; label: string}[] = [
+  { value: "gemini", label: "Google Gemini"},
+  { value: "openai", label: "OpenAI"},
+  { value: "xai", label: "xAI"},
+  { value: "deepseek", label: "DeepSeek"},
+  { value: "anthropic", label: "Anthropic"}
+];
+
+// Define the TTS model options array
+// TODO: Add the TTS models to database and fetch from there
+export const ttsModelOptions: { value: TTSModel; label: string}[] = [
+  { value: "gemini", label: "Google Gemini"},
+  { value: "geminimulti", label: "Google Gemini Live Multi-Speaker"},
+  { value: "edge", label: "Microsoft Edge TTS"},
+  { value: "openai", label: "OpenAI TTS"},
+  { value: "elevenlabs", label: "ElevenLabs"},
+  { value: "hume", label: "Hume AI"},
+  { value: "playai", label: "Play.ai"}
+];
+
 
 export interface VoiceConfig {
   question: string;
@@ -47,7 +72,7 @@ export const ttsVoiceDefaults: Record<TTSModel, VoiceConfig> = {
     answer: "default",
     model: "default"
   },
-  playht: {
+  playai: {
     question: "default",
     answer: "default",
     model: "default"

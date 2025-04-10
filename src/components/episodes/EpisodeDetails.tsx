@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft, ChevronDown } from "lucide-react";
-import { FileUpload } from "@/components/ui/file-upload";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { podcastsService, promptsService, transcriptsService } from "@/lib/services/database-service";
-import { storage, auth } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +25,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// import { toast } from "@/components/ui/use-toast";
-import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
 
 /*
@@ -126,7 +122,6 @@ export default function EpisodeDetails({
   isGenerated = false,
   isReadOnly = false 
 }: EpisodeDetailsProps) {
-  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<Episode>>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -335,49 +330,14 @@ export default function EpisodeDetails({
   ///////////////////////////////////////////////////////////////////////////////
   // This is the handleFileUpload function
   ///////////////////////////////////////////////////////////////////////////////
-  const handleFileUpload = async (file: File) => {
+  const handleImageUpload = async (filePath: string) => {
+    setUploadingImage(true);
     try {
-      // Check if user is authenticated
-      if (!auth.currentUser) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to upload images",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setUploadingImage(true);
-      
-      // Create a unique filename using the episode ID and timestamp
-      const timestamp = Date.now();
-      const filename = `episodes/${formData.id}/${timestamp}-${file.name}`;
-      const storageRef = ref(storage, filename);
-      
-      // Upload the file
-      await uploadBytes(storageRef, file);
-      
-      // Get the download URL
-      const downloadUrl = await getDownloadURL(storageRef);
-      
-      // Update the form data with the permanent URL
       setFormData(prev => ({
         ...prev,
-        content_image: downloadUrl
+        content_image: filePath
       }));
       setHasChanges(true);
-      
-      toast({
-        title: "Success",
-        description: "Image uploaded successfully",
-      });
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast({
-        title: "Error",
-        description: "Failed to upload image. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setUploadingImage(false);
     }
@@ -425,18 +385,19 @@ export default function EpisodeDetails({
       </div>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="id" className="text-muted-foreground/70">Episode ID</Label>
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="id" className="text-muted-foreground/70 whitespace-nowrap">Episode ID:</Label>
             <Input
               id="id"
               name="id"
               value={formData.id || ""}
               disabled
+              className="flex-1"
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="episode_number" className="text-muted-foreground/70">Episode Number</Label>
+          <div className="col-span-2 flex items-center gap-2 justify-end">
+            <Label htmlFor="episode_number" className="text-muted-foreground/70 whitespace-nowrap">Episode Number:</Label>
             <Input
               id="episode_number"
               name="episode_number"
@@ -444,6 +405,7 @@ export default function EpisodeDetails({
               value={formData.episode_number || 1}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-20"
             />
           </div>
         </div>
@@ -549,6 +511,11 @@ export default function EpisodeDetails({
             onChange={handleChange}
             className="min-h-[100px]"
             disabled={isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
@@ -561,6 +528,28 @@ export default function EpisodeDetails({
             value={formData.episode_summary || ""}
             onChange={handleChange}
             className="min-h-[100px]"
+            disabled={isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="topic_tags">Topic Tags</Label>
+          <Input
+            id="topic_tags"
+            name="topic_tags"
+            value={formData.topic_tags?.join(", ") || ""}
+            onChange={(e) => {
+              setFormData({
+                ...formData,
+                topic_tags: e.target.value.split(",").map(tag => tag.trim())
+              });
+              setHasChanges(true);
+            }}
             disabled={isReadOnly}
           />
         </div>
@@ -586,13 +575,19 @@ export default function EpisodeDetails({
             onChange={handleChange}
             className={`min-h-[200px] ${!isTranscriptEditable || isReadOnly ? "bg-muted text-foreground" : ""}`}
             disabled={!isTranscriptEditable || isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label>Episode Image</Label>
-            <div className="flex items-start gap-4">
+
+        <div className="space-y-1"> 
+          <Label>Episode Image</Label>
+          <div className="flex items-start gap-4"> 
+            <div className="w-48 h-48">
               {formData.content_image && (
                 <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
                   <img
@@ -602,21 +597,21 @@ export default function EpisodeDetails({
                   />
                 </div>
               )}
-              {!isReadOnly && (
-                <div className="flex-1">
-                  <FileUpload
-                    onFileSelect={handleFileUpload}
-                    accept="image/*"
-                  />
-                  {uploadingImage && (
-                    <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Uploading image...
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
+            {!isReadOnly && (
+              <div className="h-48 w-48">
+                <ImageUpload
+                  onUpload={handleImageUpload}
+                  maxSize={5242880} // 5MB max size
+                />
+                {uploadingImage && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading image...
+                  </div>
+                )}
+              </div>              
+            )}
           </div>
         </div>
 
@@ -662,23 +657,6 @@ export default function EpisodeDetails({
               className="w-28"
             />
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="topic_tags">Topic Tags</Label>
-          <Input
-            id="topic_tags"
-            name="topic_tags"
-            value={formData.topic_tags?.join(", ") || ""}
-            onChange={(e) => {
-              setFormData({
-                ...formData,
-                topic_tags: e.target.value.split(",").map(tag => tag.trim())
-              });
-              setHasChanges(true);
-            }}
-            disabled={isReadOnly}
-          />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -754,6 +732,16 @@ export default function EpisodeDetails({
                       : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
                         ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
                         : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
+              <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
+              <span className="text-sm">
+                {formData.updated_at 
+                  ? (formData.updated_at instanceof Date 
+                      ? formData.updated_at.toLocaleString() 
+                      : typeof formData.updated_at === 'object' && 'seconds' in formData.updated_at
+                        ? new Date((formData.updated_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.updated_at as any).toLocaleString())
                   : ""}
               </span>
             </div>

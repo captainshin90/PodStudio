@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { FileUpload } from "@/components/ui/file-upload";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { episodesService } from "@/lib/services/database-service";
 import {
   Select,
@@ -53,6 +53,8 @@ export default function PodcastDetails({
   const [hasChanges, setHasChanges] = useState(false);
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   useEffect(() => {
     if (podcast) {
@@ -85,6 +87,48 @@ export default function PodcastDetails({
       setHasChanges(false);
     }
   }, [podcast, isNew]);
+
+  // Add event listeners for audio elements
+  useEffect(() => {
+    const handleAudioPlay = (e: Event) => {
+      const audioElement = e.target as HTMLAudioElement;
+      setPlayingAudioId(audioElement.id.replace('audio-', ''));
+    };
+
+    const handleAudioPause = () => {
+      setPlayingAudioId(null);
+    };
+
+    const handleAudioEnded = () => {
+      setPlayingAudioId(null);
+    };
+
+    // Add event listeners to all audio elements
+    episodes.forEach(episode => {
+      if (episode.content_url) {
+        const audioElement = document.getElementById(`audio-${episode.id}`) as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.addEventListener('play', handleAudioPlay);
+          audioElement.addEventListener('pause', handleAudioPause);
+          audioElement.addEventListener('ended', handleAudioEnded);
+        }
+      }
+    });
+
+    // Clean up event listeners
+    return () => {
+      episodes.forEach(episode => {
+        if (episode.content_url) {
+          const audioElement = document.getElementById(`audio-${episode.id}`) as HTMLAudioElement;
+          if (audioElement) {
+            audioElement.removeEventListener('play', handleAudioPlay);
+            audioElement.removeEventListener('pause', handleAudioPause);
+            audioElement.removeEventListener('ended', handleAudioEnded);
+          }
+        }
+      });
+    };
+  }, [episodes]);
 
   ///////////////////////////////////////////////////////////////////////////////
   // load the episodes for the podcast
@@ -168,15 +212,17 @@ export default function PodcastDetails({
   ///////////////////////////////////////////////////////////////////////////////
   // handle the file upload event
   ///////////////////////////////////////////////////////////////////////////////
-  const handleFileUpload = async (file: File) => {
-    // Here you would typically upload the file to your storage service
-    // and get back a URL. For now, we'll just use a placeholder
-    const imageUrl = URL.createObjectURL(file);
-    setFormData(prev => ({
-      ...prev,
-      podcast_image: imageUrl
-    }));
-    setHasChanges(true);
+  const handleImageUpload = async (filePath: string) => {
+    setUploadingImage(true);
+    try {
+      setFormData(prev => ({
+        ...prev,
+        podcast_image: filePath
+      }));
+      setHasChanges(true);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -187,6 +233,30 @@ export default function PodcastDetails({
       setShowCancelDialog(true);
     } else {
       onCancel();
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // handle the audio play/pause toggle
+  ///////////////////////////////////////////////////////////////////////////////
+  const handleAudioToggle = (e: React.MouseEvent, episodeId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const audioElement = document.getElementById(`audio-${episodeId}`) as HTMLAudioElement;
+    if (audioElement) {
+      if (playingAudioId === episodeId) {
+        audioElement.pause();
+      } else {
+        // Pause any currently playing audio
+        if (playingAudioId) {
+          const currentAudio = document.getElementById(`audio-${playingAudioId}`) as HTMLAudioElement;
+          if (currentAudio) {
+            currentAudio.pause();
+          }
+        }
+        audioElement.play();
+      }
     }
   };
 
@@ -222,18 +292,19 @@ export default function PodcastDetails({
       )}
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="id" className="text-muted-foreground/70">Podcast ID</Label>
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="id" className="text-muted-foreground/70 whitespace-nowrap">Podcast ID:</Label>
             <Input
               id="id"
               name="id"
               value={formData.id || ""}
               disabled
+              className="flex-1"
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="podcast_type" className="text-muted-foreground/70">Type</Label>
+          <div className="col-span-2 flex items-center gap-2 justify-end">
+            <Label htmlFor="podcast_type" className="text-muted-foreground/70 whitespace-nowrap">Type:</Label>
             <Select
               value={formData.podcast_type || "summary"}
               onValueChange={(value: PodcastType) => {
@@ -242,7 +313,7 @@ export default function PodcastDetails({
               }}
               disabled={isReadOnly}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -305,65 +376,6 @@ export default function PodcastDetails({
           />
         </div>
 
-        {isNew && !isReadOnly && (
-          <div className="space-y-1">
-            <Label>Podcast Image</Label>
-            <div className="flex items-start gap-4">
-              {formData.podcast_image && (
-                <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
-                  <img
-                    src={formData.podcast_image}
-                    alt="Podcast preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="flex-1">
-                <FileUpload
-                  onFileSelect={handleFileUpload}
-                  accept="image/*"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isNew && !isReadOnly && (
-          <div className="space-y-1">
-            <Label>Podcast Image</Label>
-            <div className="flex items-start gap-4">
-              {formData.podcast_image && (
-                <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
-                  <img
-                    src={formData.podcast_image}
-                    alt="Podcast preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="flex-1">
-                <FileUpload
-                  onFileSelect={handleFileUpload}
-                  accept="image/*"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isReadOnly && formData.podcast_image && (
-          <div className="space-y-1">
-            <Label>Podcast Image</Label>
-            <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
-              <img
-                src={formData.podcast_image}
-                alt="Podcast preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-        )}
-
         <div className="space-y-1">
           <Label htmlFor="podcast_desc" className="text-muted-foreground/70">Description</Label>
           <Textarea
@@ -374,10 +386,63 @@ export default function PodcastDetails({
             onChange={handleChange}
             className="min-h-[100px]"
             disabled={isReadOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="topic_tags" className="text-muted-foreground/70">Topic Tags (#topic/place/people/org/event. Lower case, no spaces, max 30 characters)</Label>
+          <Input
+            id="topic_tags"
+            name="topic_tags"
+            value={formData.topic_tags?.join(", ") || ""}
+            onChange={(e) => {
+              setFormData({
+                ...formData,
+                topic_tags: e.target.value.split(",").map(tag => tag.trim())
+              });
+              setHasChanges(true);
+            }}
+            disabled={isReadOnly}
+          />
+        </div>
+
+        <div className="space-y-1"> 
+          <Label>Podcast Image</Label>
+          <div className="flex items-start gap-4"> 
+            <div className="w-48 h-48">
+              {formData.podcast_image && (
+                <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
+                  <img
+                    src={formData.podcast_image}
+                    alt="Podcast preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+            {!isReadOnly && (
+              <div className="h-48 w-48">
+                <ImageUpload
+                  onUpload={handleImageUpload}
+                  maxSize={5242880} // 5MB max size
+                />
+                {uploadingImage && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading image...
+                  </div>
+                )}
+              </div>              
+            )}
+          </div>
+        </div>
+
+       <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label htmlFor="podcast_format" className="text-muted-foreground/70">Format</Label>
             <Select
@@ -419,23 +484,6 @@ export default function PodcastDetails({
           </div>
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="topic_tags" className="text-muted-foreground/70">Topic Tags (#topic/place/people/org/event. Lower case, no spaces, max 30 characters)</Label>
-          <Input
-            id="topic_tags"
-            name="topic_tags"
-            value={formData.topic_tags?.join(", ") || ""}
-            onChange={(e) => {
-              setFormData({
-                ...formData,
-                topic_tags: e.target.value.split(",").map(tag => tag.trim())
-              });
-              setHasChanges(true);
-            }}
-            disabled={isReadOnly}
-          />
-        </div>
-
         {!isReadOnly && (
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
@@ -475,6 +523,16 @@ export default function PodcastDetails({
                         : new Date(formData.created_at as any).toLocaleString())
                   : ""}
               </span>
+              <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
+              <span className="text-sm">
+                {formData.updated_at 
+                  ? (formData.updated_at instanceof Date 
+                      ? formData.updated_at.toLocaleString() 
+                      : typeof formData.updated_at === 'object' && 'seconds' in formData.updated_at
+                        ? new Date((formData.updated_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.updated_at as any).toLocaleString())
+                  : ""}
+              </span>
             </div>
           </div>
         )}
@@ -482,17 +540,70 @@ export default function PodcastDetails({
         {podcast && episodes.length > 0 && (
           <div className="space-y-3 mt-8 border-t pt-4">
             <h3 className="text-lg font-bold">Episodes</h3>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {episodes.map((episode) => (
                 <div
                   key={episode.id}
-                  className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
+                  className="p-3 border rounded-lg hover:bg-muted cursor-pointer flex items-center gap-3"
                 >
-                  <div className="font-medium">{episode.episode_title}</div>
-                  <div className="text-sm text-muted-foreground truncate">
-                  {episode.episode_desc}
-                  {/* new Date(episode.publish_date).toLocaleDateString() */}
+                  <div className="w-16 h-16 flex-shrink-0 relative group">
+                    {episode.content_image ? (
+                      <img 
+                        src={episode.content_image} 
+                        alt={episode.episode_title} 
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                        <span className="text-muted-foreground text-xs">No image</span>
+                      </div>
+                    )}
+                    {episode.content_url && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center">
+                        <button 
+                          type="button"
+                          className="p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                          title={playingAudioId === episode.id ? "Pause" : "Play"}
+                          onClick={(e) => handleAudioToggle(e, episode.id)}
+                        >
+                          {playingAudioId === episode.id ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="6" y="4" width="4" height="16"></rect>
+                              <rect x="14" y="4" width="4" height="16"></rect>
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{episode.episode_title}</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="whitespace-nowrap">
+                        {episode.publish_date 
+                          ? new Date(episode.publish_date).toLocaleDateString() 
+                          : "No date"}
+                      </span>
+                      <span className="truncate">{episode.episode_desc}</span>
+                    </div>
+                  </div>
+                  {episode.content_url && (
+                    <div className="flex-shrink-0">
+                      <audio 
+                        id={`audio-${episode.id}`}
+                        controls
+                        className="h-16 w-56"
+                        src={episode.content_url}
+                        title={`Play ${episode.episode_title}`}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

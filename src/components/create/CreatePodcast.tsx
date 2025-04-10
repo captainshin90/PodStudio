@@ -238,6 +238,7 @@ export default function CreatePodcast() {
           engagement_techniques: selectedPrompt.engagement_techniques,
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
+          llm_model: selectedPrompt.llm_model,
           tts_model: selectedPrompt.tts_model,
           voice_question: selectedPrompt.voice_question,
           voice_answer: selectedPrompt.voice_answer,

@@ -293,18 +293,19 @@ export default function TranscriptDetails({
 
       {/* Transcript details section */}
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="id" className="text-muted-foreground/70">Transcript ID</Label>
+        <div className="grid grid-cols-5 gap-4">
+          <div className="col-span-3 flex items-center gap-2">
+            <Label htmlFor="id" className="text-muted-foreground/70 whitespace-nowrap">Transcript ID:</Label>
             <Input
               id="id"
               name="id"
               value={formData.id || ""}
               disabled
+              className="flex-1"
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="transcript_type" className="text-muted-foreground/70">Type</Label>
+          <div className="col-span-2 flex items-center gap-2 justify-end">
+            <Label htmlFor="transcript_type" className="text-muted-foreground/70 whitespace-nowrap">Type:</Label>
             <Select
               value={formData.transcript_type || "interview"}
               onValueChange={(value: TranscriptType) => {
@@ -313,7 +314,7 @@ export default function TranscriptDetails({
               }}
               disabled={isReadOnly}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -433,6 +434,12 @@ export default function TranscriptDetails({
             onChange={handleChange}
             className={`min-h-[200px] font-mono text-sm ${!isEditable || isReadOnly ? "bg-muted text-foreground" : ""}`}
             disabled={!isEditable || isReadOnly}
+            onKeyDown={(e) => {
+              // Prevent form from capturing arrow keys when editing the textarea
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.stopPropagation();
+              }
+            }}
           />
         </div>
 
@@ -472,6 +479,16 @@ export default function TranscriptDetails({
                       : typeof formData.created_at === 'object' && 'seconds' in formData.created_at
                         ? new Date((formData.created_at as any).seconds * 1000).toLocaleString()
                         : new Date(formData.created_at as any).toLocaleString())
+                  : ""}
+              </span>
+              <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
+              <span className="text-sm">
+                {formData.updated_at 
+                  ? (formData.updated_at instanceof Date 
+                      ? formData.updated_at.toLocaleString() 
+                      : typeof formData.updated_at === 'object' && 'seconds' in formData.updated_at
+                        ? new Date((formData.updated_at as any).seconds * 1000).toLocaleString()
+                        : new Date(formData.updated_at as any).toLocaleString())
                   : ""}
               </span>
             </div>

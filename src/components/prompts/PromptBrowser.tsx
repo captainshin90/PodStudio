@@ -166,7 +166,7 @@ export default function PromptBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2" ref={listRef}>
+      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2 pt-1" ref={listRef}>
         {filteredPrompts.map((prompt, index) => (
           <div
             key={prompt.id}

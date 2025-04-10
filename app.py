@@ -14,6 +14,7 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 from podcastfy.content_parser.content_extractor import ContentExtractor
 from podcastfy.utils.logger import setup_logger
+import time
 
 logger = setup_logger(__name__)
 
@@ -23,61 +24,59 @@ load_dotenv(dotenv_path=env_path, override=True)
 
 # Create required directories
 # they should be relative to the current working directory (in dev is C:/SRC/PodStudio)
-# why does it use a "static" folder. why not just use "data" folder?
-# use forward /, rather than \\ for file paths.
-# if need to use \ slash: use a r prefix: r"C:\path\to\file"
-
+#
 # Flask uses the static folder for static files like images, css, and js
-# Fly.io doesn't allow access to the root directory, 
-# so we need to use the static folder for the temp and upload directories
-# STATIC_DIR = './static'
+# Fly.io doesn't allow access to the root directory and erases the static folder on new build 
+# so we need to use the public folder for new files we generate or upload
 # TEMP_DIR = './static/tmp'
-# UPLOAD_FOLDER = './static/uploads'
+# UPLOADS_FOLDER = './static/uploads'
 # AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
 # TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
 # STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
-# UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'public/uploads')
+# UPLOADS_FOLDER = os.path.join(os.path.dirname(__file__), 'public/uploads')
 # TEMP_DIR = os.path.join(os.path.dirname(__file__), 'public/tmp/audio')
 # AUDIO_DIR = os.path.join(STATIC_DIR, 'audio')
 # TRANSCRIPT_DIR = os.path.join(STATIC_DIR, 'transcripts')
 
-STATIC_DIR = './static' 
-TEMP_DIR = './public/tmp/audio'
-UPLOAD_FOLDER = './public/uploads'
-AUDIO_DIR = './public/audio'
-TRANSCRIPT_DIR = './public/transcripts'
+# relative paths from public folder
+# CDN_BASE_URL = 'https://podstudio.fly.dev' || 'http://localhost:8080'
+REL_UPLOADS_DIR = '/uploads'
+REL_IMAGES_DIR = '/images'
+
+STATIC_DIR = os.path.join('.', 'static')
+PUBLIC_DIR = os.path.join('.', 'public')
+TEMP_DIR = os.path.join(STATIC_DIR, 'tmp', 'audio')
+AUDIO_DIR = os.path.join(PUBLIC_DIR, 'audio') 
+TRANSCRIPT_DIR = os.path.join(PUBLIC_DIR, 'transcripts')
+UPLOADS_DIR = os.path.join(PUBLIC_DIR, 'uploads')
+IMAGES_DIR = os.path.join(PUBLIC_DIR, 'images')  
+
+print(f"STATIC_DIR: {STATIC_DIR}")
+print(f"PUBLIC_DIR: {PUBLIC_DIR}")
+print(f"TEMP_DIR: {TEMP_DIR}")
+print(f"AUDIO_DIR: {AUDIO_DIR}")
+print(f"TRANSCRIPT_DIR: {TRANSCRIPT_DIR}")
+print(f"UPLOADS_DIR: {UPLOADS_DIR}")
+print(f"IMAGES_DIR: {IMAGES_DIR}")
+
+os.makedirs(PUBLIC_DIR, exist_ok=True)
+os.makedirs(TEMP_DIR, exist_ok=True)
+os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(IMAGES_DIR, exist_ok=True)  # Create images directory
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
 
-print(f"TEMP_DIR: {TEMP_DIR}")
-print(f"UPLOAD_FOLDER: {UPLOAD_FOLDER}")
-print(f"STATIC_DIR: {STATIC_DIR}")
-print(f"AUDIO_DIR: {AUDIO_DIR}")
-print(f"TRANSCRIPT_DIR: {TRANSCRIPT_DIR}")
-
-os.makedirs(TEMP_DIR, exist_ok=True)
-os.makedirs(AUDIO_DIR, exist_ok=True)
-os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
+################################################################################
+### Flask app
+################################################################################
 app = Flask(__name__,
-    static_folder='static',
-    static_url_path='/static'
-    # static_folder='public',    # this fails on fly.dev
-    # static_url_path='/public'  # this fails on fly.dev
+    static_folder='static',    # don't change this
+    static_url_path='/static'  # don't change this
 )
-
-# SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24)) - why random number?
-SECRET_KEY = os.getenv('SECRET_KEY') 
-app.config['SECRET_KEY'] = SECRET_KEY
-app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-
-# Load API token after ensuring .env is loaded
-# QUESTION: how is API_TOKEN used? used in generate-from-transcript
-API_TOKEN = os.getenv('API_TOKEN')
-if not API_TOKEN:
-    raise ValueError("app.py: API_TOKEN must be set in .env file")
 
 # Enable CORS in development
 if app.debug:
@@ -96,9 +95,38 @@ else:
             return send_from_directory(app.static_folder, path)
         return send_from_directory(app.static_folder, 'index.html')
 
-# QUESTION: What does this do?
-# Should restrict to specific origins for security reasons in production
+# Initialize socketio
+# TODO: Should restrict to specific origins for security reasons in production
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+SECRET_KEY = os.getenv('SECRET_KEY') 
+if not SECRET_KEY:
+    raise ValueError("app.py: SECRET_KEY must be set in .env file")
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+# Load API token after ensuring .env is loaded
+# QUESTION: how is API_TOKEN used? used in generate-from-transcript
+API_TOKEN = os.getenv('API_TOKEN')
+if not API_TOKEN:
+    raise ValueError("app.py: API_TOKEN must be set in .env file")
+
+### ------------------------------------------------------------------------------------------------
+### verify SECRET_KEY access code
+### ------------------------------------------------------------------------------------------------
+@app.route('/api/verify-access', methods=['POST'])
+def verify_access():
+    data = request.get_json()
+    access_code = data.get('accessCode', '')
+    
+    # Get the secret key from environment variables
+    secret_key = os.environ.get('SECRET_KEY', '')
+    
+    # Check if the access code matches the secret key
+    if access_code == secret_key:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid access code"}), 401
 
 ### ------------------------------------------------------------------------------------------------
 ### require api token
@@ -222,15 +250,17 @@ def handle_extract_text(data):
             # Process each URL individually
             for url in urls:
                 try:
-                    # If the URL starts with http://localhost:8080/public/uploads/, extract the file path
+                    # If the URL starts with base_url (e.g. http://localhost:8080/ or https://podstudio.fly.dev/), 
+                    # convert to local file path
                     base_url = request.url_root
-                    if url.startswith(base_url):
-                        # Extract the file path from the URL
-                        file_path = url.replace(base_url, '')
+                    if url.startswith('/'): # it's a relative local file path 
                         # Remove any double slashes
-                        file_path = file_path.replace('//', '/')
-                        # Add the static directory prefix
-                        file_path = os.path.join('.', file_path.lstrip('/'))
+                        url = url.replace('//', '/')
+                        # Add the public directory prefix
+                        if not url.startswith('/public'):  
+                            url = f'{PUBLIC_DIR}/{url}'
+                        # Convert to local file path
+                        file_path = os.path.abspath(url)
                         logger.info(f"Processing local file: {file_path}")
                         if not os.path.exists(file_path):
                             raise FileNotFoundError(f"File not found: {file_path}")
@@ -239,7 +269,23 @@ def handle_extract_text(data):
                             content = open(file_path, 'r').read()
                         else:
                             content = content_extractor.extract_content(file_path)
-                    else:
+                    elif url.startswith(base_url):
+                        # Extract the file path from the URL 
+                        # Replace base URL with ./public                       
+                        file_path = url.replace(base_url, PUBLIC_DIR)
+                        # Remove any double slashes
+                        file_path = file_path.replace('//', '/')
+                        # Add the static directory prefix
+                        # file_path = os.path.join('.', file_path.lstrip('/'))
+                        logger.info(f"Processing local file: {file_path}")
+                        if not os.path.exists(file_path):
+                            raise FileNotFoundError(f"File not found: {file_path}")
+                        ## just a text file, so read it
+                        if file_path.lower().endswith('.txt'):
+                            content = open(file_path, 'r').read()
+                        else:
+                            content = content_extractor.extract_content(file_path)
+                    else: # it's a remote url 
                           content = content_extractor.extract_content(url)
                     combined_content += f"\n\n{content}"
                 except Exception as e:
@@ -276,6 +322,9 @@ def handle_generate_podcast(data):
         transcript_only = data.get('transcript_only')
         # transcript_file = data.get('transcript_file', None)
         tts_model = data.get('tts_model', 'gemini')
+        # llm_model = data.get('llm_model', 'gemini')  # not used
+        llm_model_name = data.get('llm_model_name', 'gemini-1.5-pro-latest')
+        # tts_model_name = data.get('tts_model_name', 'gemini-1.5-pro-latest')  # not used
         secret_key = data.get('secret_key')
         env_secret_key = os.getenv('SECRET_KEY')
 
@@ -287,8 +336,9 @@ def handle_generate_podcast(data):
         else:
             use_default_keys = False
         
-        if is_from_transcript and tts_model not in ['gemini', 'geminimulti']:
-            raise ValueError("app.py: Only Gemini model supported for podcast from transcript")
+        # TODO: need validation of llm_model_name and tts_model_name
+        # if transcript_only and llm_model not in ['gemini', 'geminimulti']:
+        #    raise ValueError("app.py: Only Gemini model supported for podcast from transcript")
 
         api_key_label = None
         # Set up API keys based on selected model
@@ -355,12 +405,12 @@ def handle_generate_podcast(data):
                 'answer': data.get('voice_answer', "Default"),
             }
             voice_model = data.get('voice_model', "default")
-        elif tts_model == 'playht':
-            api_key = os.getenv('PLAYHT_API_KEY') if use_default_keys else data.get('playht_key')
+        elif tts_model == 'playai':
+            api_key = os.getenv('PLAYAI_API_KEY') if use_default_keys else data.get('playai_key')
             if not api_key:
-                raise ValueError("app.py: Missing Play HT API key")
-            os.environ['PLAYHT_API_KEY'] = api_key
-            api_key_label = 'PLAYHT_API_KEY'
+                raise ValueError("app.py: Missing Play.ai API key")
+            os.environ['PLAYAI_API_KEY'] = api_key
+            api_key_label = 'PLAYAI_API_KEY'
             default_voices = {
                 'question': data.get('voice_question', "Default"), 
                 'answer': data.get('voice_answer', "Default"),
@@ -402,28 +452,30 @@ def handle_generate_podcast(data):
         # Add image_paths parameter if provided
         image_paths = data.get('image_urls', [])
 
-        if transcript_only: # generate only a transcript, no audio
+        if transcript_only: # generate only a transcript, no audio from raw source urls or text
             result = generate_podcast(
                 urls=data.get('urls', []),
                 text=data.get('text', ''),    # Kap: added support for text input
                 transcript_only=True,
                 conversation_config=conversation_config, 
+                llm_model_name=llm_model_name,
                 # tts_model=tts_model, # tts_model is ignored if transcript_only is True
                 longform=bool(data.get('is_long_form', False)),
                 api_key_label=api_key_label,  # This tells podcastfy which env var to use
                 image_paths=image_paths if image_paths else None  # Only pass if not empty
             )
-        elif not is_from_transcript: # generate a audio podcast from urls or text
+        elif not is_from_transcript: # generate a audio podcast from raw source urls or text
             result = generate_podcast(
                 urls=data.get('urls', []),
                 text=data.get('text', ''),    # Kap: added support for text input
                 conversation_config=conversation_config,
                 tts_model=tts_model,
+                llm_model_name=llm_model_name,
                 longform=bool(data.get('is_long_form', False)),
                 api_key_label=api_key_label,  # This tells podcastfy which env var to use
                 image_paths=image_paths if image_paths else None  # Only pass if not empty
             )
-        else:  # Generate the audio podcast from transcript
+        else:  # Generate the audio podcast from a Q&A transcript file
             urls = data.get('urls', [])
             transcript_file = urls[0] if len(urls) > 0 else None
             transcript = data.get('text') if len(data.get('text', '')) > 0 else None
@@ -460,12 +512,17 @@ def handle_generate_podcast(data):
 
             # Handle the result. Create a new file and copy the result to it.
             if isinstance(result, str) and os.path.isfile(result):
+
+                # Kap: this is the old way to handle the result, but why need to create a new 
+                # file and copy the result to it?
                 # filename = f"podcast_{os.urandom(8).hex()}.mp3"
                 # output_path = os.path.join(TEMP_DIR, filename)
                 # shutil.copy2(result, output_path)
                 # just return the path to the audio file, not temp dir
                 # remove /public from the path
-                audio_url = result.replace('/public', '')
+
+                # TODO: this may not work on fly.dev
+                audio_url = result.replace(PUBLIC_DIR, '')
                 emit('progress', {'progress': 100, 'message': 'Podcast generation complete!'})
                 emit('complete', {
                     # 'audioUrl': f'{TEMP_DIR}/{filename}',
@@ -716,12 +773,6 @@ def test_env():
     })
 
 ### ------------------------------------------------------------------------------------------------
-### allowed file types
-### ------------------------------------------------------------------------------------------------        
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-### ------------------------------------------------------------------------------------------------
 ### service audio file requests
 ### ------------------------------------------------------------------------------------------------    
 @app.route('/audio/<path:filename>')
@@ -745,8 +796,14 @@ def serve_audio(filename):
     return jsonify({'error': 'Audio file not found'}), 404
 
 ### ------------------------------------------------------------------------------------------------
-### upload files return file paths
+### upload file(s) to server storage and return file paths
+### TODO: handle upload to CDN
+### Files in the public directory are served at the root path. 
+### - Instead of /public/uploads/filename.pdf, use /uploads/filename.pdf.
 ### ------------------------------------------------------------------------------------------------
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
     if 'files' not in request.files:
@@ -757,41 +814,66 @@ def upload_files():
 
     for file in files:
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            filename = secure_filename(file .filename)
+            # Add timestamp to filename to prevent duplicates
+            base, ext = os.path.splitext(filename)
+            filename = f"{base}_{int(time.time())}{ext}"
+
+            filepath = os.path.join(UPLOADS_DIR, filename)   # OS path to save the file
+            rel_filepath = f'{REL_UPLOADS_DIR}/{filename}'   # relative path to return to the client
+
+            # save the file to the server
             file.save(filepath)
-            # in local windows dev, a full os.path (e.g. C:/) doesn't work
-            # file_paths.append(f'./public/uploads/{filename}')
-            # file_paths.append(filepath)
-            # try returning a URL instead
-            # get the base URL
-            base_url = request.url_root
-            file_paths.append(f'{base_url}/public/uploads/{filename}')
+            file_paths.append(rel_filepath)
+            
             print(f"Uploaded: {filepath}")
-            print(f"File URL: {file_paths[-1]}")
 
     return jsonify({'file_paths': file_paths})
 
 ### ------------------------------------------------------------------------------------------------
-### verify access code
+### Single Image Upload
+### Files in the public directory are served at the root path. 
+### Instead of /public/images/filename.jpg, use /images/filename.jpg.
+### TODO: handle upload to CDN and compress image
 ### ------------------------------------------------------------------------------------------------
-@app.route('/api/verify-access', methods=['POST'])
-def verify_access():
-    data = request.get_json()
-    access_code = data.get('accessCode', '')
-    
-    # Get the secret key from environment variables
-    secret_key = os.environ.get('SECRET_KEY', '')
-    
-    # Check if the access code matches the secret key
-    if access_code == secret_key:
-        return jsonify({"success": True}), 200
-    else:
-        return jsonify({"success": False, "message": "Invalid access code"}), 401
 
-### ------------------------------------------------------------------------------------------------
+def allowed_image(filename):
+    """Check if the file extension is allowed for images"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+@app.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    """Handle image upload"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_image(file.filename):
+        filename = secure_filename(file.filename)
+        # Add timestamp to filename to prevent duplicates
+        base, ext = os.path.splitext(filename)
+        filename = f"{base}_{int(time.time())}{ext}"
+        
+        filepath = os.path.join(IMAGES_DIR, filename)   # OS path to save the file
+        rel_filepath = f'{REL_IMAGES_DIR}/{filename}'   # relative path to return to the client
+
+        file.save(filepath)
+        
+        # Return the path relative to /public folder
+        return jsonify({
+            'filePath': f'{rel_filepath}',
+            'message': 'File uploaded successfully'
+        })
+    
+    return jsonify({'error': 'File type not allowed'}), 400
+
+################################################################################
 ### run the app
-### ------------------------------------------------------------------------------------------------
+################################################################################
 if __name__ == '__main__':
     port = int(os.getenv('API_PORT', 8080))
     debug = os.getenv('DEBUG', 'False')

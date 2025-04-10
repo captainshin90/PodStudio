@@ -274,7 +274,7 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - 04/01/25: git tag -a "v0.2.1-alpha" -m "version v0.2.1-alpha" - bug fixing
 - git tag -a "v.0.2.3-alpha" -m "version v0.2.3-alpha" - works in fly.dev
 - git tag -a "v.0.2.6-alpha" -m "version v0.2.6-alpha" - before refactoring id in all the collections
-- git tag -a "v.0.2.8-alpha" -m "version v0.2.8-alpha" - factored id in all the collections, support multiple URLs, play audio correctly
+- git tag -a "v.0.2.9-alpha" -m "version v0.2.9-alpha" - factored id in all the collections, support multiple URLs, play audio correctly, static vs public folder issues
 
 
 ### Firebase
