@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { databaseService } from "@/lib/services/database-service";
 
 interface DocumentBrowserProps {
@@ -51,8 +51,10 @@ export default function DocumentBrowser({
     if (filters.doc_type !== "all") {
       q = query(q, where('doc_type', '==', filters.doc_type));
     }
-    q = query(q, where('is_deleted', '==', filters.is_deleted));
     q = query(q, where('is_active', '==', filters.is_active));
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    // Add orderBy for updated_at in descending order
+    q = query(q, orderBy('updated_at', 'desc'));
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(q, (snapshot) => {

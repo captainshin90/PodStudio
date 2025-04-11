@@ -1,3 +1,4 @@
+import { config } from "@/config/config";
 import { useState, useEffect } from "react";
 import { Podcast } from "@/lib/schemas/podcasts";
 import { Transcript } from "@/lib/schemas/transcripts";
@@ -239,7 +240,9 @@ export default function CreatePodcast() {
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
           llm_model: selectedPrompt.llm_model,
+          llm_model_name: selectedPrompt.llm_model_name,
           tts_model: selectedPrompt.tts_model,
+          tts_model_name: selectedPrompt.tts_model_name,
           voice_question: selectedPrompt.voice_question,
           voice_answer: selectedPrompt.voice_answer,
           voice_model: selectedPrompt.voice_model,

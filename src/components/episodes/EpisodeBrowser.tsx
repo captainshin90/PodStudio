@@ -11,7 +11,7 @@ import {
 //  DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { collection, query, where, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDoc, doc, orderBy } from "firebase/firestore";
 import { databaseService } from "@/lib/services/database-service";
 
 interface EpisodeBrowserProps {
@@ -55,8 +55,10 @@ export default function EpisodeBrowser({
     let q = query(collection(databaseService.db, 'episodes'));
 
     // Apply filters
-    q = query(q, where('is_deleted', '==', filters.is_deleted));
     q = query(q, where('is_active', '==', filters.is_active));
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    // Add orderBy for updated_at in descending order
+    q = query(q, orderBy('updated_at', 'desc'));
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(q, async (snapshot) => {

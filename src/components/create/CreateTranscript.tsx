@@ -264,6 +264,7 @@ export default function CreateTranscript() {
           transcript_type: "interview",
           topic_tags: selectedDocument.topic_tags,
           transcript_model: selectedPrompt.tts_model,
+          transcript_model_name: selectedPrompt.tts_model_name,
           transcript_text: data.transcript,
           is_active: true,
           is_deleted: false,

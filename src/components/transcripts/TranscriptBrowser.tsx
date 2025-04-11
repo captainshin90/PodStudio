@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { databaseService } from "@/lib/services/database-service";
 
 interface TranscriptBrowserProps {
@@ -48,8 +48,10 @@ export default function TranscriptBrowser({
     if (filters.transcript_type !== "all") {
       q = query(q, where('transcript_type', '==', filters.transcript_type));
     }
-    q = query(q, where('is_deleted', '==', filters.is_deleted));
     q = query(q, where('is_active', '==', filters.is_active));
+    q = query(q, where('is_deleted', '==', filters.is_deleted));
+    // Add orderBy for updated_at in descending order
+    q = query(q, orderBy('updated_at', 'desc'));
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -57,6 +59,7 @@ export default function TranscriptBrowser({
       snapshot.forEach((doc) => {
         updatedTranscripts.push({ id: doc.id, ...doc.data() } as Transcript);
       });
+      
       setTranscripts(updatedTranscripts);
       setIsLoading(false);
     }, (error) => {

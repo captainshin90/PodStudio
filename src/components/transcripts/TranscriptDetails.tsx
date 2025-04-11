@@ -139,6 +139,7 @@ export default function TranscriptDetails({
         transcript_type: "interview",
         topic_tags: [],
         transcript_model: "",
+        transcript_model_name: "",
         transcript_text: "",
         is_active: true,
         is_deleted: false,
@@ -402,15 +403,31 @@ export default function TranscriptDetails({
           />
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="transcript_model" className="text-muted-foreground/70">Model</Label>
-          <Input
-            id="transcript_model"
-            name="transcript_model"
-            value={formData.transcript_model || ""}
-            onChange={handleChange}
-            disabled={isReadOnly}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="transcript_model" className="text-muted-foreground/70">Model</Label>
+            </div>
+            <Input
+              id="transcript_model"
+              name="transcript_model"
+              value={formData.transcript_model || ""}
+              onChange={handleChange}
+              disabled={isReadOnly}
+            />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="transcript_model_name" className="text-muted-foreground/70">Model Name</Label>
+            </div>
+            <Input
+              id="transcript_model_name"
+              name="transcript_model_name"
+              value={formData.transcript_model_name || ""}
+              onChange={handleChange}
+              disabled={isReadOnly}
+            />
+          </div>
         </div>
 
         <div className="space-y-1">
