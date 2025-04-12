@@ -126,6 +126,7 @@ export default function ModelBrowser({
     );
   }
 
+  // return the model browser component
   return (
     <div className={`flex flex-col h-[calc(80vh-3rem)] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex gap-2 mb-4">
@@ -161,7 +162,7 @@ export default function ModelBrowser({
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2" ref={listRef}>
+      <div className="space-y-1 overflow-y-auto flex-1 pr-2 pl-2 pb-2 pt-1" ref={listRef}>
         {filteredModels.map((model, index) => (
           <div
             key={model.id}
@@ -182,9 +183,9 @@ export default function ModelBrowser({
             aria-selected={selectedModel?.id === model.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium">{model.model_name}</div>
-            <div className="text-xs opacity-80 mt-0.5">
-              {model.model_desc}
+            <div className="font-medium truncate">{model.model_name}</div>
+            <div className="text-xs opacity-80 mt-0.5 truncate">
+              {model.model_type}
             </div>
           </div>
         ))}

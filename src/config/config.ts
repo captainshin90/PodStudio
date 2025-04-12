@@ -36,6 +36,9 @@ export const config = {
   defaultTTSProvider: env.VITE_DEFAULT_TTS_PROVIDER || 'gemini',
   defaultExtractTool: env.VITE_DEFAULT_EXTRACT_TOOL || 'podcastfy',
 
+  // NOTE: AI model settings are now stored in the models collection in Firestore
+  //       see modelsService.ts for details
+
   // OpenAI configuration
   openai: {
     apiKey: env.VITE_OPENAI_API_KEY || '',

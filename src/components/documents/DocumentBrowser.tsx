@@ -222,8 +222,8 @@ export default function DocumentBrowser({
             aria-selected={selectedDocument?.id === document.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium">{document.doc_name}</div>
-            <div className="text-xs opacity-80 mt-0.5">
+            <div className="font-medium truncate">{document.doc_name}</div>
+            <div className="text-xs opacity-80 mt-0.5 truncate">
              { document.topic_tags?.join(", ") }
             </div>
           </div>

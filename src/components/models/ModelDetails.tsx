@@ -7,6 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft } from "lucide-react";
 import { nanoid } from "nanoid";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
     AlertDialog, 
     AlertDialogAction, 
@@ -17,6 +23,15 @@ import {
     AlertDialogHeader,
     AlertDialogFooter
 } from "@/components/ui/alert-dialog";
+// import { ttsVoiceDefaults } from "@/config/podcast-config";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,6 +63,28 @@ export default function ModelDetails({
   const [hasChanges, setHasChanges] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
+  // Define the provider options
+  const providerOptions = [
+    { id: "gemini", type: "LLM", title: "Google Gemini", question: "en-US-Standard-A", answer: "en-US-Standard-C", model: "" },
+    { id: "geminimulti", type: "LLM", title: "Google Gemini Multi", question: "R", answer: "S", model: "en-US-Studio-MultiSpeaker" },
+    { id: "edge", type: "LLM", title: "Microsoft Edge", question: "en-US-JennyNeural", answer: "en-US-EricNeural", model: "" },
+    { id: "openai", type: "LLM", title: "OpenAI", question: "echo", answer: "shimmer", model: "tts-1-hd" },
+    { id: "deepseek", type: "LLM", title: "DeepSeek", question: "default", answer: "default", model: "default" },
+    { id: "anthropic", type: "LLM", title: "Anthropic", question: "default", answer: "default", model: "default" },
+    { id: "xai", type: "LLM", title: "xAI", question: "default", answer: "default", model: "default" },
+    { id: "elevenlabs", type: "TTS", title: "ElevenLabs", question: "Chris", answer: "Jessica", model: "eleven_multilingual_v2" },
+    { id: "hume", type: "TTS", title: "Hume AI", question: "default", answer: "default", model: "default" },
+    { id: "playai", type: "TTS", title: "Play.ai", question: "default", answer: "default", model: "default" },
+  ];
+
+  // Define the model type options
+  const modelTypeOptions = [
+    { value: "LLM", label: "Language Model" },
+    { value: "TTS", label: "Text-to-Speech" },
+    { value: "STT", label: "Speech-to-Text" },
+    { value: "EXTRACT", label: "Text Extraction" }
+  ];
+
   useEffect(() => {
     if (model) {
       setFormData(model);
@@ -68,9 +105,9 @@ export default function ModelDetails({
         frequency_penalty: 0.0,
         presence_penalty: 0.0,
         stop_sequences: [],
-        voice_question: "",
-        voice_answer: "",
-        voice_model: "",
+        voice_question: providerOptions.find(provider => provider.id === formData.model_provider)?.question || "",
+        voice_answer: providerOptions.find(provider => provider.id === formData.model_provider)?.answer || "",
+        voice_model: providerOptions.find(provider => provider.id === formData.model_provider)?.model || "",
         is_active: true,
         is_deleted: false,
         created_at: new Date(),
@@ -160,17 +197,67 @@ export default function ModelDetails({
             />
           </div>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="model_name" className="text-muted-foreground/70">Name</Label>
-          <Input
-            id="model_name"
-            name="model_name"
-            placeholder="Enter Model Name"
-            value={formData.model_name || ""}
-            onChange={handleChange}
-            required
-            disabled={isReadOnly}
-          />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">Provider</Label>
+            <Select
+              value={formData.model_provider || ""}
+              onValueChange={(value) => {
+                // Find the selected provider
+                const selectedProvider = providerOptions.find(provider => provider.id === value);
+                
+                // Update form data with provider and its default voice settings
+                setFormData(prev => ({ 
+                  ...prev, 
+                  model_provider: value,
+                  // Set default voice values if a provider is selected
+                  ...(selectedProvider && {
+                    voice_question: selectedProvider.question,
+                    voice_answer: selectedProvider.answer,
+                    voice_model: selectedProvider.model,
+                    // Set the model type based on the provider's type
+                    model_type: selectedProvider.type
+                  })
+                }));
+                setHasChanges(true);
+              }}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {providerOptions.map((provider) => (
+                  <SelectItem key={provider.id} value={provider.id}>
+                    {provider.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="model_type" className="text-muted-foreground/70">Model Type</Label>
+            <Select
+              value={formData.model_type || ""}
+              onValueChange={(value) => {
+                setFormData(prev => ({ ...prev, model_type: value }));
+                setHasChanges(true);
+              }}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Model Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {modelTypeOptions.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-1">
@@ -187,12 +274,12 @@ export default function ModelDetails({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="model_type" className="text-muted-foreground/70">Model Type</Label>
+            <Label htmlFor="model_name" className="text-muted-foreground/70">Model Name (e.g. gemini-1.5-pro)</Label>
             <Input
-              id="model_type"
-              name="model_type"
-              placeholder="LLM, TTS, STT, etc."
-              value={formData.model_type || ""}
+              id="model_name"
+              name="model_name"
+              placeholder="Enter Model Name"
+              value={formData.model_name || ""}
               onChange={handleChange}
               required
               disabled={isReadOnly}
@@ -200,65 +287,35 @@ export default function ModelDetails({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="model_provider" className="text-muted-foreground/70">Provider</Label>
+            <Label htmlFor="model_url" className="text-muted-foreground/70">Model URL</Label>
             <Input
-              id="model_provider"
-              name="model_provider"
-              placeholder="OpenAI, Google, etc."
-              value={formData.model_provider || ""}
-              onChange={handleChange}
-              required
-              disabled={isReadOnly}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="model_url" className="text-muted-foreground/70">Model URL</Label>
-          <Input
-            id="model_url"
-            name="model_url"
-            placeholder="Enter Model URL"
-            value={formData.model_url || ""}
-            onChange={handleChange}
-            disabled={isReadOnly}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="top_k" className="text-muted-foreground/70">Top K</Label>
-            <Input
-              id="top_k"
-              name="top_k"
-              type="number"
-              min={1}
-              max={100}
-              value={formData.top_k || 40}
-              onChange={handleChange}
-              disabled={isReadOnly}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="top_p" className="text-muted-foreground/70">Top P</Label>
-            <Input
-              id="top_p"
-              name="top_p"
-              type="number"
-              min={0}
-              max={1}
-              step={0.01}
-              value={formData.top_p || 0.95}
+              id="model_url"
+              name="model_url"
+              placeholder="Enter Model URL"
+              value={formData.model_url || ""}
               onChange={handleChange}
               disabled={isReadOnly}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="temperature" className="text-muted-foreground/70">Temperature</Label>
+        <div className="border-t border-zinc-200 my-4 space-y-2"></div>
+
+        <div className="grid grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="temperature" className="text-muted-foreground/70">Temperature</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Controls randomness in the output. Higher values (e.g., 0.8) make the output more random, while lower values (e.g., 0.2) make it more focused and deterministic.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="temperature"
               name="temperature"
@@ -269,11 +326,24 @@ export default function ModelDetails({
               value={formData.temperature || 0.7}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-24"
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="max_tokens" className="text-muted-foreground/70">Max Tokens</Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="max_tokens" className="text-muted-foreground/70">Max Tokens</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>The maximum number of tokens to generate in the response. One token is roughly 4 characters for English text.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="max_tokens"
               name="max_tokens"
@@ -283,13 +353,81 @@ export default function ModelDetails({
               value={formData.max_tokens || 1000}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-24"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="top_k" className="text-muted-foreground/70">Top K</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Limits the number of tokens considered for each step of text generation to the K most likely ones.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Input
+              id="top_k"
+              name="top_k"
+              type="number"
+              min={1}
+              max={100}
+              value={formData.top_k || 40}
+              onChange={handleChange}
+              disabled={isReadOnly}
+              className="w-24"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="top_p" className="text-muted-foreground/70">Top P</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Controls diversity by limiting cumulative probability of tokens considered for generation. Lower values make output more focused.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Input
+              id="top_p"
+              name="top_p"
+              type="number"
+              min={0}
+              max={1}
+              step={0.01}
+              value={formData.top_p || 0.95}
+              onChange={handleChange}
+              disabled={isReadOnly}
+              className="w-24"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="repetition_penalty" className="text-muted-foreground/70">Repetition Penalty</Label>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="repetition_penalty" className="text-muted-foreground/70">Repetition Penalty</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Penalizes the model for repeating the same token multiple times. Higher values (e.g., 1.2) reduce repetition, while lower values (e.g., 1.0) allow more repetition.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="repetition_penalty"
               name="repetition_penalty"
@@ -300,11 +438,24 @@ export default function ModelDetails({
               value={formData.repetition_penalty || 1.0}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-24"
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="frequency_penalty" className="text-muted-foreground/70">Frequency Penalty</Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="frequency_penalty" className="text-muted-foreground/70">Frequency Penalty</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Reduces the likelihood of the model repeating the same token based on its frequency in the text so far. Higher values (e.g., 0.5) reduce repetition of frequent tokens.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="frequency_penalty"
               name="frequency_penalty"
@@ -315,11 +466,24 @@ export default function ModelDetails({
               value={formData.frequency_penalty || 0.0}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-24"
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="presence_penalty" className="text-muted-foreground/70">Presence Penalty</Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="presence_penalty" className="text-muted-foreground/70">Presence Penalty</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                    <p>Reduces the likelihood of the model repeating the same topic or concept. Higher values (e.g., 0.5) encourage the model to talk about new topics.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="presence_penalty"
               name="presence_penalty"
@@ -330,13 +494,42 @@ export default function ModelDetails({
               value={formData.presence_penalty || 0.0}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="w-24"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-1">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 space-y-0">
             <Label htmlFor="voice_question" className="text-muted-foreground/70">Question Voice</Label>
+            <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                  <p className="max-w-xs">
+                      {formData.model_name?.startsWith("gemini") ? (
+                        <>
+                          Select a voice from the{" "}
+                          <a 
+                            href="https://cloud.google.com/text-to-speech/docs/list-voices-and-types"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            Google Cloud Text-to-Speech voices list
+                          </a>
+                        </>
+                      ) : (
+                        "Voice used for the interviewer's questions"
+                      )}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>            
             <Input
               id="voice_question"
               name="voice_question"
@@ -344,10 +537,11 @@ export default function ModelDetails({
               value={formData.voice_question || ""}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="mt-2"
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0">
             <Label htmlFor="voice_answer" className="text-muted-foreground/70">Answer Voice</Label>
             <Input
               id="voice_answer"
@@ -356,10 +550,11 @@ export default function ModelDetails({
               value={formData.voice_answer || ""}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="mt-2"
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0">
             <Label htmlFor="voice_model" className="text-muted-foreground/70">Voice Model</Label>
             <Input
               id="voice_model"
@@ -368,9 +563,12 @@ export default function ModelDetails({
               value={formData.voice_model || ""}
               onChange={handleChange}
               disabled={isReadOnly}
+              className="mt-2"
             />
           </div>
         </div>
+
+        <div className="border-t border-zinc-200 my-4"></div>
 
         {!isReadOnly && (
           <div className="space-y-3">
@@ -400,7 +598,7 @@ export default function ModelDetails({
             
             <div className="flex items-center space-x-2">
               <Label className="text-muted-foreground/70">Created:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.created_at 
                   ? (formData.created_at instanceof Date 
                       ? formData.created_at.toLocaleString() 
@@ -410,7 +608,7 @@ export default function ModelDetails({
                   : ""}
               </span>
               <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.updated_at 
                   ? (formData.updated_at instanceof Date 
                       ? formData.updated_at.toLocaleString() 

@@ -2,81 +2,22 @@ import { useState, useEffect } from "react";
 import { Document } from "@/lib/schemas/documents";
 import { Prompt } from "@/lib/schemas/prompts";
 import { Transcript } from "@/lib/schemas/transcripts";
+import { Model } from "@/lib/schemas/models";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronDown, Play } from "lucide-react";
 import { io } from "socket.io-client";
-import { documentsService, promptsService, transcriptsService } from "@/lib/services/database-service";
+import { documentsService, modelsService, promptsService, transcriptsService } from "@/lib/services/database-service";
 import DocumentDetails from "@/components/documents/DocumentDetails";
 import PromptDetails from "@/components/prompts/PromptDetails";
 import TranscriptDetails from "@/components/transcripts/TranscriptDetails";
+import ModelDetails from "@/components/models/ModelDetails";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@radix-ui/react-progress";
-import { nanoid } from "nanoid";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { nanoid } from "nanoid";        
+// import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SelectDialog from "@/components/ui/select-dialog";
 
-interface SelectDialogProps {
-  title: string;
-  items: Array<{ id: string; title: string }>;
-  onSelect: (id: string) => void;
-  trigger: React.ReactNode;
-}
-
-//////////////////////////////////////////////////////////////////////
-// Select Dialog
-//////////////////////////////////////////////////////////////////////
-function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-2 rounded-lg hover:bg-muted cursor-pointer"
-                onClick={() => {
-                  onSelect(item.id);
-                  setOpen(false);
-                }}
-              >
-                <div className="font-medium">{item.title}</div>
-                <div className="text-xs text-muted-foreground">{item.id}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // This is the main component for creating a transcript
@@ -88,8 +29,10 @@ export default function CreateTranscript() {
   const [statusMessage, setStatusMessage] = useState("");
   const [documents, setDocuments] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; title: string }>>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [generatedTranscript, setGeneratedTranscript] = useState<Transcript | null>(null);
   const [hasGeneratedTranscript, setHasGeneratedTranscript] = useState(false);
   const [sourceType, setSourceType] = useState("text"); // 'urls' or 'text'
@@ -101,9 +44,10 @@ export default function CreateTranscript() {
   // This is a helper function to load the documents and prompts
   const loadSelectionData = async () => {
     try {
-      const [loadedDocuments, loadedPrompts] = await Promise.all([
+      const [loadedDocuments, loadedPrompts, loadedModels] = await Promise.all([
         documentsService.getAllDocuments(),
-        promptsService.getAllPrompts()
+        promptsService.getAllPrompts(),
+        modelsService.getAllModels(),
       ]);
 
       if (loadedDocuments) {
@@ -116,11 +60,16 @@ export default function CreateTranscript() {
           .filter(p => p.is_active && !p.is_deleted)
           .map(p => ({ id: p.id, title: p.prompt_name })));
       }
+      if (loadedModels) {
+        setModels(loadedModels
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'LLM')
+          .map(m => ({ id: m.id, title: m.model_name })));
+      }
     } catch (error) {
       console.error("Error loading selection data:", error);
       toast({
         title: "Error",
-        description: "Failed to load documents and prompts",
+        description: "Failed to load selection data",
         variant: "destructive",
       });
     }
@@ -162,11 +111,36 @@ export default function CreateTranscript() {
     }
   };
 
+  // Handle model selection
+  const handleModelSelect = async (modelId: string) => {
+    try {
+      const model = await modelsService.getModelById(modelId);
+      if (model) {
+        setSelectedModel(model as Model);
+        setHasGeneratedTranscript(false);
+      }
+    } catch (error) {
+      console.error("Error loading model:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load selected model",
+        variant: "destructive",
+      });
+    }
+  };
+
   //////////////////////////////////////////////////////////////////////////////
   // This is a helper function to handle the transcript generation
   //////////////////////////////////////////////////////////////////////////////
   const handleGenerateTranscript = async () => {
-    if (!selectedDocument || !selectedPrompt) return;
+    if (!selectedDocument || !selectedPrompt || !selectedModel) {
+      toast({
+        title: "Error",
+        description: "Please select a document, prompt, and model",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // validate either text or urls are present
     if (sourceType === 'text' && !selectedDocument.doc_extracted_text) {
@@ -216,7 +190,6 @@ export default function CreateTranscript() {
           tagline: selectedDocument.doc_desc,
           is_long_form: selectedPrompt.is_long_form,
           word_count: selectedPrompt.word_count,
-          creativity: selectedPrompt.creativity,
           conversation_style: selectedPrompt.conversation_style,
           roles_person1: selectedPrompt.roles_person1,
           roles_person2: selectedPrompt.roles_person2,
@@ -224,6 +197,9 @@ export default function CreateTranscript() {
           engagement_techniques: selectedPrompt.engagement_techniques,
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
+          creativity: selectedPrompt.creativity,
+          llm_model: selectedModel.model_provider,  // TODO: change to model_provider
+          llm_model_name: selectedModel.model_name, // specific model version
           secret_key: sessionStorage.getItem("secret_key") || "",
         };
 
@@ -257,14 +233,13 @@ export default function CreateTranscript() {
       socket.on("complete", async (data: {transcript: string }) => {
         const newTranscript: Transcript = {
           id: "transcript_" + nanoid(20),  
-          // transcript_id: transcriptId, 
           doc_id: selectedDocument.id,
           prompt_id: selectedPrompt.id,
           transcript_title: `${selectedDocument.doc_name} - ${selectedPrompt.prompt_name}`,
           transcript_type: "interview",
           topic_tags: selectedDocument.topic_tags,
-          transcript_model: selectedPrompt.tts_model,
-          transcript_model_name: selectedPrompt.tts_model_name,
+          transcript_model: selectedModel.model_name,
+          transcript_model_name: selectedModel.model_name,
           transcript_text: data.transcript,
           is_active: true,
           is_deleted: false,
@@ -303,6 +278,7 @@ export default function CreateTranscript() {
       setGeneratedTranscript(null);
       setSelectedDocument(null);
       setSelectedPrompt(null);
+      setSelectedModel(null);
       setHasGeneratedTranscript(false);
     } catch (error) {
       console.error("Error saving transcript:", error);
@@ -319,6 +295,7 @@ export default function CreateTranscript() {
     setGeneratedTranscript(null);
     setSelectedDocument(null);
     setSelectedPrompt(null);
+    setSelectedModel(null);
     setHasGeneratedTranscript(false);
   };
 
@@ -374,6 +351,24 @@ export default function CreateTranscript() {
               }
             />
           </div>
+
+          <div>
+            <h3 className="text-lg font-medium mb-2 text-muted-foreground pl-3">3. Select a LLM Model</h3>
+            <SelectDialog
+              title="Select LLM Model"
+              items={models}
+              onSelect={handleModelSelect}
+              trigger={
+                <Button variant="outline" className="w-full justify-between pl-7">
+                  <span className="truncate mr-2 max-w-[calc(100%-24px)]">
+                    {selectedModel ? selectedModel.model_name : "Select LLM Model"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </Button>
+              }
+            />
+          </div>
+
           <div className="border-t pt-4 space-y-4">
             {isGenerating && (
               <div className="space-y-2">
@@ -386,7 +381,7 @@ export default function CreateTranscript() {
             <Button
               className="w-full text-lg"
               onClick={handleGenerateTranscript}
-              disabled={!selectedDocument || !selectedPrompt || isGenerating || hasGeneratedTranscript}
+              disabled={!selectedDocument || !selectedPrompt || !selectedModel || isGenerating || hasGeneratedTranscript}
             >
               {isGenerating ? (
                 <>
@@ -433,6 +428,15 @@ export default function CreateTranscript() {
                 isReadOnly={true}
               />
             </div>
+            <div className="border-t pt-4">
+              <ModelDetails
+                model={selectedModel}
+                onSave={() => {}}
+                onCancel={() => {}}
+                isNew={false}
+                isReadOnly={true}
+              />
+            </div>
           </>
         ) : (
           <>
@@ -453,7 +457,18 @@ export default function CreateTranscript() {
                   onCancel={() => {}}
                   isNew={false}
                   isReadOnly={true}
-                  />
+                />
+              </div>
+            )}
+            {selectedModel && (
+              <div className="mt-4">
+                <ModelDetails
+                  model={selectedModel}
+                  onSave={() => {}}
+                  onCancel={() => {}}
+                  isNew={false}
+                  isReadOnly={true}
+                />
               </div>
             )}
           </>

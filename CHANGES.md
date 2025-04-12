@@ -23,6 +23,7 @@
     x - DocumentDetails: make Source URL a list to support multiple sources.
     x - DocumentDetails: support multiple file uploads, text extract support multiple documents for text extraction. 
     x - https://github.com/lfnovo/open-notebook/blob/main/open_notebook/plugins/podcasts.py
+    x - Add schema, page for AI Models
 
 
     - podcastfy: Add Deepseek, Grok for content to transcript
@@ -497,3 +498,4 @@ URL vs Filepath:
 x - Play button hover on the episode image 
 x - Get more podcast types from Open Notebook in plugins/podcast.py
 x - Make LLM/TTS model version database configurable 
+x - sort browser records by updated_at

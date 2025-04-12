@@ -462,6 +462,7 @@ export default function TranscriptDetails({
 
         {!isReadOnly && (
           <div className="space-y-3">
+            <div className="border-t border-zinc-200 my-4"></div>
             <div className="flex items-center space-x-2">
               <Switch
                 id="is_active"
@@ -489,7 +490,7 @@ export default function TranscriptDetails({
 
             <div className="flex items-center space-x-2">
               <Label className="text-muted-foreground/70">Created:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.created_at 
                   ? (formData.created_at instanceof Date 
                       ? formData.created_at.toLocaleString() 
@@ -499,7 +500,7 @@ export default function TranscriptDetails({
                   : ""}
               </span>
               <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.updated_at 
                   ? (formData.updated_at instanceof Date 
                       ? formData.updated_at.toLocaleString() 

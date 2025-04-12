@@ -1,80 +1,22 @@
-// import { config } from "@/config/config";
 import { useState, useEffect } from "react";
 import { Podcast } from "@/lib/schemas/podcasts";
 import { Transcript } from "@/lib/schemas/transcripts";
 import { Prompt } from "@/lib/schemas/prompts";
 import { Episode } from "@/lib/schemas/episodes";
+import { Model } from "@/lib/schemas/models";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronDown, Play } from "lucide-react";
 import { io } from "socket.io-client";
-import { podcastsService, transcriptsService, promptsService, episodesService } from "@/lib/services/database-service";
+import { podcastsService, transcriptsService, promptsService, episodesService, modelsService } from "@/lib/services/database-service";
 import PodcastDetails from "@/components/podcasts/PodcastDetails";
 import TranscriptDetails from "@/components/transcripts/TranscriptDetails";
 import PromptDetails from "@/components/prompts/PromptDetails";
 import EpisodeDetails from "@/components/episodes/EpisodeDetails";
+import ModelDetails from "@/components/models/ModelDetails";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-
-interface SelectDialogProps {
-  title: string;
-  items: Array<{ id: string; title: string }>;
-  onSelect: (id: string) => void;
-  trigger: React.ReactNode;
-}
-
-//////////////////////////////////////////////////////////////////////
-// Select Dialog
-//////////////////////////////////////////////////////////////////////
-function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-2 rounded-lg hover:bg-muted cursor-pointer"
-                onClick={() => {
-                  onSelect(item.id);
-                  setOpen(false);
-                }}
-              >
-                <div className="font-medium">{item.title}</div>
-                <div className="text-xs text-muted-foreground">{item.id}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import SelectDialog from "@/components/ui/select-dialog";
 
 //////////////////////////////////////////////////////////////////////////////
 // This is the main component for creating a podcast
@@ -87,9 +29,11 @@ export default function CreatePodcast() {
   const [podcasts, setPodcasts] = useState<Array<{ id: string; title: string }>>([]);
   const [transcripts, setTranscripts] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
+  const [ttsModels, setTtsModels] = useState<Array<{ id: string; title: string }>>([]);
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null);
   const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [selectedTtsModel, setSelectedTtsModel] = useState<Model | null>(null);
   const [generatedEpisode, setGeneratedEpisode] = useState<Episode | null>(null);
   const [hasGeneratedPodcast, setHasGeneratedPodcast] = useState(false);
 
@@ -100,10 +44,11 @@ export default function CreatePodcast() {
   // This is a helper function to load the podcasts, transcripts, and prompts
   const loadSelectionData = async () => {
     try {
-      const [loadedPodcasts, loadedTranscripts, loadedPrompts] = await Promise.all([
+      const [loadedPodcasts, loadedTranscripts, loadedPrompts, loadedModels] = await Promise.all([
         podcastsService.getAllPodcasts(),
         transcriptsService.getAllTranscripts(),
-        promptsService.getAllPrompts()
+        promptsService.getAllPrompts(),
+        modelsService.getAllModels()
       ]);
 
       if (loadedPodcasts) {
@@ -121,11 +66,16 @@ export default function CreatePodcast() {
           .filter(p => p.is_active && !p.is_deleted)
           .map(p => ({ id: p.id, title: p.prompt_name })));
       }
+      if (loadedModels) {
+        setTtsModels(loadedModels
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'TTS')
+          .map(m => ({ id: m.id, title: m.model_name })));
+      }
     } catch (error) {
       console.error("Error loading selection data:", error);
       toast({
         title: "Error",
-        description: "Failed to load podcasts, transcripts, and prompts",
+        description: "Failed to load selection data",
         variant: "destructive",
       });
     }
@@ -185,15 +135,32 @@ export default function CreatePodcast() {
     }
   };
 
+  // Handle TTS model selection
+  const handleTtsModelSelect = async (modelId: string) => {
+    try {
+      const model = await modelsService.getModelById(modelId);
+      if (model) {
+        setSelectedTtsModel(model as Model);
+        setHasGeneratedPodcast(false);
+      }
+    } catch (error) {
+      console.error("Error loading TTS model:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load selected TTS model",
+        variant: "destructive",
+      });
+    }
+  };
+
   //////////////////////////////////////////////////////////////////////////////
   // This is a helper function to handle the podcast generation
   //////////////////////////////////////////////////////////////////////////////
   const handleGeneratePodcast = async () => {
-    // validate that we have a podcast, transcript, and prompt
-    if (!selectedPodcast || !selectedTranscript || !selectedPrompt) {
+    if (!selectedPodcast || !selectedTranscript || !selectedPrompt || !selectedTtsModel) {
       toast({
         title: "Missing Information",
-        description: "Please select a podcast, transcript, and prompt",
+        description: "Please select a podcast, transcript, prompt, and TTS model",
         variant: "destructive",
       });
       return;
@@ -204,14 +171,12 @@ export default function CreatePodcast() {
     setStatusMessage("Connecting to server...");
 
     try {
-      // const episodeId = crypto.randomUUID();
       const socket = io({
         path: "/socket.io",
         reconnection: true,
         timeout: 10000,
       });
 
-      // handle cleanup
       const cleanup = () => {
         console.log("Cleaning up socket connection...");
         socket.disconnect();
@@ -239,13 +204,11 @@ export default function CreatePodcast() {
           engagement_techniques: selectedPrompt.engagement_techniques,
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
-          llm_model: selectedPrompt.llm_model,
-          llm_model_name: selectedPrompt.llm_model_name,
-          tts_model: selectedPrompt.tts_model,
-          tts_model_name: selectedPrompt.tts_model_name,
-          voice_question: selectedPrompt.voice_question,
-          voice_answer: selectedPrompt.voice_answer,
-          voice_model: selectedPrompt.voice_model,
+          tts_model: selectedTtsModel.model_provider,   // TODO: change to model_provider?
+          tts_model_name: selectedTtsModel.model_name,
+          voice_question: selectedTtsModel.voice_question,
+          voice_answer: selectedTtsModel.voice_answer,
+          voice_model: selectedTtsModel.voice_model,
           secret_key: sessionStorage.getItem("secret_key") || "",
         };
 
@@ -340,6 +303,7 @@ export default function CreatePodcast() {
       setSelectedPodcast(null);
       setSelectedTranscript(null);
       setSelectedPrompt(null);
+      setSelectedTtsModel(null);
       setHasGeneratedPodcast(false);
     } catch (error) {
       console.error("Error saving episode:", error);
@@ -359,6 +323,7 @@ export default function CreatePodcast() {
     setSelectedPodcast(null);
     setSelectedTranscript(null);
     setSelectedPrompt(null);
+    setSelectedTtsModel(null);
     setHasGeneratedPodcast(false);
   };
 
@@ -421,6 +386,23 @@ export default function CreatePodcast() {
             />
           </div>
 
+          <div>
+            <h3 className="text-lg font-medium mb-2 text-muted-foreground pl-3">4. Select a TTS Model</h3>
+            <SelectDialog
+              title="Select TTS Model"
+              items={ttsModels}
+              onSelect={handleTtsModelSelect}
+              trigger={
+                <Button variant="outline" className="w-full justify-between pl-7">
+                  <span className="truncate mr-2 max-w-[calc(100%-24px)]">
+                    {selectedTtsModel ? selectedTtsModel.model_name : "Select TTS Model"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </Button>
+              }
+            />
+          </div>
+
           <div className="border-t pt-4 space-y-4">
             {isGenerating && (
               <div className="space-y-2">
@@ -433,7 +415,7 @@ export default function CreatePodcast() {
             <Button
               className="w-full text-lg"
               onClick={handleGeneratePodcast}
-              disabled={!selectedPodcast || !selectedTranscript || !selectedPrompt || isGenerating || hasGeneratedPodcast}
+              disabled={!selectedPodcast || !selectedTranscript || !selectedPrompt || !selectedTtsModel || isGenerating || hasGeneratedPodcast}
             >
               {isGenerating ? (
                 <>
@@ -490,6 +472,15 @@ export default function CreatePodcast() {
                 isReadOnly={true}
               />
             </div>
+            <div className="border-t pt-4">
+              <ModelDetails
+                model={selectedTtsModel}
+                onSave={() => {}}
+                onCancel={() => {}}
+                isNew={false}
+                isReadOnly={true}
+              />
+            </div>
           </>
         ) : (
           <>
@@ -517,6 +508,17 @@ export default function CreatePodcast() {
               <div className="mt-4">
                 <PromptDetails
                   prompt={selectedPrompt}
+                  onSave={() => {}}
+                  onCancel={() => {}}
+                  isNew={false}
+                  isReadOnly={true}
+                />
+              </div>
+            )}
+            {selectedTtsModel && (
+              <div className="mt-4">
+                <ModelDetails
+                  model={selectedTtsModel}
                   onSave={() => {}}
                   onCancel={() => {}}
                   isNew={false}

@@ -206,8 +206,8 @@ export default function TranscriptBrowser({
             aria-selected={selectedTranscript?.id === transcript.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium">{transcript.transcript_title}</div>
-            <div className="text-xs opacity-80 mt-0.5">
+            <div className="font-medium truncate">{transcript.transcript_title}</div>
+            <div className="text-xs opacity-80 mt-0.5 truncate">
               {transcript.topic_tags?.join(", ")}
             </div>
           </div>

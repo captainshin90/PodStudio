@@ -237,12 +237,12 @@ export default function EpisodeBrowser({
             aria-selected={selectedEpisode?.id === episode.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium">{episode.episode_title}</div>
+            <div className="font-medium truncate">{episode.episode_title}</div>
             <div className="text-xs opacity-80 mt-0.5">
               {episode.podcast_title || "No podcast selected"}
             </div>
-            <div className="text-xs opacity-80 mt-0.5">
-              {episode.topic_tags?.join(", ") || "No topic tags"}
+            <div className="text-xs opacity-80 mt-0.5 truncate">
+              {episode.topic_tags?.join(", ")}
             </div>
           </div>
         ))}

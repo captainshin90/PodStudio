@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, ChevronDown } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
@@ -33,20 +33,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   ConversationStyle,
   DialogueStructure,
   EngagementTechnique,
-  ttsVoiceDefaults,
   conversationStyles,
   dialogueStructures,
   engagementTechniques,
-  LLMModel,
-  llmModelOptions,
-  TTSModel,
-  ttsModelOptions
 } from '@/config/podcast-config';
 import { nanoid } from "nanoid";
-import { config } from "@/config/config";
+import { modelsService } from "@/lib/services/database-service";
 
 interface PromptDetailsProps {
   prompt: Prompt | null;
@@ -125,6 +127,57 @@ const AddCustomValue = ({
 // PromptDetails component
 /////////////////////////////////////////////////////////////////////////////// 
 
+interface SelectDialogProps {
+  title: string;
+  items: Array<{ id: string; title: string }>;
+  onSelect: (id: string) => void;
+  trigger: React.ReactNode;
+}
+
+function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const filteredItems = items.filter((item) =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-2xl overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="relative">
+            <div className="overflow-y-auto max-h-[300px] pr-4">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-2 rounded-lg hover:bg-muted cursor-pointer mb-2"
+                  onClick={() => {
+                    onSelect(item.id);
+                    setOpen(false);
+                  }}
+                >
+                  <div className="font-medium truncate">{item.title}</div>
+                  <div className="text-xs text-muted-foreground truncate">{item.id}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PromptDetails({
   prompt,
   onSave,
@@ -139,6 +192,8 @@ export default function PromptDetails({
   const [customDialogueStructures, setCustomDialogueStructures] = useState<DialogueStructure[]>(dialogueStructures);
   const [customEngagementTechniques, setCustomEngagementTechniques] = useState<EngagementTechnique[]>(engagementTechniques);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [llmModels, setLlmModels] = useState<Array<{ id: string; title: string }>>([]);
+  const [ttsModels, setTtsModels] = useState<Array<{ id: string; title: string }>>([]);
 
   useEffect(() => {
     if (prompt) {
@@ -147,27 +202,26 @@ export default function PromptDetails({
     } else if (isNew) {
       setFormData({
         id: "prompt_" + nanoid(20),
-        // prompt_id: crypto.randomUUID(),
         prompt_name: "",
         prompt_desc: "",
         prompt_text: "",
         is_long_form: false,
-        word_count: 250,
-        max_tokens: 1000,
-        creativity: 0.7,
+        word_count: 250,      // use as override for model max_tokens
+        creativity: 0.7,      // use as override for model temperature
         roles_person1: "Interviewer",
         roles_person2: "Subject matter expert",
         conversation_style: ["Engaging", "Fast-paced", "Enthusiastic"],
         dialogue_structure: ["Discussions"], 
         engagement_techniques: ["Questions"],
-        llm_model: config.defaultLLMProvider as LLMModel,
-        llm_model_name: config[config.defaultLLMProvider as keyof typeof config].llmModel,
-        tts_model: config.defaultTTSProvider as TTSModel,
-        tts_model_name: config[config.defaultTTSProvider as keyof typeof config].ttsModel,
-        voice_question: ttsVoiceDefaults.gemini.question,
-        voice_answer: ttsVoiceDefaults.gemini.answer,
-        voice_model: ttsVoiceDefaults.gemini.model,
         ending_message: "Thank you for listening to this episode.",
+        llm_model_id: "",
+        tts_model_id: "",
+        // Chain of Thought prompting features
+        use_chain_of_thought: true,
+        cot_style: "Step-by-step",
+        cot_instructions: "",
+        cot_examples: [],
+        cot_verification: false,
         is_active: true,
         is_deleted: false,
         created_at: new Date(),
@@ -179,6 +233,28 @@ export default function PromptDetails({
       setHasChanges(false);
     }
   }, [prompt, isNew]);
+
+  useEffect(() => {
+    loadModels();
+  }, []);
+
+  const loadModels = async () => {
+    try {
+      const models = await modelsService.getAllModels();
+      if (models) {
+        const llms = models
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'LLM')
+          .map(m => ({ id: m.id, title: m.model_name }));
+        const tts = models
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'TTS')
+          .map(m => ({ id: m.id, title: m.model_name }));
+        setLlmModels(llms);
+        setTtsModels(tts);
+      }
+    } catch (error) {
+      console.error("Error loading models:", error);
+    }
+  };
 
   if (!prompt && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
@@ -305,6 +381,8 @@ export default function PromptDetails({
           />
         </div>
 
+        <div className="border-t border-zinc-200 pt-2 my-4"></div>
+
         {/* Prompt customization settings section */}
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
@@ -329,7 +407,7 @@ export default function PromptDetails({
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
                       <p className="max-w-xs">
                         Target number of words for the generated podcast (100-10000)
                       </p>
@@ -377,7 +455,7 @@ export default function PromptDetails({
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
                       <p className="max-w-xs">
                         Define the role of the first speaker (e.g., Host, Moderator, Journalist)
                       </p>
@@ -402,7 +480,7 @@ export default function PromptDetails({
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
                       <p className="max-w-xs">
                         Define the role of the second speaker (e.g., Guest Expert, Specialist, Researcher)
                       </p>
@@ -570,18 +648,6 @@ export default function PromptDetails({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Label htmlFor="ending_message" className="text-muted-foreground/70">Ending Message</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">
-                      The message that will be played at the end of the podcast
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
             <Input
               id="ending_message"
@@ -592,194 +658,247 @@ export default function PromptDetails({
               disabled={isReadOnly}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4"> 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-muted-foreground/70">LLM Model</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm">
-                      <div className="space-y-1 text-sm">
-                        <p className="font-semibold">API Key Setup Instructions:</p>
-                        <p><strong>Google Gemini:</strong></p>
-                        <ol className="list-decimal pl-4 space-y-1">
-                          <li>Go to Google Cloud Console</li>
-                          <li>Create an API key with access to these APIs</li>
-                        </ol>
-                        <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Select
-                value={formData.llm_model}
-                onValueChange={(value: LLMModel) => {
-                  setFormData({ ...formData, llm_model: value });
+              <Label className="text-muted-foreground/70">Default LLM Model</Label>
+              <SelectDialog
+                title="Select LLM Model"
+                items={llmModels}
+                onSelect={(id) => {
+                  setFormData(prev => ({ ...prev, llm_model_id: id }));
                   setHasChanges(true);
                 }}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select LLM model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {llmModelOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                trigger={
+                  <Button variant="outline" className="w-full justify-between" disabled={isReadOnly}>
+                    <span className="truncate">
+                      {formData.llm_model_id ? 
+                        llmModels.find(m => m.id === formData.llm_model_id)?.title || "Select LLM Model" :
+                        "Select LLM Model"
+                      }
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                }
+              />
             </div>
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-muted-foreground/70">LLM Model Name</Label>
-              </div>
-              <Input
-                id="llm_model_name"
-                name="llm_model_name"
-                value={formData.llm_model_name || ""}
-                onChange={handleChange}
-                placeholder="LLM Model Name"
-                disabled={isReadOnly}
+              <Label className="text-muted-foreground/70">Default TTS Model</Label>
+              <SelectDialog
+                title="Select TTS Model"
+                items={ttsModels}
+                onSelect={(id) => {
+                  setFormData(prev => ({ ...prev, tts_model_id: id }));
+                  setHasChanges(true);
+                }}
+                trigger={
+                  <Button variant="outline" className="w-full justify-between" disabled={isReadOnly}>
+                    <span className="truncate">
+                      {formData.tts_model_id ? 
+                        ttsModels.find(m => m.id === formData.tts_model_id)?.title || "Select TTS Model" :
+                        "Select TTS Model"
+                      }
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                }
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-muted-foreground/70">Text-to-Speech Model</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm">
-                      <div className="space-y-1 text-sm">
-                        <p className="font-semibold">API Key Setup Instructions:</p>
-                        <p><strong>Google Gemini:</strong></p>
-                        <ol className="list-decimal pl-4 space-y-1">
-                          <li>Go to Google Cloud Console</li>
-                          <li>Enable both "Vertex AI API" and "Cloud Text-to-Speech API"</li>
-                          <li>Create an API key with access to these APIs</li>
-                          <li>Add Cloud Text-to-Speech API permission to the key</li>
-                        </ol>
-                        <p><strong>OpenAI: </strong>Get your API key from OpenAI dashboard</p>
-                        <p><strong>ElevenLabs: </strong>Get your API key from ElevenLabs dashboard</p>
-                        <p><strong>Hume AI: </strong>Get your API key from Hume AI dashboard</p>
-                        <p><strong>Play.ai: </strong>Get your API key from Play.ai dashboard</p>
-                        <p><strong>Edge TTS: </strong>No API key required - free to use</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Select
-                value={formData.tts_model}
-                onValueChange={(value: TTSModel) => {
-                  setFormData({ ...formData, tts_model: value });
+          <div className="border-t border-zinc-200 pt-2 my-4"></div>
+          {/* Chain of Thought Prompting Section */}
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="use_chain_of_thought"
+                checked={formData.use_chain_of_thought || false}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, use_chain_of_thought: checked });
                   setHasChanges(true);
                 }}
                 disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select TTS model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ttsModelOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-muted-foreground/70">TTS Model Name</Label>
-              </div>
-              <Input
-                id="tts_model_name"
-                name="tts_model_name"
-                value={formData.tts_model_name || ""}
-                onChange={handleChange}
-                placeholder="TTS Model Name"
-                disabled={isReadOnly}
               />
+              <Label htmlFor="use_chain_of_thought" className="text-muted-foreground/70">Use Chain of Thought Prompting</Label>
             </div>
           </div>
 
-          <div className="space-y-3 mt-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 space-y-0">
-                  <Label className="text-muted-foreground/70">Question Voice</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          {formData.tts_model?.startsWith("gemini") ? (
-                            <>
-                              Select a voice from the{" "}
-                              <a 
-                                href="https://cloud.google.com/text-to-speech/docs/list-voices-and-types"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                Google Cloud Text-to-Speech voices list
-                              </a>
-                            </>
-                          ) : (
-                            "Voice used for the interviewer's questions"
-                          )}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+          <div className="space-y-3 pt-2 mt-4">
+            {formData.use_chain_of_thought && (
+              <>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="cot_style" className="text-muted-foreground/70">Chain of Thought Style</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                          <p className="max-w-xs">
+                            Different styles of Chain of Thought reasoning that can be applied to the prompt.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-[300px]">
+                      <Select
+                        value={formData.cot_style}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, cot_style: value });
+                          setHasChanges(true);
+                        }}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Chain of Thought style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Step-by-step">Step-by-step</SelectItem>
+                          <SelectItem value="Tree of Thoughts">Tree of Thoughts</SelectItem>
+                          <SelectItem value="Self-consistency">Self-consistency</SelectItem>
+                          <SelectItem value="Least-to-Most">Least-to-Most</SelectItem>
+                          <SelectItem value="Self-refine">Self-refine</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="cot_verification"
+                        checked={formData.cot_verification || false}
+                        onCheckedChange={(checked) => {
+                          setFormData({ ...formData, cot_verification: checked });
+                          setHasChanges(true);
+                        }}
+                        disabled={isReadOnly}
+                      />
+                      <Label htmlFor="cot_verification" className="text-muted-foreground/70">Verify Chain of Thought</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                            <p className="max-w-xs">
+                              Have the model verify its own Chain of Thought reasoning for accuracy and consistency.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
                 </div>
-                <Input
-                  id="voice_question"
-                  name="voice_question"
-                  value={formData.voice_question || ""}
-                  onChange={handleChange}
-                  placeholder="Voice for questions"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div className="space-y-0">
-                <Label className="text-muted-foreground/70">Answer Voice</Label>
-                <Input
-                  id="voice_answer"
-                  name="voice_answer"
-                  value={formData.voice_answer || ""}
-                  onChange={handleChange}
-                  placeholder="Voice for answers"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div className="space-y-0">
-                <Label className="text-muted-foreground/70">Voice Model</Label>
-                <Input
-                  id="voice_model"
-                  name="voice_model"
-                  value={formData.voice_model || ""}
-                  onChange={handleChange}
-                  placeholder="Voice model"
-                  disabled={isReadOnly}
-                />
-              </div>
-            </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="cot_instructions" className="text-muted-foreground/70">Chain of Thought Instructions</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                          <p className="max-w-xs">
+                            Specific instructions for how the model should approach the Chain of Thought reasoning.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Textarea
+                    id="cot_instructions"
+                    name="cot_instructions"
+                    placeholder="Enter Chain of Thought instructions"
+                    value={formData.cot_instructions || ""}
+                    onChange={handleChange}
+                    className="min-h-[100px]"
+                    disabled={isReadOnly}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        e.stopPropagation();
+                      }
+                    }}        
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="cot_examples" className="text-muted-foreground/70">Chain of Thought Examples</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
+                          <p className="max-w-xs">
+                            Example Chain of Thought reasoning to guide the model's approach.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="space-y-2">
+                    {(formData.cot_examples || []).map((example, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <Textarea
+                          value={example}
+                          onChange={(e) => {
+                            const newExamples = [...(formData.cot_examples || [])];
+                            newExamples[index] = e.target.value;
+                            setFormData({ ...formData, cot_examples: newExamples });
+                            setHasChanges(true);
+                          }}
+                          className="min-h-[80px]"
+                          disabled={isReadOnly}
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                              e.stopPropagation();
+                            }
+                          }}
+                        />
+                        {!isReadOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newExamples = [...(formData.cot_examples || [])];
+                              newExamples.splice(index, 1);
+                              setFormData({ ...formData, cot_examples: newExamples });
+                              setHasChanges(true);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-[200px]"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            cot_examples: [...(formData.cot_examples || []), ""]
+                          });
+                          setHasChanges(true);
+                        }}
+                      >
+                        Add Example
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
+
         </div>
+        <div className="border-t border-zinc-200 my-4"></div>
 
         {!isReadOnly && (
           <div className="space-y-3">
@@ -809,7 +928,7 @@ export default function PromptDetails({
             
             <div className="flex items-center space-x-2">
               <Label className="text-muted-foreground/70">Created:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.created_at 
                   ? (formData.created_at instanceof Date 
                       ? formData.created_at.toLocaleString() 
@@ -819,7 +938,7 @@ export default function PromptDetails({
                   : ""}
               </span>
               <Label className="text-muted-foreground/70 pl-2">Updated:</Label>
-              <span className="text-sm">
+              <span className="text-sm text-muted-foreground/70">
                 {formData.updated_at 
                   ? (formData.updated_at instanceof Date 
                       ? formData.updated_at.toLocaleString() 

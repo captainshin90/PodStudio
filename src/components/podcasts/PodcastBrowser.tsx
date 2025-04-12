@@ -211,8 +211,8 @@ export default function PodcastBrowser({
             aria-selected={selectedPodcast?.id === podcast.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium">{podcast.podcast_title}</div>
-            <div className="text-xs opacity-80 mt-0.5">
+            <div className="font-medium truncate">{podcast.podcast_title}</div>
+            <div className="text-xs opacity-80 mt-0.5 truncate">
               {podcast.topic_tags?.join(", ")}
             </div>
           </div>

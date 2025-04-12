@@ -267,6 +267,7 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - 3/28/25: npm install clsx tailwind-merge
 - 3/28/25: npm install dotenv
 - 4/05/25: npm install nanoid
+- 4/11/25: npm install @radix-ui/react-scroll-area
 
 ### Repo Versions 
 - 03/28/25: git tag -a "v0.1.1-alpha" -m "version v0.1.1-alpha" - working version before adding content management features
@@ -276,6 +277,7 @@ https://bun.sh/blog/bun-lock-text-lockfile
 - git tag -a "v.0.2.6-alpha" -m "version v0.2.6-alpha" - before refactoring id in all the collections
 - git tag -a "v.0.2.9-alpha" -m "version v0.2.9-alpha" - factored id in all the collections, support multiple URLs, play audio correctly, static vs public folder issues
 - git tag -a "v.0.3.0-alpha" -m "version v0.3.0-alpha" - file/image upload issues, support for llm_model_name 
+- git tag -a "v.0.3.2-alpha" -m "version v0.3.2-alpha" - add models schema and page 
 
 ### Firebase
 - 4/1/25: Register app
@@ -297,3 +299,4 @@ https://bun.sh/blog/bun-lock-text-lockfile
 4/04/25: Fly deploy - works now, issue with secret keys that need to be defined in dockerfile and not Fly.io Secrets console. For SPA (Single Page App) like Vite, it needs the secret keys at build time. See bug notes in changes.md
 4/06/25: Fly deploy - podcast generation with episode URL pointing to correct place, schema cleaned up
 4/10/25: Fly deploy - file/image upload issues, llm_model_name, firestore indexes to sort by updated_at, audio player for episdoes
+4/11/25: Fly deploy - add models schema and page, MacOS upload bug
