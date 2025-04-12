@@ -812,7 +812,7 @@ export default function PromptDetails({
                     placeholder="Enter Chain of Thought instructions"
                     value={formData.cot_instructions || ""}
                     onChange={handleChange}
-                    className="min-h-[100px]"
+                    className="min-h-[120px]"
                     disabled={isReadOnly}
                     onKeyDown={(e) => {
                       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {

@@ -7,14 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft, ChevronDown } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
-import { podcastsService, promptsService, transcriptsService } from "@/lib/services/database-service";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { podcastsService, promptsService, transcriptsService, modelsService } from "@/lib/services/database-service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { nanoid } from "nanoid";
-
+import SelectDialog from "@/components/ui/select-dialog";
 /*
 import {
   Select,
@@ -51,63 +44,6 @@ interface EpisodeDetailsProps {
   isReadOnly?: boolean;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// SelectDialogProps interface
-///////////////////////////////////////////////////////////////////////////////
-
-interface SelectDialogProps {
-  title: string;
-  items: Array<{ id: string; title: string }>;
-  onSelect: (id: string) => void;
-  trigger: React.ReactNode;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// SelectDialog component
-///////////////////////////////////////////////////////////////////////////////
-
-function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // return the select dialog component
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-2 rounded-lg hover:bg-muted cursor-pointer"
-                onClick={() => {
-                  onSelect(item.id);
-                  setOpen(false);
-                }}
-              >
-                <div className="font-medium">{item.title}</div>
-                <div className="text-xs text-muted-foreground">{item.id}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // EpisodeDetails component
@@ -129,6 +65,7 @@ export default function EpisodeDetails({
   const [podcasts, setPodcasts] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
   const [transcripts, setTranscripts] = useState<Array<{ id: string; title: string }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; title: string }>>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
@@ -150,6 +87,7 @@ export default function EpisodeDetails({
         podcast_id: "",
         transcript_id: "",
         prompt_id: "",
+        model_id: "",
         episode_title: "",
         episode_desc: "",
         episode_number: 1,
@@ -213,26 +151,32 @@ export default function EpisodeDetails({
   /////////////////////////////////////////////////////////////////////////////// 
   const loadSelectionData = async () => {
     try {
-      const [loadedPodcasts, loadedPrompts, loadedTranscripts] = await Promise.all([
+      const [loadedPodcasts, loadedPrompts, loadedTranscripts, loadedModels] = await Promise.all([
         podcastsService.getAllPodcasts(),
         promptsService.getAllPrompts(),
-        transcriptsService.getAllTranscripts()
+        transcriptsService.getAllTranscripts(),
+        modelsService.getAllModels()
       ]);
 
       if (loadedPodcasts) {
         setPodcasts(loadedPodcasts
-          .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.id, title: p.podcast_title })));
+          .filter((p: any) => p.is_active && !p.is_deleted)
+          .map((p: any) => ({ id: p.id, title: p.podcast_title })));
       }
       if (loadedPrompts) {
         setPrompts(loadedPrompts
-          .filter(p => p.is_active && !p.is_deleted)
-          .map(p => ({ id: p.id, title: p.prompt_name })));
+          .filter((p: any) => p.is_active && !p.is_deleted)
+          .map((p: any) => ({ id: p.id, title: p.prompt_name })));
       }
       if (loadedTranscripts) {
         setTranscripts(loadedTranscripts
-          .filter(t => t.is_active && !t.is_deleted)
-          .map(t => ({ id: t.id, title: t.transcript_title })));
+          .filter((t: any) => t.is_active && !t.is_deleted)
+          .map((t: any) => ({ id: t.id, title: t.transcript_title })));
+      }
+      if (loadedModels) {
+        setModels(loadedModels
+          .filter((m: any) => m.is_active && !m.is_deleted)
+          .map((m: any) => ({ id: m.id, title: m.model_name })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
@@ -430,7 +374,7 @@ export default function EpisodeDetails({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-muted-foreground/70">Podcast</Label>
             <SelectDialog
@@ -475,6 +419,8 @@ export default function EpisodeDetails({
               }
             />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-muted-foreground/70">Transcript</Label>
             <SelectDialog
@@ -490,6 +436,28 @@ export default function EpisodeDetails({
                     {formData.transcript_id ? 
                       transcripts.find(t => t.id === formData.transcript_id)?.title || "Select Transcript" :
                       "Select Transcript"
+                    }
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">Model</Label>
+            <SelectDialog
+              title="Select Model"
+              items={models}
+              onSelect={(id) => {
+                setFormData(prev => ({ ...prev, model_id: id }));
+                setHasChanges(true);
+              }}
+              trigger={
+                <Button variant="outline" className="w-full justify-between" disabled={isReadOnly}>
+                  <span className="truncate">
+                    {formData.model_id ? 
+                      models.find(m => m.id === formData.model_id)?.title || "Select Model" :
+                      "Select Model"
                     }
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />

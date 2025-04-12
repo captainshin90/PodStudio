@@ -7,6 +7,7 @@ export interface Episode {
   podcast_id: string; // Podcast ID
   transcript_id: string; // Transcript ID
   prompt_id: string; // Prompt ID
+  model_id: string; // Model ID
   episode_title: string; // Episode Title
   episode_slug: string; // Episode Slug For when you need to refer to your episode in a url.
   episode_desc: string; // Episode Description
@@ -59,6 +60,7 @@ export function convertToEpisode(data: any): Episode {
     podcast_id: data.podcast_id,
     transcript_id: data.transcript_id,
     prompt_id: data.prompt_id,
+    model_id: data.model_id,
     created_by: data.created_by,
     episode_title: data.episode_title,
     episode_slug: data.episode_slug,

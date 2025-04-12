@@ -404,8 +404,8 @@ def handle_generate_podcast(data):
                 },
                 tts_provider: {
                     'default_voices': {
-                        'question': data.get('voice_question', "Default"), 
-                        'answer': data.get('voice_answer', "Default")
+                        'question': data.get('voice_question', "default"), 
+                        'answer': data.get('voice_answer', "default")
                     },
                     'model': data.get('voice_model', "default") 
                 }

@@ -23,7 +23,7 @@ interface SelectDialogProps {
     const [open, setOpen] = useState(false);
   
     const filteredItems = items.filter((item) =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+      item?.title?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (

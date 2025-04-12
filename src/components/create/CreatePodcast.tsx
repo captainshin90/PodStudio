@@ -245,6 +245,7 @@ export default function CreatePodcast() {
           podcast_id: selectedPodcast.id,
           transcript_id: selectedTranscript.id,
           prompt_id: selectedPrompt.id,
+          model_id: selectedTtsModel.id,
           episode_title: `${selectedPodcast.podcast_title} - ${selectedTranscript.transcript_title}`,
           episode_slug: `${selectedPodcast.podcast_slug}-${selectedTranscript.transcript_title.toLowerCase().replace(/\s+/g, '-')}`,
           episode_desc: selectedPodcast.podcast_desc,
