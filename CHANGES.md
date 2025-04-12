@@ -22,6 +22,7 @@
     x - simple access control with secret_key: only permitted users
     x - DocumentDetails: make Source URL a list to support multiple sources.
     x - DocumentDetails: support multiple file uploads, text extract support multiple documents for text extraction. 
+    x - https://github.com/lfnovo/open-notebook/blob/main/open_notebook/plugins/podcasts.py
 
 
     - podcastfy: Add Deepseek, Grok for content to transcript
@@ -45,6 +46,83 @@ x - Add intro title ("welcome to X, tagline Y")
 
 ### Issues:
 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead. Flask/Werkzeug is single threaded, not for production, use a production WSGI server. 
+
+
+### PodStudio / PodCon Prototype 
+(I didn't use this spec with Bolt.new. Instead, I started with OpenPod code, then used Cursor.ai to build features by feature).
+
+>>> 1. Create a webapp named "Pod Studio" that allows the user to generate and manage audio podcasts from text, images, documents, videos
+
+The UI should be clean, modern, and look like xxx.  User login is required to use the app. 
+
+Set up a full-stack application with: 
+- Frontend app based on Next.js, React, and shadcn.  
+- Use Vite build tool on port 5173.
+- Ensure responsive design across all device sizes using Tailwind CSS.
+- Use Lucide icon library
+- User login and authentication using Firebase. Allow Google, Facebook, or Microsoft sign-in. 
+- Create a separate service layer for API calls by moving them from the UI components into dedicated service files, following best practices for separation of concerns and maintainability.
+
+For the backend, I'd like the following:
+- Server framework using Node.js and Express.js
+- Store all API KEYS in a .env configuration file
+- Database using Firestore and and user authentication using Firebase 
+- Server connection to multiple LLM APIs: OpenAI, Gemini 
+- (fails NPM install) remove DeepSeek, Anthropic
+- Server connection to multiple Text-to-Speech APIs: ElevenLabs, Play.ai, Gemini 
+- Support concurrent execution of both servers via package.json scripts.
+
+>>> 3. User Interface
+>>> 2. Key Functionality
+- drag and drop files (max 10MB)
+- store uploaded files in data/uploads
+- podcast customization features
+- add title, description, image to the episode
+
+>>> 3. Database
+- update podcasts collection in Firestore
+>>> 3. Setup backend database and user authentication on Firebase. 
+>>> 3. Setup backend database and user authentication on Supabase. 
+- Create database schemas for Users, Subscriptions, Personas, Documents, Topics, Transcripts, Prompts, Podcasts, Episodes, Questions, Chats. 
+- Please ensure the data is consistent and follows the existing schema relationships.
+
+The schemas should have at least the following data fields:
+
+Users: user_id, login_id, password, first_name, last_name, email1, email2, phone, avatar, addresses, preferences, personas, following_topics, following_users, followed_by_users, subscription_type, subscription_startdate, subscription_enddate, last_payment_date, next_payment_date, payment_method, card_name, card_number, card_expire, card_cvv, card_city
+
+Documents: doc_id, doc_name, doc_desc, topic_tags, doc_source_url, doc_extracted_text, extract_tool, extract_datetime, doc_source_format:txt/pdf/docx/mp3
+
+Topics: topic_id, topic_name, topic_image, topic_type:place/company/school/club/person/sport/issue, related_topic_tags, datetime, followed_by_users, is_private, managed_by
+
+Transcripts: transcript_id, transcript_type:interview/meeting/article/petition, topic_tags, create_datetime, modified_datetime, delete_datetime, transcript_model, transcript_text 
+
+Prompts: prompt_id, prompt_name, prompt_desc, created_by, create_datetime, modified_datetime, delete_datetime, is_active, target_persona, prompt_text, prompt_audio
+
+Podcasts: podcast_id, podcast_title, podcast_image, podcast_desc, podcast_type:summary/audio_podcast/video_podcast, podcast_hosts,  podcast_format:html/mp3/mp4, topic_tags, prompt_id, followers, create_datetime, subscription_type 
+
+Episodes: podcast_id, episode_id, episode_title, episode_desc, topic_tags, views, likes, dislikes, create_datetime, publish_datetime, expire_datetime, content_duration, content_url, content_image 
+
+Questions: question_id, podcast_id, question_text, question_audio, clicks, user_id, create_datetime
+
+>>> 4. Create a server script to create seed data to populate the database, including realistic sample entries for all tables. Here are example topics for Topics: "Newton, MA", "Weston, MA", "Massachusetts", "Elizabeth Warren", "Newton High School", "Soccer".
+
+>>> 5. (### at end of each session - added to system prompt)
+- Make sure you create all files required for the app to run.
+- Please implement all features maintaining best practices and proper error handling.
+- You must record your changes into docs/CHANGELOG.md
+- Document all requirements I gave you into the docs folder.
+- Include functional/non-functional features, implementation details, and the intended user experience.
+
+>>> 6. Changes:
+
+>>> xx. Later:
+- Bolt.new does not yet support server framework using Python, Django, and Fast API.
+- Integrate to Anthropic, DeepSeek
+- integrate to Hume AI (not working initially, can't find NPM package)
+- add full semantic text search: check orama
+ 
+>>> xx. Deploy this application.
+
 
 ### 3/12/2025: Add drag and drop file upload (using Cursor AI)
 Can you help me add a drag and drop file upload component on this page? The uploaded files should be less than 10MB and stored in the data/uploads folder.  

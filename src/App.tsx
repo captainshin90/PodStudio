@@ -7,6 +7,7 @@ import DocumentsPage from "@/pages/documents";
 import PromptsPage from "@/pages/prompts";
 import TranscriptsPage from "@/pages/transcripts";
 import PodcastsPage from "@/pages/podcasts";
+import ModelsPage from "@/pages/models";
 import { Toaster } from "@/components/ui/toaster";
 import {
   DropdownMenu,
@@ -55,10 +56,11 @@ export default function App() {
             <TabsTrigger value="create" className="text-lg font-bold data-[state=active]:text-red-700">Create</TabsTrigger>
             <div className="h-6 w-px bg-border mx-2 self-center"></div>
             <TabsTrigger value="episodes" className="text-md data-[state=active]:text-red-700">Episodes</TabsTrigger>
+            <TabsTrigger value="transcripts" className="text-md data-[state=active]:text-red-700">Transcripts</TabsTrigger>
             <TabsTrigger value="podcasts" className="text-md data-[state=active]:text-red-700">Podcasts</TabsTrigger>
             <TabsTrigger value="prompts" className="text-md data-[state=active]:text-red-700">Prompts</TabsTrigger>
-            <TabsTrigger value="transcripts" className="text-md data-[state=active]:text-red-700">Transcripts</TabsTrigger>
             <TabsTrigger value="documents" className="text-md data-[state=active]:text-red-700">Documents</TabsTrigger>
+            <TabsTrigger value="models" className="text-md data-[state=active]:text-red-700">Models</TabsTrigger>
           </TabsList>
 
           {/* Podcasts Section */}
@@ -81,30 +83,29 @@ export default function App() {
               </TabsContent>
             </Tabs>
           </TabsContent>
-
           {/* Podcasts Section */}
           <TabsContent value="podcasts">
             <PodcastsPage />
           </TabsContent>
-
           {/* Episodes Section */}
           <TabsContent value="episodes">
             <EpisodesPage />
           </TabsContent>
-
-          {/* Documents Section */}
-          <TabsContent value="documents">
-            <DocumentsPage />
-          </TabsContent>
-
           {/* Transcripts Section */}
           <TabsContent value="transcripts">
             <TranscriptsPage />
           </TabsContent>
-
           {/* Prompts Section */}
           <TabsContent value="prompts">
             <PromptsPage />
+          </TabsContent>
+          {/* Documents Section */}
+          <TabsContent value="documents">
+            <DocumentsPage />
+          </TabsContent>
+          {/* Models Section */}
+          <TabsContent value="models">
+            <ModelsPage />
           </TabsContent>
         </Tabs>
       </main>

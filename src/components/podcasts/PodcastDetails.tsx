@@ -135,7 +135,7 @@ export default function PodcastDetails({
   ///////////////////////////////////////////////////////////////////////////////
   const loadEpisodes = async (podcastId: string) => {
     try {
-      const loadedEpisodes = await episodesService.getAllEpisodes(podcastId);
+      const loadedEpisodes = await episodesService.getActiveEpisodes(podcastId);
       if (loadedEpisodes) {
         setEpisodes(loadedEpisodes);
       }

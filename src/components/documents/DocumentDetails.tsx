@@ -104,11 +104,18 @@ export default function DocumentDetails({
   const validateUrl = (url: string): boolean => {
     if (!url) return true; // Allow empty URLs
     try {
-    // validate either local file or remote url
+      // validate either local file or remote url
       if (url.startsWith('http')) {
         new URL(url);
         return true;
-      } else if (url.startsWith('/')) {
+      } else if (url.startsWith('file://')) {
+        // Handle file:// protocol
+        return true;
+      } else if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
+        // Handle relative paths
+        return true;
+      } else if (url.includes('/') && !url.includes('://')) {
+        // Handle absolute paths without protocol (MacOS style)
         return true;
       } else {
         return false;
@@ -122,7 +129,6 @@ export default function DocumentDetails({
   const validateUrls = (urls: string[]): { isValid: boolean; invalidUrls: string[] } => {
     if (!urls?.length) return { isValid: true, invalidUrls: [] };
 
-    
     const invalidUrls = urls.filter(url => url.trim() && !validateUrl(url.trim()));
     return {
       isValid: invalidUrls.length === 0,

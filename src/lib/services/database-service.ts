@@ -339,6 +339,13 @@ export const usersService = {
 
   async getAllUsers(): Promise<DocumentData[] | null> {
     return databaseService.getAll('users');
+  },
+
+  async getActiveUsers(): Promise<DocumentData[] | null> {
+    return databaseService.query('users', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
   }
 };
 
@@ -370,7 +377,8 @@ export const subscriptionsService = {
   
   async getActiveSubscriptions( ): Promise<DocumentData[] | null> {
     return databaseService.query('subscriptions', [
-      { field: 'is_active', operator: '==', value: true }
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
     ]);
   }
 };
@@ -383,7 +391,14 @@ export const personasService = {
   async getAllPersonas(): Promise<DocumentData[] | null> {
     return databaseService.getAll('personas');
   },
-  
+
+  async getActivePersonas(): Promise<DocumentData[] | null> {
+    return databaseService.query('personas', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
+
   async getPersonaById(id: string): Promise<DocumentData | null> {
     return databaseService.getById('personas', id);
   },
@@ -416,6 +431,13 @@ export const documentsService = {
     return databaseService.getAll('documents');
   },
   
+  async getActiveDocuments(): Promise<DocumentData[] | null> {
+    return databaseService.query('documents', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
+
   async getDocumentById(id: string): Promise<DocumentData | null> {
     return databaseService.getById('documents', id);
   },
@@ -448,6 +470,12 @@ export const topicsService = {
     return databaseService.getAll('topics');
   },
   
+  async getActiveTopics(): Promise<DocumentData[] | null> {
+    return databaseService.query('topics', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
   async getTopicById(id: string): Promise<DocumentData | null> {
     return databaseService.getById('topics', id);
   },
@@ -484,6 +512,13 @@ export const topicsService = {
 export const transcriptsService = {
   async getAllTranscripts(): Promise<DocumentData[] | null> {
     return databaseService.getAll('transcripts');
+  },
+
+  async getActiveTranscripts(): Promise<DocumentData[] | null> {
+    return databaseService.query('transcripts', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
   },
   
   async getTranscriptById(id: string): Promise<DocumentData | null> {
@@ -524,6 +559,13 @@ export const promptsService = {
     return databaseService.getAll('prompts');
   },
   
+  async getActivePrompts(): Promise<DocumentData[] | null> {
+    return databaseService.query('prompts', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
+  
   async getPromptById(id: string): Promise<DocumentData | null> {
     return databaseService.getById('prompts', id);
   },
@@ -540,18 +582,53 @@ export const promptsService = {
     return databaseService.delete('prompts', id);
   },
 
-  async getActivePrompts(): Promise<DocumentData[] | null> {
-    return databaseService.query('prompts', [
-      { field: 'is_active', operator: '==', value: true }
-    ]);
-  },
-  
   async getPromptsByPersona(personaId: string): Promise<DocumentData[] | null> {
     return databaseService.query('prompts', [
       { field: 'target_persona', operator: '==', value: personaId }
     ]);
   }
 };
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Model services
+///////////////////////////////////////////////////////////////////////////////
+
+export const modelsService = {
+  async getAllModels(): Promise<DocumentData[] | null> {
+    return databaseService.getAll('models');
+  },
+
+  async getActiveModels(): Promise<DocumentData[] | null> {
+    return databaseService.query('models', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
+
+  async getModelById(id: string): Promise<DocumentData | null> {
+    return databaseService.getById('models', id);
+  },
+  
+  async createModel(id: string, modelData: any): Promise<void> {
+    return databaseService.createWithId('models', id, modelData);
+  },
+  
+  async updateModel(id: string, modelData: any): Promise<void> {
+    return databaseService.update('models', id, modelData);
+  },
+
+  async deleteModel(id: string): Promise<void> {
+    return databaseService.delete('models', id);
+  },
+
+  async getModelsByType(type: string): Promise<DocumentData[] | null> {
+    return databaseService.query('models', [
+      { field: 'model_type', operator: '==', value: type }
+    ]);
+  }
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Podcast services
@@ -561,7 +638,14 @@ export const podcastsService = {
   async getAllPodcasts(): Promise<DocumentData[] | null> {
     return databaseService.getAll('podcasts');
   },
-  
+
+  async getActivePodcasts(): Promise<DocumentData[] | null> {
+    return databaseService.query('podcasts', [
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }
+    ]);
+  },
+
   async getPodcastById(id: string): Promise<DocumentData | null> {
     return databaseService.getById('podcasts', id);
   },
@@ -602,15 +686,22 @@ export const podcastsService = {
 ///////////////////////////////////////////////////////////////////////////////
 
 export const episodesService = {
-  async getAllEpisodes(podcastId?: string): Promise<DocumentData[] | null> {
+  async getAllEpisodes(): Promise<DocumentData[] | null> {
+    return databaseService.getAll('episodes');
+  },
+
+  async getActiveEpisodes(podcastId?: string): Promise<DocumentData[] | null> {
     if (podcastId) {
-      return databaseService.query('episodes', 
-        [{ field: 'podcast_id', operator: '==', value: podcastId },
-         { field: 'is_active', operator: '==', value: true }, 
-         { field: 'is_deleted', operator: '==', value: false }],
+      return databaseService.query('episodes', [
+        { field: 'podcast_id', operator: '==', value: podcastId },
+        { field: 'is_active', operator: '==', value: true }, 
+        { field: 'is_deleted', operator: '==', value: false }],
           'updated_at', 'desc');
     } else {
-      return databaseService.getAll('episodes');
+      return databaseService.query('episodes', [
+        { field: 'is_active', operator: '==', value: true },
+        { field: 'is_deleted', operator: '==', value: false }],
+          'updated_at', 'desc');
     }
   },
 
@@ -659,15 +750,25 @@ export const episodesService = {
 ///////////////////////////////////////////////////////////////////////////////
 
 export const questionsService = {
-  async getAllQuestions(podcastId?: string): Promise<DocumentData[] | null> {
-    if (podcastId) {
-      return databaseService.query('questions', [
-        { field: 'podcast_id', operator: '==', value: podcastId }
-      ]);
-    }
+  async getAllQuestions(): Promise<DocumentData[] | null> {
     return databaseService.getAll('questions');
   },
  
+  async getActiveQuestions(podcastId?: string): Promise<DocumentData[] | null> {
+    if (podcastId) {
+      return databaseService.query('questions', [
+        { field: 'podcast_id', operator: '==', value: podcastId },
+        { field: 'is_active', operator: '==', value: true }, 
+        { field: 'is_deleted', operator: '==', value: false }],
+          'updated_at', 'desc');
+    } else {
+      return databaseService.query('questions', [
+        { field: 'is_active', operator: '==', value: true }, 
+        { field: 'is_deleted', operator: '==', value: false }],
+          'updated_at', 'desc');
+    }
+  },
+
   async getQuestionById(id: string): Promise<DocumentData | null> { 
     return databaseService.getById('questions', id);
   },

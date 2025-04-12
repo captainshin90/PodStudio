@@ -234,7 +234,7 @@ export default function CreateTranscript() {
       // handle the progress event
       socket.on("progress", (data: { progress: number; message: string }) => {
         setProgress(data.progress);
-        setStatusMessage(data.message);
+        setStatusMessage("Generating transcript content...");
       });
 
       // handle the error event

@@ -296,3 +296,4 @@ https://bun.sh/blog/bun-lock-text-lockfile
 4/01/25: Fly deploy
 4/04/25: Fly deploy - works now, issue with secret keys that need to be defined in dockerfile and not Fly.io Secrets console. For SPA (Single Page App) like Vite, it needs the secret keys at build time. See bug notes in changes.md
 4/06/25: Fly deploy - podcast generation with episode URL pointing to correct place, schema cleaned up
+4/10/25: Fly deploy - file/image upload issues, llm_model_name, firestore indexes to sort by updated_at, audio player for episdoes

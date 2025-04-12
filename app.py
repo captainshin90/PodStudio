@@ -67,7 +67,6 @@ os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)  # Create images directory
 
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # max 10MB
 
 ################################################################################
@@ -801,6 +800,8 @@ def serve_audio(filename):
 ### Files in the public directory are served at the root path. 
 ### - Instead of /public/uploads/filename.pdf, use /uploads/filename.pdf.
 ### ------------------------------------------------------------------------------------------------
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'html', 'json', 'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'wav', 'ogg', 'm4a', 'webm'}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 

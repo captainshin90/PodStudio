@@ -1,4 +1,4 @@
-import { config } from "@/config/config";
+// import { config } from "@/config/config";
 import { useState, useEffect } from "react";
 import { Podcast } from "@/lib/schemas/podcasts";
 import { Transcript } from "@/lib/schemas/transcripts";
