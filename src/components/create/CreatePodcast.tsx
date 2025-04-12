@@ -204,8 +204,8 @@ export default function CreatePodcast() {
           engagement_techniques: selectedPrompt.engagement_techniques,
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
-          tts_model: selectedTtsModel.model_provider,   // TODO: change to model_provider?
-          tts_model_name: selectedTtsModel.model_name,
+          tts_provider: selectedTtsModel.model_provider,   // e.g. "gemini"
+          tts_model_name: selectedTtsModel.model_name,     // e.g. "gemini-1.5-pro-latest"  
           voice_question: selectedTtsModel.voice_question,
           voice_answer: selectedTtsModel.voice_answer,
           voice_model: selectedTtsModel.voice_model,
@@ -437,14 +437,17 @@ export default function CreatePodcast() {
       <div className="w-2/3 p-4 space-y-4 overflow-y-auto">
         {generatedEpisode ? (
           <>
-            <EpisodeDetails
-              episode={generatedEpisode}
-              onSave={handleSaveEpisode}
-              onCancel={handleCancel}
-              isNew={true}
-              isGenerated={true}
-              isReadOnly={false}
-            />
+            <div className="border-t pt-4">
+              <EpisodeDetails
+                episode={generatedEpisode}
+                onSave={handleSaveEpisode}
+                onCancel={handleCancel}
+                isNew={true}
+                isGenerated={true}
+                isReadOnly={false}
+              />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
+            </div>
             <div className="border-t pt-4">
               <PodcastDetails
                 podcast={selectedPodcast}
@@ -453,6 +456,7 @@ export default function CreatePodcast() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <TranscriptDetails
@@ -462,6 +466,7 @@ export default function CreatePodcast() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <PromptDetails
@@ -471,6 +476,7 @@ export default function CreatePodcast() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <ModelDetails
@@ -480,18 +486,22 @@ export default function CreatePodcast() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div> 
             </div>
           </>
         ) : (
           <>
             {selectedPodcast && (
-              <PodcastDetails
-                podcast={selectedPodcast}
-                onSave={() => {}}
-                onCancel={() => {}}
-                isNew={false}
-                isReadOnly={true}
-              />
+              <div className="mt-4">
+                <PodcastDetails
+                  podcast={selectedPodcast}
+                  onSave={() => { } }
+                  onCancel={() => { } }
+                  isNew={false}
+                  isReadOnly={true} 
+                />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
+              </div>
             )}
             {selectedTranscript && (
               <div className="mt-4">
@@ -502,6 +512,7 @@ export default function CreatePodcast() {
                   isNew={false}
                   isReadOnly={true}
                 />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
               </div>
             )}
             {selectedPrompt && (
@@ -513,6 +524,7 @@ export default function CreatePodcast() {
                   isNew={false}
                   isReadOnly={true}
                 />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
               </div>
             )}
             {selectedTtsModel && (

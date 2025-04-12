@@ -320,8 +320,8 @@ def handle_generate_podcast(data):
         is_from_transcript = data.get('is_from_transcript')
         transcript_only = data.get('transcript_only')
         # transcript_file = data.get('transcript_file', None)
-        tts_model = data.get('tts_model', 'gemini')
-        # llm_model = data.get('llm_model', 'gemini')  # not used
+        # llm_provider = data.get('llm_provider', 'gemini')    # not used
+        tts_provider = data.get('tts_provider', 'gemini')  
         llm_model_name = data.get('llm_model_name', 'gemini-1.5-pro-latest')
         # tts_model_name = data.get('tts_model_name', 'gemini-1.5-pro-latest')  # not used
         secret_key = data.get('secret_key')
@@ -341,80 +341,44 @@ def handle_generate_podcast(data):
 
         api_key_label = None
         # Set up API keys based on selected model
-        if tts_model == 'gemini':
+        if tts_provider == 'gemini':
             api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
             if not api_key:
                 raise ValueError("app.py: Missing Google API key")
             os.environ['GOOGLE_API_KEY'] = api_key
             os.environ['GEMINI_API_KEY'] = api_key
             api_key_label = 'GEMINI_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "en-US-Standard-A"), 
-                'answer': data.get('voice_answer', "en-US-Standard-C")
-            }
-            voice_model = data.get('voice_model', "")
-        elif tts_model == 'geminimulti':
+        elif tts_provider == 'geminimulti':
             api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
             if not api_key:
                 raise ValueError("app.py: Missing Google API key")
             os.environ['GOOGLE_API_KEY'] = api_key
             os.environ['GEMINI_API_KEY'] = api_key
             api_key_label = 'GEMINI_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "R"), 
-                'answer': data.get('voice_answer', "S")
-            }
-            voice_model = data.get('voice_model', "en-US-Studio-MultiSpeaker")
-        elif tts_model == 'edge':
-            default_voices = {
-                'question': data.get('voice_question', "en-US-JennyNeural"), 
-                'answer': data.get('voice_answer', "en-US-EricNeural"),
-            }
-            voice_model = data.get('voice_model', "")
-        elif tts_model == 'openai':
+        elif tts_provider == 'openai':
             api_key = os.getenv('OPENAI_API_KEY') if use_default_keys else data.get('openai_key')
             if not api_key:
                 raise ValueError("app.py: Missing OpenAI API key")
             os.environ['OPENAI_API_KEY'] = api_key
             api_key_label = 'OPENAI_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "echo"), 
-                'answer': data.get('voice_answer', "shimmer"),
-            }
-            voice_model = data.get('voice_model', "tts-1-hd")
-        elif tts_model == 'elevenlabs':
+        elif tts_provider == 'elevenlabs':
             api_key = os.getenv('ELEVENLABS_API_KEY') if use_default_keys else data.get('elevenlabs_key')
             if not api_key:
                 raise ValueError("app.py: Missing ElevenLabs API key")
             os.environ['ELEVENLABS_API_KEY'] = api_key
             api_key_label = 'ELEVENLABS_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "Chris"), 
-                'answer': data.get('voice_answer', "Jessica"),
-            }
-            voice_model = data.get('voice_model', "eleven_multilingual_v2")
-        elif tts_model == 'hume':
+        elif tts_provider == 'hume':
             api_key = os.getenv('HUME_API_KEY') if use_default_keys else data.get('hume_key')
             if not api_key:
                 raise ValueError("app.py: Missing Hume AI API key")
             os.environ['HUME_API_KEY'] = api_key
             api_key_label = 'HUME_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "Default"), 
-                'answer': data.get('voice_answer', "Default"),
-            }
-            voice_model = data.get('voice_model', "default")
-        elif tts_model == 'playai':
+        elif tts_provider == 'playai':
             api_key = os.getenv('PLAYAI_API_KEY') if use_default_keys else data.get('playai_key')
             if not api_key:
                 raise ValueError("app.py: Missing Play.ai API key")
             os.environ['PLAYAI_API_KEY'] = api_key
             api_key_label = 'PLAYAI_API_KEY'
-            default_voices = {
-                'question': data.get('voice_question', "Default"), 
-                'answer': data.get('voice_answer', "Default"),
-            }
-            voice_model = data.get('voice_model', "default")  
 
         # Extract conversation config from data
         conversation_config = {
@@ -427,20 +391,23 @@ def handle_generate_podcast(data):
             'podcast_name': data.get('name', 'Custom Podcast'),
             'podcast_tagline': data.get('tagline'),
             'output_language': data.get('output_language', 'English'),
-            'user_instructions': data.get('user_instructions'),
             'engagement_techniques': data.get('engagement_techniques', []),
+            'user_instructions': data.get('user_instructions'),
             'text_to_speech': {
                 'temp_audio_dir': TEMP_DIR,
                 'ending_message': data.get('ending_message', "Bye Bye!"),
-                'default_tts_model': tts_model,
+                'default_tts_model': tts_provider,
                 'audio_format': 'mp3',
                 'output_directories': {
                     'audio': AUDIO_DIR,
                     'transcripts': TRANSCRIPT_DIR
                 },
-                tts_model: {
-                    'default_voices': default_voices, 
-                    'model': voice_model
+                tts_provider: {
+                    'default_voices': {
+                        'question': data.get('voice_question', "Default"), 
+                        'answer': data.get('voice_answer', "Default")
+                    },
+                    'model': data.get('voice_model', "default") 
                 }
             }
         }
@@ -468,7 +435,7 @@ def handle_generate_podcast(data):
                 urls=data.get('urls', []),
                 text=data.get('text', ''),    # Kap: added support for text input
                 conversation_config=conversation_config,
-                tts_model=tts_model,
+                tts_model=tts_provider,
                 llm_model_name=llm_model_name,
                 longform=bool(data.get('is_long_form', False)),
                 api_key_label=api_key_label,  # This tells podcastfy which env var to use
@@ -494,7 +461,7 @@ def handle_generate_podcast(data):
             result = generate_podcast(
                 transcript_file=transcript_path,
                 conversation_config=conversation_config,
-                tts_model=tts_model,
+                tts_model=tts_provider,
                 api_key_label=api_key_label
             )
             # Clean up temporary file

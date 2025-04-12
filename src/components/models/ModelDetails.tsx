@@ -65,7 +65,7 @@ export default function ModelDetails({
 
   // Define the provider options
   const providerOptions = [
-    { id: "gemini", type: "LLM", title: "Google Gemini", question: "en-US-Standard-A", answer: "en-US-Standard-C", model: "" },
+    { id: "gemini", type: "LLM", title: "Google Gemini", question: "en-US-Standard-A", answer: "en-US-Standard-C", model: "gemini-1.5-pro-latest" },
     { id: "geminimulti", type: "LLM", title: "Google Gemini Multi", question: "R", answer: "S", model: "en-US-Studio-MultiSpeaker" },
     { id: "edge", type: "LLM", title: "Microsoft Edge", question: "en-US-JennyNeural", answer: "en-US-EricNeural", model: "" },
     { id: "openai", type: "LLM", title: "OpenAI", question: "echo", answer: "shimmer", model: "tts-1-hd" },

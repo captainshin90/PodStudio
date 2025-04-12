@@ -198,7 +198,7 @@ export default function CreateTranscript() {
           user_instructions: selectedPrompt.prompt_text,
           ending_message: selectedPrompt.ending_message,
           creativity: selectedPrompt.creativity,
-          llm_model: selectedModel.model_provider,  // TODO: change to model_provider
+          llm_provider: selectedModel.model_provider,  // Podcastfy doesn't have llm_provider
           llm_model_name: selectedModel.model_name, // specific model version
           secret_key: sessionStorage.getItem("secret_key") || "",
         };
@@ -403,13 +403,16 @@ export default function CreateTranscript() {
       <div className="w-2/3 p-4 space-y-4 overflow-y-auto">
         {generatedTranscript ? (
           <>
-            <TranscriptDetails
-              transcript={generatedTranscript}
-              onSave={handleSaveTranscript}
-              onCancel={handleCancel}
-              isNew={true}
-              isReadOnly={false}
-            />
+            <div className="mt-4">
+              <TranscriptDetails
+                transcript={generatedTranscript}
+                onSave={handleSaveTranscript}
+                onCancel={handleCancel}
+                isNew={true}
+                isReadOnly={false}
+              />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
+            </div>
             <div className="border-t pt-4">
               <DocumentDetails
                 document={selectedDocument}
@@ -418,6 +421,7 @@ export default function CreateTranscript() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <PromptDetails
@@ -427,6 +431,7 @@ export default function CreateTranscript() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <ModelDetails
@@ -436,18 +441,22 @@ export default function CreateTranscript() {
                 isNew={false}
                 isReadOnly={true}
               />
+              <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
           </>
         ) : (
           <>
             {selectedDocument && (
-              <DocumentDetails
-                document={selectedDocument}
-                onSave={() => {}}
-                onCancel={() => {}}
-                isNew={false}
-                isReadOnly={true}
-              />
+              <div className="mt-4">
+                <DocumentDetails
+                  document={selectedDocument}
+                  onSave={() => {}}
+                  onCancel={() => {}}
+                  isNew={false}
+                  isReadOnly={true}
+                />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
+            </div>
             )}
             {selectedPrompt && (
               <div className="mt-4">
@@ -458,6 +467,7 @@ export default function CreateTranscript() {
                   isNew={false}
                   isReadOnly={true}
                 />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
               </div>
             )}
             {selectedModel && (
@@ -469,6 +479,7 @@ export default function CreateTranscript() {
                   isNew={false}
                   isReadOnly={true}
                 />
+                <div className="border-t-8 border-zinc-200 my-4"></div>
               </div>
             )}
           </>
