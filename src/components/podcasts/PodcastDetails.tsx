@@ -584,12 +584,22 @@ export default function PodcastDetails({
                     <div className="font-medium truncate">{episode.episode_title}</div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span className="whitespace-nowrap">
-                        {episode.publish_date 
-                          ? new Date(episode.publish_date).toLocaleDateString() 
-                          : "No date"}
+                        {episode.updated_at 
+                      ? (episode.updated_at instanceof Date 
+                          ? episode.updated_at.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                          : typeof episode.updated_at === 'object' && 'seconds' in episode.updated_at
+                            ? new Date((episode.updated_at as any).seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                            : new Date(episode.updated_at as any).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+                      : ""}
                       </span>
                       <span className="truncate">{episode.episode_desc}</span>
                     </div>
+                    {episode.topic_tags && episode.topic_tags.length > 0 && (
+                    <div className="text-xs text-muted-foreground truncate mt-1">
+                      {episode.topic_tags.join(", ")}
+                    </div>
+                  )}
+
                   </div>
                   {episode.content_url && (
                     <div className="flex-shrink-0">

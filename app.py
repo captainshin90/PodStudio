@@ -307,6 +307,114 @@ def handle_extract_text(data):
 
 
 ### ------------------------------------------------------------------------------------------------
+### Generate custom report with payload as data parameter
+### Returns a report as a string
+### ------------------------------------------------------------------------------------------------
+@socketio.on('generate_report')
+def handle_generate_report(data):
+    try:
+        print("\n=== Starting Report Generation ===")
+        emit('status', "Starting report generation...")
+
+        # Get the selected TTS model and secret key, default to gemini
+        report_type = data.get('report_type', 'summary')
+        llm_provider = data.get('llm_provider', 'gemini')    # not used
+        llm_model_name = data.get('llm_model_name', 'gemini-1.5-pro-latest')
+        # tts_model_name = data.get('tts_model_name', 'gemini-1.5-pro-latest')  # not used
+        secret_key = data.get('secret_key')
+        env_secret_key = os.getenv('SECRET_KEY')
+
+        # Validate secret key if provided
+        if secret_key:
+            if not secret_key == env_secret_key:
+                raise ValueError("app.py: Invalid secret key - please check your secret key or remove it to use your own API keys")
+            use_default_keys = True
+        else:
+            use_default_keys = False
+        
+        # TODO: need validation of llm_model_name and tts_model_name
+        # if transcript_only and llm_model not in ['gemini', 'geminimulti']:
+        #    raise ValueError("app.py: Only Gemini model supported for podcast from transcript")
+
+        api_key_label = None
+        # Set up API keys based on selected model
+        if llm_provider == 'gemini':
+            api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
+            if not api_key:
+                raise ValueError("app.py: Missing Google API key")
+            os.environ['GOOGLE_API_KEY'] = api_key
+            os.environ['GEMINI_API_KEY'] = api_key
+            api_key_label = 'GEMINI_API_KEY'
+        elif llm_provider == 'geminimulti':
+            api_key = os.getenv('GOOGLE_API_KEY') if use_default_keys else data.get('google_key')
+            if not api_key:
+                raise ValueError("app.py: Missing Google API key")
+            os.environ['GOOGLE_API_KEY'] = api_key
+            os.environ['GEMINI_API_KEY'] = api_key
+            api_key_label = 'GEMINI_API_KEY'
+        elif llm_provider == 'openai':
+            api_key = os.getenv('OPENAI_API_KEY') if use_default_keys else data.get('openai_key')
+            if not api_key:
+                raise ValueError("app.py: Missing OpenAI API key")
+            os.environ['OPENAI_API_KEY'] = api_key
+            api_key_label = 'OPENAI_API_KEY'
+
+        # Extract conversation config from data
+        conversation_config = {
+            'word_count': data.get('word_count', 250),
+            'creativity': float(data.get('creativity', 0.7)),
+            'conversation_style': data.get('conversation_style', []),
+            'roles_person1': data.get('roles_person1', 'Interviewer'),
+            'roles_person2': data.get('roles_person2', 'Subject matter expert'),
+            'dialogue_structure': data.get('dialogue_structure', []),
+            'podcast_name': data.get('name', 'Custom Podcast'),
+            'podcast_tagline': data.get('tagline'),
+            'output_language': data.get('output_language', 'English'),
+            'engagement_techniques': data.get('engagement_techniques', []),
+            'user_instructions': data.get('user_instructions'),
+            }
+        
+        emit('status', "Generating report content...")
+        emit('progress', {'progress': 30, 'message': 'Generating report content...'})
+
+        # Add image_paths parameter if provided
+        image_paths = data.get('image_urls', [])
+
+### 
+###        if report_type == 'summary': # generate only a transcript, no audio from raw source urls or text
+###            result = generate_report(
+###                urls=data.get('urls', []),
+###                text=data.get('text', ''),    # Kap: added support for text input
+###                transcript_only=True,
+###                conversation_config=conversation_config, 
+###                llm_model_name=llm_model_name,
+###                longform=bool(data.get('is_long_form', False)),
+###                api_key_label=api_key_label,  # This tells podcastfy which env var to use
+###                image_paths=image_paths if image_paths else None  # Only pass if not empty
+###            )
+###        elif report_type == 'article':
+###            result = generate_report(
+###                urls=data.get('urls', []),
+###                text=data.get('text', ''),    # Kap: added support for text input
+###                conversation_config=conversation_config, 
+###                llm_model_name=llm_model_name,
+###                api_key_label=api_key_label,  # This tells podcastfy which env var to use
+###            )
+
+        # transcript only - return the transcript as text data
+        emit('complete', {
+            'report': open(result).read() if os.path.isfile(result) else None
+        }, room=request.sid)
+
+    except Exception as e:
+        print(f"\nError in handle_generate_report: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        emit('error', {'message': str(e)}, room=request.sid)
+
+
+### ------------------------------------------------------------------------------------------------
 ### Generate custom podcast with payload as data parameter
 ### Returns
 ### ------------------------------------------------------------------------------------------------
@@ -339,6 +447,7 @@ def handle_generate_podcast(data):
         # if transcript_only and llm_model not in ['gemini', 'geminimulti']:
         #    raise ValueError("app.py: Only Gemini model supported for podcast from transcript")
 
+        # QUESTION: what if llm_provider and tts_provider are different? Need 2 different API keys?
         api_key_label = None
         # Set up API keys based on selected model
         if tts_provider == 'gemini':

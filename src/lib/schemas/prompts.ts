@@ -21,16 +21,6 @@ export interface Prompt {
   tts_model_id?: string;  // default tts model id
   ending_message: string; // Question: does this need to be here?
   
-  // Moved to the model schema
-  // max_tokens: number;     // moved to the model schema
-  // llm_model: LLMModel;  // TODO: change to model_provider
-  // llm_model_name: string; // TODO: specific model version
-  // tts_model: TTSModel;  
-  // tts_model_name: string;    // QUESTION: is this needed? How different from voice_model?
-  // voice_question: string;
-  // voice_answer: string;
-  // voice_model: string;
-
   // Chain of Thought prompting features
   use_chain_of_thought: boolean; // Whether to use Chain of Thought prompting
   cot_style: string; // Style of Chain of Thought (e.g., "Step-by-step", "Tree of Thoughts", "Self-consistency")
@@ -57,7 +47,6 @@ export function convertToPrompt(data: any): Prompt {
     is_long_form: data.is_long_form,
     word_count: data.word_count,
     creativity: data.creativity,
-    // max_tokens: data.max_tokens,
     roles_person1: data.roles_person1,
     roles_person2: data.roles_person2,
     conversation_style: data.conversation_style,

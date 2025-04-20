@@ -17,12 +17,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+//////////////////////////////////////////////////////////////////////////////
+// models page component
+//////////////////////////////////////////////////////////////////////////////  
 export default function ModelsPage() {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [showNewModel, setShowNewModel] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the save model
+  //////////////////////////////////////////////////////////////////////////////
   const handleSave = async (updatedModel: Model) => {
     try {
       await modelsService.updateModel(updatedModel.id, updatedModel);
@@ -41,6 +47,9 @@ export default function ModelsPage() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the create model
+  //////////////////////////////////////////////////////////////////////////////
   const handleCreate = async (newModel: Model) => {
     try {
       await modelsService.createModel(newModel.id, newModel);
@@ -59,6 +68,9 @@ export default function ModelsPage() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the delete model
+  //////////////////////////////////////////////////////////////////////////////
   const handleDelete = async () => {
     if (!selectedModel?.id) return;
     
@@ -80,6 +92,9 @@ export default function ModelsPage() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // return the models page component
+  //////////////////////////////////////////////////////////////////////////////
   return (
     <div className="container mx-auto py-0 px-0">
       <h1 className="text-2xl font-bold text-muted-foreground mb-6">Models Management</h1>

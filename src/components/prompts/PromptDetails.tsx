@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Prompt } from "@/lib/schemas/prompts";
+import { SystemDatatypes } from "@/lib/schemas/system";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,15 +41,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  ConversationStyle,
-  DialogueStructure,
-  EngagementTechnique,
-  conversationStyles,
-  dialogueStructures,
-  engagementTechniques,
+  // ConversationStyle,
+  // DialogueStructure,
+  // EngagementTechnique,
+  // conversationStyles,
+  // dialogueStructures,
+  // engagementTechniques,
 } from '@/config/podcast-config';
 import { nanoid } from "nanoid";
-import { modelsService } from "@/lib/services/database-service";
+import { modelsService, systemService } from "@/lib/services/database-service";
 
 interface PromptDetailsProps {
   prompt: Prompt | null;
@@ -142,6 +143,9 @@ function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  //////////////////////////////////////////////////////////////////////////////
+  // return the select dialog component
+  //////////////////////////////////////////////////////////////////////////////
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -178,6 +182,14 @@ function SelectDialog({ title, items, onSelect, trigger }: SelectDialogProps) {
   );
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// PromptDetails component
+///////////////////////////////////////////////////////////////////////////////
+let conversationStyles: string[] = [];
+let dialogueStructures: string[] = [];
+let engagementTechniques: string[] = [];
+
 export default function PromptDetails({
   prompt,
   onSave,
@@ -188,9 +200,9 @@ export default function PromptDetails({
 }: PromptDetailsProps) {
   const [formData, setFormData] = useState<Partial<Prompt>>({});
   const [hasChanges, setHasChanges] = useState(false);
-  const [customConversationStyles, setCustomConversationStyles] = useState<ConversationStyle[]>(conversationStyles);
-  const [customDialogueStructures, setCustomDialogueStructures] = useState<DialogueStructure[]>(dialogueStructures);
-  const [customEngagementTechniques, setCustomEngagementTechniques] = useState<EngagementTechnique[]>(engagementTechniques);
+  const [customConversationStyles, setCustomConversationStyles] = useState<string[]>(conversationStyles);
+  const [customDialogueStructures, setCustomDialogueStructures] = useState<string[]>(dialogueStructures);
+  const [customEngagementTechniques, setCustomEngagementTechniques] = useState<string[]>(engagementTechniques);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [llmModels, setLlmModels] = useState<Array<{ id: string; title: string }>>([]);
   const [ttsModels, setTtsModels] = useState<Array<{ id: string; title: string }>>([]);
@@ -206,16 +218,16 @@ export default function PromptDetails({
         prompt_desc: "",
         prompt_text: "",
         is_long_form: false,
-        word_count: 250,      // use as override for model max_tokens
-        creativity: 0.7,      // use as override for model temperature
+        word_count: 500,      // use as override for model max_tokens
+        creativity: 0.5,      // use as override for model temperature
         roles_person1: "Interviewer",
         roles_person2: "Subject matter expert",
         conversation_style: ["Engaging", "Fast-paced", "Enthusiastic"],
         dialogue_structure: ["Discussions"], 
         engagement_techniques: ["Questions"],
         ending_message: "Thank you for listening to this episode.",
-        llm_model_id: "",
-        tts_model_id: "",
+        llm_model_id: "",     // default llm model id
+        tts_model_id: "",     // default tts model id
         // Chain of Thought prompting features
         use_chain_of_thought: true,
         cot_style: "Step-by-step",
@@ -238,6 +250,9 @@ export default function PromptDetails({
     loadModels();
   }, []);
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // Load models
+  ///////////////////////////////////////////////////////////////////////////////
   const loadModels = async () => {
     try {
       const models = await modelsService.getAllModels();
@@ -254,8 +269,22 @@ export default function PromptDetails({
     } catch (error) {
       console.error("Error loading models:", error);
     }
-  };
+    // Load system datatype
+    const datatypes = await systemService.getSystemById("datatypes");
+    if (datatypes) {
+      const typedDatatypes = datatypes as SystemDatatypes;
+      setCustomConversationStyles(typedDatatypes.conversation_styles);
+      setCustomDialogueStructures(typedDatatypes.dialogue_structures);
+      setCustomEngagementTechniques(typedDatatypes.engagement_techniques);
+    }
 
+    // Load system voices
+    // const datatypes = await systemService.getSystemById("voices");
+
+  }
+
+
+  //////////////////////////////////////////////////////////////////////////////
   if (!prompt && !isNew && !formData.id) {
     return <div className="flex items-center gap-2 font-semibold text-muted-foreground">
       <ArrowLeft className="h-4 w-4" />
@@ -263,12 +292,18 @@ export default function PromptDetails({
     </div>;
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Handle submit
+  //////////////////////////////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSave(formData as Prompt);
     setHasChanges(false);
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Handle changes
+  //////////////////////////////////////////////////////////////////////////////
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -280,6 +315,9 @@ export default function PromptDetails({
     setHasChanges(true);
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Handle cancel
+  //////////////////////////////////////////////////////////////////////////////
   const handleCancel = () => {
     if (hasChanges) {
       setShowCancelDialog(true);
@@ -417,12 +455,13 @@ export default function PromptDetails({
               </div>
               <Input
                 id="word_count"
+                name="word_count"
                 type="number"
                 min={100}
                 max={10000}
                 step={10}
                 className="w-30"
-                value={formData.word_count || 250}
+                value={formData.word_count || 500}
                 onChange={handleChange}
                 disabled={isReadOnly}
               />
@@ -433,7 +472,7 @@ export default function PromptDetails({
                 Creativity Level ({formData.creativity})
               </Label>
               <Slider
-                value={[formData.creativity || 0.7]}
+                value={[formData.creativity || 0.5]}
                 onValueChange={([value]) => {
                   setFormData({ ...formData, creativity: value });
                   setHasChanges(true);
@@ -466,7 +505,7 @@ export default function PromptDetails({
               <Input 
                 id="roles_person1"
                 name="roles_person1"
-                value={formData.roles_person1 || ""}
+                value={formData.roles_person1 || "Journalist"}
                 onChange={handleChange}
                 disabled={isReadOnly}
               />
@@ -491,7 +530,7 @@ export default function PromptDetails({
               <Input 
                 id="roles_person2" 
                 name="roles_person2" 
-                value={formData.roles_person2 || ""} 
+                value={formData.roles_person2 || "Researcher"} 
                 onChange={handleChange}
                 disabled={isReadOnly}
                 />
@@ -531,8 +570,8 @@ export default function PromptDetails({
                 </Badge>
               ))}
               <AddCustomValue
-                onAdd={(value) => {
-                  setCustomConversationStyles((prev) => [...prev, value as ConversationStyle]);
+                onAdd={async (value) => {
+                  setCustomConversationStyles((prev) => [...prev, value as string]);
                   const current = formData.conversation_style || [];
                   if (!current.includes(value)) {
                     setFormData({
@@ -540,6 +579,10 @@ export default function PromptDetails({
                       conversation_style: [...current, value],
                       });
                     setHasChanges(true);
+                    // update the system datatype
+                    await systemService.updateSystem("datatypes", {
+                      conversation_styles: [...customConversationStyles, value],
+                    });
                   }
                 }}
                 placeholder="Enter custom style"
@@ -580,8 +623,8 @@ export default function PromptDetails({
                 </Badge>
               ))}
               <AddCustomValue
-                onAdd={(value) => {
-                  setCustomDialogueStructures((prev) => [...prev, value as DialogueStructure]);
+                onAdd={async (value) => {
+                  setCustomDialogueStructures((prev) => [...prev, value as string]);
                   const current = formData.dialogue_structure || [];
                   if (!current.includes(value)) {
                     setFormData({
@@ -589,6 +632,11 @@ export default function PromptDetails({
                       dialogue_structure: [...current, value],
                     });
                     setHasChanges(true);
+                    // update the system datatype
+                    await systemService.updateSystem("datatypes", {
+                      dialogue_structures: [...customDialogueStructures, value],
+                    });
+                    
                   }
                 }}
                 placeholder="Enter custom structure"
@@ -629,8 +677,8 @@ export default function PromptDetails({
                 </Badge>
               ))}
               <AddCustomValue
-                onAdd={(value) => {
-                  setCustomEngagementTechniques((prev) => [...prev, value as EngagementTechnique]);
+                onAdd={async (value) => {
+                  setCustomEngagementTechniques((prev) => [...prev, value as string]);
                   const current = formData.engagement_techniques || [];
                   if (!current.includes(value)) {
                     setFormData({
@@ -638,6 +686,10 @@ export default function PromptDetails({
                       engagement_techniques: [...current, value],
                     });
                     setHasChanges(true);
+                    // update the system datatype
+                    await systemService.updateSystem("datatypes", {
+                      engagement_techniques: [...customEngagementTechniques, value],
+                    });
                   }
                 }}
                 placeholder="Enter custom technique"

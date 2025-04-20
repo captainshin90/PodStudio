@@ -6,6 +6,7 @@ import "./index.css";
 import { initFirestore, initStorage } from "./lib/firebase";
 import { AccessControlDialog } from "./components/auth/AccessControlDialog";
 import { Toaster } from "@/components/ui/toaster";
+import { BrowserRouter } from "react-router-dom";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Validate environment variables
@@ -63,7 +64,9 @@ async function bootstrap() {
     
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
-        <AppWithAccessControl />
+        <BrowserRouter>
+          <AppWithAccessControl />
+        </BrowserRouter>
       </React.StrictMode>
     );
   } catch (error) {

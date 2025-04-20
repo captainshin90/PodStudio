@@ -5,7 +5,7 @@ import { Prompt } from "@/lib/schemas/prompts";
 import { Episode } from "@/lib/schemas/episodes";
 import { Model } from "@/lib/schemas/models";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, Play } from "lucide-react";
+import { Loader2, ChevronDown, Play, Clock } from "lucide-react";
 import { io } from "socket.io-client";
 import { podcastsService, transcriptsService, promptsService, episodesService, modelsService } from "@/lib/services/database-service";
 import PodcastDetails from "@/components/podcasts/PodcastDetails";
@@ -19,6 +19,191 @@ import { Progress } from "@/components/ui/progress";
 import SelectDialog from "@/components/ui/select-dialog";
 
 //////////////////////////////////////////////////////////////////////////////
+// This is a helper function to handle generating audio for an existing episode
+//////////////////////////////////////////////////////////////////////////////
+export const handleRegeneratePodcast = async (
+  episode: Episode,
+  progressCallback?: (progress: number, message: string) => void,
+  toast?: any
+): Promise<void> => {
+  if (!episode.podcast_id || !episode.transcript_id || !episode.prompt_id || !episode.model_id) {
+    if (toast) {
+      toast({
+        title: "Missing Information",
+        description: "Episode is missing required information for audio generation",
+        variant: "destructive",
+      });
+    }
+    return;
+  }
+
+  // Load the required data
+  try {
+    const [podcast, transcript, prompt, model] = await Promise.all([
+      podcastsService.getPodcastById(episode.podcast_id),
+      transcriptsService.getTranscriptById(episode.transcript_id),
+      promptsService.getPromptById(episode.prompt_id),
+      modelsService.getModelById(episode.model_id)
+    ]);
+
+    if (!podcast || !transcript || !prompt || !model) {
+      if (toast) {
+        toast({
+          title: "Error",
+          description: "Failed to load required data for audio generation",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    // Start the generation process
+    if (progressCallback) {
+      progressCallback(0, "Connecting to server...");
+    }
+
+    const socket = io({
+      path: "/socket.io",
+      reconnection: true,
+      timeout: 10000,
+    });
+
+    const cleanup = () => {
+      console.log("Cleaning up socket connection...");
+      socket.disconnect();
+    };
+
+    // connected to the server, get payload and call the generate_podcast server endpoint
+    socket.on("connect", () => {
+      console.log("Socket connected successfully");
+      if (progressCallback) {
+        progressCallback(0, "Connected to server");
+      }
+
+      const payload = {
+        is_from_transcript: true,
+        transcript_only: false,
+        text: transcript.transcript_text,
+        name: podcast.podcast_title,
+        tagline: podcast.podcast_tagline,
+        is_long_form: prompt.is_long_form,
+        word_count: prompt.word_count,
+        creativity: prompt.creativity,
+        conversation_style: prompt.conversation_style,
+        roles_person1: prompt.roles_person1,
+        roles_person2: prompt.roles_person2,
+        dialogue_structure: prompt.dialogue_structure,
+        engagement_techniques: prompt.engagement_techniques,
+        user_instructions: prompt.prompt_text,
+        ending_message: prompt.ending_message,
+        tts_provider: model.model_provider,
+        tts_model_name: model.model_name,
+        voice_question: model.voice_question,
+        voice_answer: model.voice_answer,
+        voice_model: model.voice_model,
+        secret_key: sessionStorage.getItem("secret_key") || "",
+      };
+
+      // call the generate_podcast server endpoint with the payload
+      socket.emit("generate_podcast", payload);
+    });
+
+    // handle the progress event
+    socket.on("progress", (data: { progress: number; message: string }) => {
+      if (progressCallback) {
+        progressCallback(data.progress, data.message);
+      }
+    });
+
+    // handle the error event
+    socket.on("error", (error: { message: string }) => {
+      if (toast) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      cleanup();
+    });
+
+    // handle the disconnect event
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+      cleanup();
+    });
+  
+    // handle the complete event
+    socket.on("complete", async (data: { audioUrl: string; transcript: string }) => {
+      // Update the existing episode with the new audio URL
+      const updatedEpisode = {
+        ...episode,
+        content_url: data.audioUrl || "",
+        content_transcript: data.transcript || episode.content_transcript,
+        updated_at: new Date()
+      };
+      
+      try {
+        // Save the updated episode
+        await episodesService.updateEpisode(episode.id, updatedEpisode);
+        
+        if (toast) {
+          toast({
+            title: "Success",
+            description: "Audio generated and episode updated successfully",
+          });
+        }
+
+        // Update progress to 100%
+        if (progressCallback) {
+          progressCallback(100, "Completed generation...");
+        }
+
+        // Return the updated episode
+        return updatedEpisode;
+      } catch (error) {
+        console.error("Error updating episode with new audio:", error);
+        if (toast) {
+          toast({
+            title: "Error",
+            description: "Failed to update episode with new audio",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        // Always clean up the socket connection
+        cleanup();
+      }
+    });
+
+    // Store the cleanup function for later use
+    const cleanupFn = () => cleanup();
+    
+    // Handle component unmount
+    window.addEventListener('beforeunload', cleanupFn);
+    
+    // Return a promise that resolves when the socket is disconnected
+    return new Promise<void>((resolve) => {
+      socket.on("disconnect", () => {
+        window.removeEventListener('beforeunload', cleanupFn);
+        resolve();
+      });
+    });
+  } catch (error) {
+    console.error("Error generating audio for episode:", error);
+    if (toast) {
+      toast({
+        title: "Error",
+        description: "Failed to generate audio for episode",
+        variant: "destructive",
+      });
+    }
+  }
+
+
+};
+
+//////////////////////////////////////////////////////////////////////////////
 // This is the main component for creating a podcast
 //////////////////////////////////////////////////////////////////////////////
 export default function CreatePodcast() {
@@ -30,16 +215,40 @@ export default function CreatePodcast() {
   const [transcripts, setTranscripts] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
   const [ttsModels, setTtsModels] = useState<Array<{ id: string; title: string }>>([]);
+  const [recentEpisodes, setRecentEpisodes] = useState<Episode[]>([]);
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null);
   const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [selectedTtsModel, setSelectedTtsModel] = useState<Model | null>(null);
   const [generatedEpisode, setGeneratedEpisode] = useState<Episode | null>(null);
   const [hasGeneratedPodcast, setHasGeneratedPodcast] = useState(false);
+  const [setShowDeleteDialog] = useState(false);
+  const [] = useState<{
+    isGenerating: boolean;
+    progress: number;
+    message: string;
+  }>({
+    isGenerating: false,
+    progress: 0,
+    message: "",
+  });
 
   useEffect(() => {
     loadSelectionData();
+    loadRecentEpisodes();
   }, []);
+
+  // This is a helper function to load recent episodes
+  const loadRecentEpisodes = async () => {
+    try {
+      const episodes = await episodesService.getRecentEpisodes(5);
+      if (episodes) {
+        setRecentEpisodes(episodes as Episode[]);
+      }
+    } catch (error) {
+      console.error("Error loading recent episodes:", error);
+    }
+  };
 
   // This is a helper function to load the podcasts, transcripts, and prompts
   const loadSelectionData = async () => {
@@ -328,6 +537,19 @@ export default function CreatePodcast() {
     setHasGeneratedPodcast(false);
   };
 
+  // This is a helper function to handle episode selection
+  const handleEpisodeSelect = (episode: Episode) => {
+    // Store the selected episode ID in localStorage
+    localStorage.setItem('selectedEpisodeId', episode.id);
+    
+    // Dispatch a custom event that the App component can listen for
+    const event = new CustomEvent('switchToTab', { 
+      detail: { tab: 'episodes' } 
+    });
+    window.dispatchEvent(event);
+  };
+
+
   //////////////////////////////////////////////////////////////////////////////
   // This is the main component for creating a podcast
   //////////////////////////////////////////////////////////////////////////////
@@ -436,6 +658,41 @@ export default function CreatePodcast() {
 
       {/* Right Panel */}
       <div className="w-2/3 p-4 space-y-4 overflow-y-auto">
+        {recentEpisodes.length > 0 && !selectedPodcast && !selectedTranscript && !selectedPrompt && !selectedTtsModel && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-lg font-medium text-muted-foreground pl-3">
+              <Clock className="h-5 w-5" />
+              Recent Podcast Episodes
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {recentEpisodes.map((episode) => (
+                <div
+                  key={episode.id}
+                  className="p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleEpisodeSelect(episode)}
+                >
+                  <div className="font-medium truncate">{episode.episode_title}</div>
+                  <div className="text-sm text-muted-foreground truncate mt-1">
+                    {episode.updated_at 
+                    ? (episode.updated_at instanceof Date 
+                        ? episode.updated_at.toLocaleString() 
+                        : typeof episode.updated_at === 'object' && 'seconds' in episode.updated_at
+                          ? new Date((episode.updated_at as any).seconds * 1000).toLocaleString()
+                          : new Date(episode.updated_at as any).toLocaleString())
+                    : ""}
+                  </div>
+                  {episode.topic_tags && episode.topic_tags.length > 0 && (
+                    <div className="text-xs text-muted-foreground truncate mt-1">
+                      {episode.topic_tags.join(", ")}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t-8 border-zinc-200 my-4"></div>
+          </div>
+        )}
+
         {generatedEpisode ? (
           <>
             <div className="border-t pt-4">
@@ -443,19 +700,18 @@ export default function CreatePodcast() {
                 episode={generatedEpisode}
                 onSave={handleSaveEpisode}
                 onCancel={handleCancel}
+                onDelete={() => setShowDeleteDialog}
                 isNew={true}
-                isGenerated={true}
-                isReadOnly={false}
               />
               <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>
             <div className="border-t pt-4">
               <PodcastDetails
                 podcast={selectedPodcast}
-                onSave={() => {}}
-                onCancel={() => {}}
+                onSave={() => { }}
+                onCancel={() => { }}
                 isNew={false}
-                isReadOnly={true}
+                isReadOnly={true} 
               />
               <div className="border-t-8 border-zinc-200 my-4"></div>
             </div>

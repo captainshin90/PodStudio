@@ -1,7 +1,6 @@
 // User schema version 0.2.5
 export interface User {
   id: string; // Unique ID, same as Firestore Document ID
-  // user_id: string; // User ID
   login_id: string; // Login ID
   password?: string; // Not stored in Firestore, only used for registration
   first_name: string; // First Name
@@ -61,8 +60,8 @@ export interface UserPreferences {
 export function convertToUser(data: any): User {
   return {
     id: data.id,
-    // user_id: data.user_id = crypto.randomUUID(),
     login_id: data.login_id,
+    password: data.password,
     first_name: data.first_name,
     last_name: data.last_name,
     email1: data.email1,

@@ -1,7 +1,6 @@
 // Question schema version 0.2.5
 export interface Question {
   id: string; // Unique ID, same as Firestore Document ID
-  // question_id: string; // Question ID
   podcast_id: string; // Podcast ID
   question_text: string; // Question Text
   question_audio?: string; // Question Audio
@@ -22,7 +21,6 @@ export type SuggestedQuestion = {
 export function convertToQuestion(data: any): Question {
   return {
     id: data.id,
-    // question_id: data.question_id = crypto.randomUUID(),
     podcast_id: data.podcast_id,
     question_text: data.question_text,
     question_audio: data.question_audio,

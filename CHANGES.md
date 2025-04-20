@@ -24,18 +24,22 @@
     x - DocumentDetails: support multiple file uploads, text extract support multiple documents for text extraction. 
     x - https://github.com/lfnovo/open-notebook/blob/main/open_notebook/plugins/podcasts.py
     x - Add schema, page for AI Models
+    x - show recent episodes in the CreatePodcast page
+    x - show recent transcripts in the CreateTranscript page
+    x - Handle duplicate and multiple file uploads
+    x - check why can't view the transcript: podcastify doesn't return file name
+    x - PromptDetails Conversation Style, Dialogue Structure, Engagement: Custom entries are added to database but not shown on the UI next time
+    x - Create system/datatype database collection to manage custom datatypes
 
 
     - podcastfy: Add Deepseek, Grok for content to transcript
     - podcastfy: Add Play.ht, Hume AI for transcript to speech
     - podcastfy: add support for local LLMs. Check langchain.
-    - check why can't view the transcript: podcastify doesn't return file name
     - read default config.yaml file from project folder - what type of info?
     - create and manage topics to group multiple transcripts, podcasts, episodes
     - select voices from a drop down for each provider
     - store list of voices by provider, gender, language, model in a yaml file
     - add Type: newscast, sportscast, debate, interview, seminar, presentation, documentary  
-    - Handle duplicate and multiple file uploads
 
 - submit text file transcripts, youtube videos,
 - (nice to have - mp4 videos and have system transcribe)
@@ -47,6 +51,133 @@ x - Add intro title ("welcome to X, tagline Y")
 
 ### Issues:
 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead. Flask/Werkzeug is single threaded, not for production, use a production WSGI server. 
+
+### Bug Fixes:
+x - clone and adapt OpenPod: https://github.com/giulioco/openpod
+x - using local .venv 
+x - OpenPod.ipynb - port to Colab, play with it
+x - cloned repo to local and Cloud Shell
+x - Build OpenPod: local and Cloud Shell
+x - build and debug in VS Core and Cursor
+x - install my custom podcastfy package
+x - add more API KEYS to .env file
+x - upload to private GitHub repo 
+x - figure out how to debug Python (app.py and podcastfy)
+x - add drag and drop file upload UI component
+x - allow paste into text field
+x - add support for tts_model="gemini"
+x - audio file play and download not working
+x - enter voices for question and answer for each provider
+x - add UI for customization options for the podcast
+x - clear text on load
+x - secret key to use API KEYs from .env file
+x - add word_count and ending_message options
+x - podcastfy: add support for different voices and multi-speaker in Gemini
+x - read default conversation_config.yaml file - not needed?
+x - add option to set the length of the podcast in word count
+x - create podcast from transcript
+x - check how an uploaded transcript file is passed to generate_from_transcript function 
+x - deploy to Netlify.dev (no) / Fly.dev (yes)
+x - issue with clicking on tooltips and triggering form submit
+x - issue with uploading txt files
+x - issue with processing txt files - just copy txt to the text field?
+x - download triggers another Generate Podcast.
+x - Try Bolt or Cursor to generate code for new features.
+x - clear url list and other fields on clear form button.
+x - Prompts: add podcastfy settings
+x - Filter: Deleted true/false 
+x - select voices from a drop down for each provider
+x - Transcript schema: add doc_id
+x - Podcasts/Episodes page: podcast_slug: from podcast_title, and episode_title
+x - when updating a record, the change is not reflected in the record browser panel as it has an earlier snapshot. Need to implement snapshot.docChange() listener: 
+onSnapshot(q, (snapshot) => {
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "modified") {
+      console.log("Modified document: ", change.document.data());
+In this example, the onSnapshot function sets up a listener for changes to the "your_collection" collection. The docChanges() method returns an array of DocumentChange objects, and the code iterates over them to check for modified documents.
+x - Episodes: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Prompts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Transcripts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
+x - Podcasts: test of view(yes), delete(yes), edit-save(save), new-save(yes)
+x - Documents: of test view(yes), delete, edit-save(yes), new-save(yes), 
+x - Podcasts/Episodes schema: need to update Four Freedoms schema
+x - Document upload: test document file upload
+x - app.py: check how API_TOKEN is used
+x - app.py: QUESTION: What does this do?
+socketio = SocketIO(app, cors_allowed_origins="*")
+This line initializes a WebSocket server using Flask-SocketIO with two important parameters:
+cors_allowed_origins="*": This parameter configures Cross-Origin Resource Sharing (CORS) settings for the WebSocket server:
+The "*" value means that the WebSocket server will accept connections from any origin (domain)
+This is particularly useful during development when your frontend and backend might be running on different ports (e.g., frontend on port 5173 and backend on port 8080)
+In production, you might want to restrict this to specific origins for security reasons
+x - DocumentDetail: uploaded file can't be read by app.py:extract_text - should be either file path or URL. If it's a local file, pass the file path. It's sending 2 entries in url[].
+x - If record has changed, ask user to save/cancel before exiting page
+x - CreateTranscript: processing logo is missing
+x - In all the detail panels, if closing the component but form data has changed, ask user to confirm discarding data.
+x - generate_podcast(transcript_only) is returning only file name
+x - app.py: Generate transcript returns text or filepath? Need text data.
+x - issue with Vite app not loading in fly.dev:
+Although I haven’t used React with Vite I believe the issue here is that vite builds its static files at what we call “build time”. Our secrets are only available at runtime (when you machine is started) so frontend apps such as NextJS need to have these envs as build args.
+Here’s the doc for NextJS build args: Run a NextJS App · Fly Docs
+https://fly.io/docs/js/frameworks/nextjs/#exposing-environment-variables-to-the-browser
+Roughly add this to your Dockerfile before the CMD part:
+ARG VITE_SUPABASE_API_URL="value"
+ARG VITE_SUPABASE_KEY="Other value"
+I can see that you defined these as secrets thinking about security. But I think that since this project is client-side react either way these secrets are going to be in your bundle.js anyway so I assume this is fine to not-be-a-secret (please someone with Supabase knowledge correct me if Im wrong)
+
+https://fly.io/docs/apps/build-secrets/#automate-the-inclusion-of-build-secrets-using-an-ephemeral-machine
+https://docs.docker.com/engine/swarm/secrets/
+
+x - Bun run build deletes /static folder
+x - use /public folder to store content
+x - Prompts: add llm_model, created_at
+x - only need id, not id and episode_id, in all collections
+x - Database record id must be same document ID
+x - Create Podcast: error saving new episode created on 4/5, other save works
+x - Create Podcast: not saving to right folder in fly.dev: should be /audio
+x - Create Podcast: saved content url is tmp/audio -> should be /audio
+x - app.py: generate_podcast - return audio path without '/public'
+x - CreateTranscript.tsx: add a switch to pass either source_urls or extracted_text or source_urls from Document, not both.
+x - Podcast/EpisodeDetails: image and upload component layout issue
+x - PodcastDetails > Episodes list: add desc, publish_date, edit button, compact audio player
+x - make llm_model_name configurable: "gemini-1.5-pro-latest"
+URL vs Filepath: 
+- "Files in the public directory are served at the root path." 
+- Instead of /public/images/filename.jpg, use /images/filename.jpg.
+- File paths for uploads, images: show as /public/uploads or /public/images
+- For now, only show filename 
+- Issue: if saving in Windows, it saves url as '\public\uploads\', which may be different for 
+- Better to hide /public, /uploads, /images on the app UI. Just show relative path (e.g. /uploads/filename)
+- Handle duplicate files (should create an internal filename or add a counter)
+- Rule for uploaded files: store storage_location (localhost, fly.dev, firebase, cloudfare) and relative path (e.g. /uploads, /images)
+- e.g. /upload/filename, /images/filename), but actual path is ./public/upload
+- Does <audio> component work if content_url=/audio/filename.mp3 or must be /public/audio/filename.mp3?
+- How about episode/podcast image?  
+- Has to be /public/images/name.jpg or /images/name.jpg?
+- <CDN>/upload/filename 
+- app.py/generate_podcast: how to handle filepaths, urls gracefully. Removing '/public' from audio url may cause other problems, should use relative paths and make the storage location (base_url = request.url_root) flexible. Maybe need both "Url" and "filePath"
+x - Play button hover on the episode image 
+x - Get more podcast types from Open Notebook in plugins/podcast.py
+x - Make LLM/TTS model version database configurable 
+x - sort browser records by updated_at
+x - issue with dropping multiple files, only one gets added to source_urls field
+x - Select Model when creating Podcast/Transcript
+x - Populate Models collection
+x - need to find a way to pass tts_model_name (version) to podcastfy
+X - In Firestore, Document ID is not a field. You get it with a function call doc.Id
+x - Database: all collections must have id field to be same as Firestore document ID.
+x - Database: episodes: delete episode_id, publish_datetime, create_datetime, expire_datetime 
+x - Database: documents: delete doc_id
+x - Podcasts: delete podcast_id
+x - Prompts: delete prompt_id
+x - Transcripts: delete transcript_id
+x - Model: add a model_title (same model, with different voices)
+x - issue with file upload from Mac
+x - databaseservice.GetAll() should filter out is_deleted/is_active? No. Do the filtering in the front-end
+x - EpisodeDetails: add "Generate Podcast" button to regenerate episode audio.
+x - TranscriptDetails: add "Generate Transcript" button to regenerate transcript.
+
+
 
 
 ### PodStudio / PodCon Prototype 
@@ -389,113 +520,3 @@ const payload: PodcastPayload = {
 
 When the result comes back, show an editable EpisodeDetails component above PodcastDetails, TranscriptDetails, and PromptDetails components with a new Episode record populated with the selected podcast_id, transcript_id, and prompt_id, along with Cancel and Save Changes buttons on top. Set new episode_url with the generated audio file. Also, copy SelectedTranscript.transcript_text to newEpisode.content_transcript, and copy SelectedPodcast.podcast_image to newEpisode.content_image.    
 
-
-### Bug Fixes:
-
-x - clone and adapt OpenPod: https://github.com/giulioco/openpod
-x - using local .venv 
-x - OpenPod.ipynb - port to Colab, play with it
-x - cloned repo to local and Cloud Shell
-x - Build OpenPod: local and Cloud Shell
-x - build and debug in VS Core and Cursor
-x - install my custom podcastfy package
-x - add more API KEYS to .env file
-x - upload to private GitHub repo 
-x - figure out how to debug Python (app.py and podcastfy)
-x - add drag and drop file upload UI component
-x - allow paste into text field
-x - add support for tts_model="gemini"
-x - audio file play and download not working
-x - enter voices for question and answer for each provider
-x - add UI for customization options for the podcast
-x - clear text on load
-x - secret key to use API KEYs from .env file
-x - add word_count and ending_message options
-x - podcastfy: add support for different voices and multi-speaker in Gemini
-x - read default conversation_config.yaml file - not needed?
-x - add option to set the length of the podcast in word count
-x - create podcast from transcript
-x - check how an uploaded transcript file is passed to generate_from_transcript function 
-x - deploy to Netlify.dev (no) / Fly.dev (yes)
-x - issue with clicking on tooltips and triggering form submit
-x - issue with uploading txt files
-x - issue with processing txt files - just copy txt to the text field?
-x - download triggers another Generate Podcast.
-x - Try Bolt or Cursor to generate code for new features.
-x - clear url list and other fields on clear form button.
-x - Prompts: add podcastfy settings
-x - Filter: Deleted true/false 
-x - select voices from a drop down for each provider
-x - Transcript schema: add doc_id
-x - Podcasts/Episodes page: podcast_slug: from podcast_title, and episode_title
-x - when updating a record, the change is not reflected in the record browser panel as it has an earlier snapshot. Need to implement snapshot.docChange() listener: 
-onSnapshot(q, (snapshot) => {
-  snapshot.docChanges().forEach((change) => {
-    if (change.type === "modified") {
-      console.log("Modified document: ", change.document.data());
-In this example, the onSnapshot function sets up a listener for changes to the "your_collection" collection. The docChanges() method returns an array of DocumentChange objects, and the code iterates over them to check for modified documents.
-x - Episodes: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
-x - Prompts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
-x - Transcripts: test of view(yes), delete(yes), edit-save(yes), new-save(yes)
-x - Podcasts: test of view(yes), delete(yes), edit-save(save), new-save(yes)
-x - Documents: of test view(yes), delete, edit-save(yes), new-save(yes), 
-x - Podcasts/Episodes schema: need to update Four Freedoms schema
-x - Document upload: test document file upload
-x - app.py: check how API_TOKEN is used
-x - app.py: QUESTION: What does this do?
-socketio = SocketIO(app, cors_allowed_origins="*")
-This line initializes a WebSocket server using Flask-SocketIO with two important parameters:
-cors_allowed_origins="*": This parameter configures Cross-Origin Resource Sharing (CORS) settings for the WebSocket server:
-The "*" value means that the WebSocket server will accept connections from any origin (domain)
-This is particularly useful during development when your frontend and backend might be running on different ports (e.g., frontend on port 5173 and backend on port 8080)
-In production, you might want to restrict this to specific origins for security reasons
-x - DocumentDetail: uploaded file can't be read by app.py:extract_text - should be either file path or URL. If it's a local file, pass the file path. It's sending 2 entries in url[].
-x - If record has changed, ask user to save/cancel before exiting page
-x - CreateTranscript: processing logo is missing
-x - In all the detail panels, if closing the component but form data has changed, ask user to confirm discarding data.
-x - generate_podcast(transcript_only) is returning only file name
-x - app.py: Generate transcript returns text or filepath? Need text data.
-x - issue with Vite app not loading in fly.dev:
-Although I haven’t used React with Vite I believe the issue here is that vite builds its static files at what we call “build time”. Our secrets are only available at runtime (when you machine is started) so frontend apps such as NextJS need to have these envs as build args.
-Here’s the doc for NextJS build args: Run a NextJS App · Fly Docs
-https://fly.io/docs/js/frameworks/nextjs/#exposing-environment-variables-to-the-browser
-Roughly add this to your Dockerfile before the CMD part:
-ARG VITE_SUPABASE_API_URL="value"
-ARG VITE_SUPABASE_KEY="Other value"
-I can see that you defined these as secrets thinking about security. But I think that since this project is client-side react either way these secrets are going to be in your bundle.js anyway so I assume this is fine to not-be-a-secret (please someone with Supabase knowledge correct me if Im wrong)
-
-https://fly.io/docs/apps/build-secrets/#automate-the-inclusion-of-build-secrets-using-an-ephemeral-machine
-https://docs.docker.com/engine/swarm/secrets/
-
-x - Bun run build deletes /static folder
-x - use /public folder to store content
-x - Prompts: add llm_model, created_at
-x - only need id, not id and episode_id, in all collections
-x - Database record id must be same document ID
-x - Create Podcast: error saving new episode created on 4/5, other save works
-x - Create Podcast: not saving to right folder in fly.dev: should be /audio
-x - Create Podcast: saved content url is tmp/audio -> should be /audio
-x - app.py: generate_podcast - return audio path without '/public'
-x - CreateTranscript.tsx: add a switch to pass either source_urls or extracted_text or source_urls from Document, not both.
-x - Podcast/EpisodeDetails: image and upload component layout issue
-x - PodcastDetails > Episodes list: add desc, publish_date, edit button, compact audio player
-x - make llm_model_name configurable: "gemini-1.5-pro-latest"
-URL vs Filepath: 
-- "Files in the public directory are served at the root path." 
-- Instead of /public/images/filename.jpg, use /images/filename.jpg.
-- File paths for uploads, images: show as /public/uploads or /public/images
-- For now, only show filename 
-- Issue: if saving in Windows, it saves url as '\public\uploads\', which may be different for 
-- Better to hide /public, /uploads, /images on the app UI. Just show relative path (e.g. /uploads/filename)
-- Handle duplicate files (should create an internal filename or add a counter)
-- Rule for uploaded files: store storage_location (localhost, fly.dev, firebase, cloudfare) and relative path (e.g. /uploads, /images)
-- e.g. /upload/filename, /images/filename), but actual path is ./public/upload
-- Does <audio> component work if content_url=/audio/filename.mp3 or must be /public/audio/filename.mp3?
-- How about episode/podcast image?  
-- Has to be /public/images/name.jpg or /images/name.jpg?
-- <CDN>/upload/filename 
-- app.py/generate_podcast: how to handle filepaths, urls gracefully. Removing '/public' from audio url may cause other problems, should use relative paths and make the storage location (base_url = request.url_root) flexible. Maybe need both "Url" and "filePath"
-x - Play button hover on the episode image 
-x - Get more podcast types from Open Notebook in plugins/podcast.py
-x - Make LLM/TTS model version database configurable 
-x - sort browser records by updated_at

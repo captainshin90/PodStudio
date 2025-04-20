@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreatePodcast from "@/components/create/CreatePodcast";
 import { TopicPodcast } from "@/components/create/TopicPodcast";
@@ -26,6 +26,23 @@ import CreateTranscript from "@/components/create/CreateTranscript";
 export default function App() {
   const [activeMainTab, setActiveMainTab] = useState("create");
 //  const [activePodcastTab, setActivePodcastTab] = useState("custom");
+
+  // Add event listener for tab switching
+  useEffect(() => {
+    const handleTabSwitch = (event: CustomEvent) => {
+      if (event.detail && event.detail.tab) {
+        setActiveMainTab(event.detail.tab);
+      }
+    };
+
+    // Add the event listener
+    window.addEventListener('switchToTab', handleTabSwitch as EventListener);
+
+    // Clean up the event listener on component unmount
+    return () => {
+      window.removeEventListener('switchToTab', handleTabSwitch as EventListener);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-background">

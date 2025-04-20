@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import TranscriptBrowser from "@/components/transcripts/TranscriptBrowser";
 import TranscriptDetails from "@/components/transcripts/TranscriptDetails";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Transcript } from "@/lib/schemas/transcripts";
 import { transcriptsService } from "@/lib/services/database-service";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { handleRegenerateTranscript } from "@/components/create/CreateTranscript";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Transcripts page
@@ -24,7 +25,35 @@ export default function TranscriptsPage() {
   const [showNewTranscript, setShowNewTranscript] = useState(false);
   const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+
+  // Load the selected transcript from localStorage if available
+  useEffect(() => {
+    const loadSelectedTranscript = async () => {
+      const storedTranscriptId = localStorage.getItem('selectedTranscriptId');
+      
+      if (storedTranscriptId) {
+        try {
+          const transcript = await transcriptsService.getTranscriptById(storedTranscriptId);
+          if (transcript) {
+            setSelectedTranscript(transcript as Transcript);
+            // Clear the stored transcript ID after loading it
+            localStorage.removeItem('selectedTranscriptId');
+          }
+        } catch (error) {
+          console.error("Error loading selected transcript:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load selected transcript",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    loadSelectedTranscript();
+  }, [toast]);
 
   // Handle save transcript
   const handleSave = async (updatedTranscript: Transcript) => {
@@ -86,7 +115,44 @@ export default function TranscriptsPage() {
     }
   };
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // Handle generate transcript
+  ///////////////////////////////////////////////////////////////////////////////
+  const handleRegenerateTranscriptWrapper = async (
+    transcript: Transcript,
+    progressCallback?: (progress: number, message: string) => void
+  ): Promise<void> => {
+    try {
+      setIsGenerating(true);
+
+      // Create a wrapper for the progress callback to ensure we're updating the UI
+      const wrappedProgressCallback = (progress: number, message: string) => {
+        if (progressCallback) {
+          progressCallback(progress, message);
+        }
+        // If progress is 100%, we're done
+        if (progress === 100) {
+          // We'll let the finally block handle setting isGenerating to false
+        }
+      };
+
+      await handleRegenerateTranscript(transcript, wrappedProgressCallback, toast);
+      
+      // Refresh the transcript data
+      const updatedTranscript = await transcriptsService.getTranscriptById(transcript.id);
+      if (updatedTranscript) {
+        setSelectedTranscript(updatedTranscript as Transcript);
+      }
+    } catch (error) {
+      console.error("Error handleRegenerateTranscriptWrapper:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////
   // Render the page
+  ///////////////////////////////////////////////////////////////////////////////
   return (
     <div className="container mx-auto py-0 px-0">
       <h1 className="text-2xl font-bold text-muted-foreground mb-6">Transcripts Management</h1>
@@ -130,6 +196,9 @@ export default function TranscriptsPage() {
                 onDelete={() => setShowDeleteDialog(true)}
                 isNew={false}
                 isReadOnly={false}
+                onRegenerateTranscript={handleRegenerateTranscriptWrapper}
+                isGenerating={isGenerating}
+                setIsGenerating={setIsGenerating}
               />
             </>
           )}

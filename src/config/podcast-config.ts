@@ -1,22 +1,23 @@
-// import yaml from 'js-yaml';
-// import { readFileSync } from 'fs';
-// import { join } from 'path';
-// yaml file is not being used as it's not compatible with Vite.
-// import { config } from '@/config/config';
 
 export type ExtractTool = "default" | "podcastfy";
-export type ConversationStyle = "Engaging" | "Fast-paced" | "Enthusiastic" | "Educational" | "Casual" | "Professional" | "Friendly";
-export type DialogueStructure = "Topic Introduction" | "Summary" | "Discussions" | "Q&A" | "Farewell";
-export type EngagementTechnique = "Questions" | "Testimonials" | "Quotes" | "Anecdotes" | "Analogies" | "Humor";
 
-export const conversationStyles: ConversationStyle[] = [
+// These datatypes were moved to the system/datatype database collection
+// export type ConversationStyle = "Engaging" | "Fast-paced" | "Enthusiastic" | "Educational" | "Casual" | "Professional" | "Friendly";
+// export type DialogueStructure = "Topic Introduction" | "Summary" | "Discussions" | "Q&A" | "Farewell";
+// export type EngagementTechnique = "Questions" | "Testimonials" | "Quotes" | "Anecdotes" | "Analogies" | "Humor";
+
+// why limit to fixed list of ConversationStyles?
+// because we want to allow the user to add their own custom styles
+/*
+export const conversationStyles: string[] = [
   "Engaging",
   "Fast-paced",
   "Enthusiastic",
   "Educational",
   "Casual",
   "Professional",
-  "Friendly"
+  "Friendly",
+  "Analytical",
 ];
 
 export const dialogueStructures: DialogueStructure[] = [
@@ -35,6 +36,7 @@ export const engagementTechniques: EngagementTechnique[] = [
   "Analogies",
   "Humor"
 ];
+*/
 
 /*
 export const conversationStyles: ConversationStyle[] = [

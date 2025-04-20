@@ -308,6 +308,30 @@ export let databaseService = DatabaseService.getInstance();
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
+// System services
+///////////////////////////////////////////////////////////////////////////////
+
+export const systemService = {
+  async getAllSystem(): Promise<DocumentData[] | null> {
+    return databaseService.getAll('system');
+  },
+  
+  async getSystemById(id: string): Promise<DocumentData | null> {
+    return databaseService.getById('system', id);
+  },
+
+  async updateSystem(id: string, systemData: any): Promise<void> {
+    return databaseService.update('system', id, systemData);
+  },
+
+  async deleteSystem(id: string): Promise<void> {
+    return databaseService.delete('system', id);
+  },
+  
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
 // User services
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -375,7 +399,7 @@ export const subscriptionsService = {
     return databaseService.delete('subscriptions', id);
   },
   
-  async getActiveSubscriptions( ): Promise<DocumentData[] | null> {
+  async getActiveSubscriptions(): Promise<DocumentData[] | null> {
     return databaseService.query('subscriptions', [
       { field: 'is_active', operator: '==', value: true },
       { field: 'is_deleted', operator: '==', value: false }
@@ -542,7 +566,16 @@ export const transcriptsService = {
       { field: 'transcript_type', operator: '==', value: type }
     ]);
   },
-  
+
+  async getRecentTranscripts(limit: number = 10): Promise<DocumentData[] | null> {
+    return databaseService.query(
+      'transcripts', 
+      [ { field: 'is_active', operator: '==', value: true }, 
+        { field: 'is_deleted', operator: '==', value: false }],
+      'updated_at', 'desc', limit
+    );
+  },
+ 
   async getTranscriptsByTopic(topicTag: string): Promise<DocumentData[] | null> {
     return databaseService.query('transcripts', [
       { field: 'topic_tags', operator: 'array-contains', value: topicTag }
@@ -732,7 +765,7 @@ export const episodesService = {
       'episodes', 
       [ { field: 'is_active', operator: '==', value: true }, 
         { field: 'is_deleted', operator: '==', value: false }],
-      'publish_date', 'desc', limit
+      'updated_at', 'desc', limit
     );
   },
   

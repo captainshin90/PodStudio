@@ -20,15 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { nanoid } from "nanoid";
 import SelectDialog from "@/components/ui/select-dialog";
-/*
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-*/
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 
 ///////////////////////////////////////////////////////////////////////////////
 // EpisodeDetailsProps interface
@@ -42,6 +35,12 @@ interface EpisodeDetailsProps {
   isNew?: boolean;
   isGenerated?: boolean;
   isReadOnly?: boolean;
+  onRegenerateAudio?: (
+    episode: Episode, 
+    progressCallback?: (progress: number, message: string) => void
+  ) => Promise<void>;
+  isGenerating?: boolean;
+  setIsGenerating?: (isGenerating: boolean) => void;
 }
 
 
@@ -56,7 +55,10 @@ export default function EpisodeDetails({
   onDelete, 
   isNew = false,
   isGenerated = false,
-  isReadOnly = false 
+  isReadOnly = false,
+  onRegenerateAudio,
+  isGenerating = false,
+  setIsGenerating
 }: EpisodeDetailsProps) {
   const [formData, setFormData] = useState<Partial<Episode>>({});
   const [loading, setLoading] = useState(false);
@@ -69,6 +71,9 @@ export default function EpisodeDetails({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("");
+  const { toast } = useToast();
 
   useEffect(() => {
     if (episode) {
@@ -175,8 +180,8 @@ export default function EpisodeDetails({
       }
       if (loadedModels) {
         setModels(loadedModels
-          .filter((m: any) => m.is_active && !m.is_deleted)
-          .map((m: any) => ({ id: m.id, title: m.model_name })));
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'TTS')
+          .map(m => ({ id: m.id, title: m.model_name })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
@@ -297,35 +302,98 @@ export default function EpisodeDetails({
   };
 
   ///////////////////////////////////////////////////////////////////////////////
+  // This is the handleGenerateAudio function
+  ///////////////////////////////////////////////////////////////////////////////
+  const handleRegenerateAudio = async () => {
+    if (!episode || !onRegenerateAudio) return;
+    
+    if (setIsGenerating) {
+      setIsGenerating(true);
+    }
+    setProgress(0);
+    setStatusMessage("Starting audio generation...");
+    
+    try {
+      await onRegenerateAudio(episode, (progress, message) => {
+        setProgress(progress);
+        setStatusMessage(message);
+      });
+    } catch (error) {
+      console.error("Error generating audio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate audio",
+        variant: "destructive",
+      });
+    } finally {
+      if (setIsGenerating) {
+        setIsGenerating(false);
+      }
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////
   // This is the main component for the episode details
   ///////////////////////////////////////////////////////////////////////////////
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <div className="flex items-center justify-between mb-4">
-        {isNew && (
-          <h2 className="text-xl font-semibold">New Episode</h2>
-        )}
-        {!isReadOnly && (
-          <div className="flex gap-2 ml-auto">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            {episode && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={onDelete}
-              >
-                Delete
-              </Button>
+      {!isReadOnly && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {isNew && (
+              <h2 className="text-xl font-semibold">New Episode</h2>
             )}
-            <Button type="submit" disabled={!hasChanges && !isNew}>
-              {episode ? "Save Changes" : "Save Episode"}
-            </Button>
+            {!isNew && episode && (
+              <div className="space-y-2">
+                <Button 
+                  type="button" 
+                  variant="default"
+                  disabled={ !hasChanges || isGenerating || !formData.podcast_id || !formData.prompt_id || !formData.transcript_id || !formData.model_id}
+                  onClick={handleRegenerateAudio}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating Audio...
+                    </>
+                  ) : (
+                    "Update Generated Audio"
+                  )}
+                </Button>
+                {isGenerating && (
+                  <div className="space-y-2">
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-sm text-center text-muted-foreground">
+                      {statusMessage || `Generating audio... ${Math.round(progress)}%`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+          {!isReadOnly && !isGenerating && (
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              {episode && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDelete}
+                >
+                  Delete
+                </Button>
+              )}
+              <Button type="submit" disabled={!hasChanges && !isNew}>
+                {episode ? "Save Changes" : "Save Episode"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Episode details section */}
       <div className="space-y-3">
         <div className="grid grid-cols-5 gap-4">
           <div className="col-span-3 flex items-center gap-2">
@@ -444,7 +512,7 @@ export default function EpisodeDetails({
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-muted-foreground/70">Model</Label>
+            <Label className="text-muted-foreground/70">TTS Model</Label>
             <SelectDialog
               title="Select Model"
               items={models}

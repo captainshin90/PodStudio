@@ -4,7 +4,6 @@ export type DocumentType = 'article' | 'podcast' | 'transcript' | 'question' | '
 // Document schema version 0.2.5
 export interface Document {
   id: string; // Unique ID, same as Firestore Document ID
-  // doc_id: string; // Document id
   doc_name: string; // Document Name
   doc_desc: string; // Document Description
   doc_type: DocumentType; // Document Type
@@ -24,7 +23,6 @@ export interface Document {
 export function convertToDocument(data: any): Document {
   return {
     id: data.id,
-    // doc_id: data.doc_id = crypto.randomUUID(), 
     doc_name: data.doc_name,
     doc_desc: data.doc_desc,
     doc_type: data.doc_type,

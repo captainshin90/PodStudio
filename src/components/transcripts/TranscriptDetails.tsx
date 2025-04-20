@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,10 +23,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { documentsService, promptsService } from "@/lib/services/database-service";
+import { documentsService, promptsService, modelsService } from "@/lib/services/database-service";
 import { nanoid } from "nanoid";
 import SelectDialog from "@/components/ui/select-dialog";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 
+
+///////////////////////////////////////////////////////////////////////////////
+// TranscriptDetailsProps interface
+///////////////////////////////////////////////////////////////////////////////
 interface TranscriptDetailsProps {
   transcript: Transcript | null;
   onSave: (transcript: Transcript) => void;
@@ -35,6 +41,12 @@ interface TranscriptDetailsProps {
   isNew?: boolean;
   isGenerated?: boolean;
   isReadOnly?: boolean;
+  onRegenerateTranscript?: (
+    transcript: Transcript, 
+    progressCallback?: (progress: number, message: string) => void
+  ) => Promise<void>;
+  isGenerating?: boolean;
+  setIsGenerating?: (isGenerating: boolean) => void;
 }
 
 
@@ -50,14 +62,21 @@ export default function TranscriptDetails({
   isNew = false,
   isGenerated = false,
   isReadOnly = false,
+  onRegenerateTranscript,
+  isGenerating = false,
+  setIsGenerating
 }: TranscriptDetailsProps) {
-  const [formData, setFormData] = useState<Partial<Transcript>>({});
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<Partial<Transcript>>(transcript || {});
   const [hasChanges, setHasChanges] = useState(false);
   const [isEditable, setIsEditable] = useState(false);
   const [documents, setDocuments] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; title: string }>>([]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [_, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("");
 
   
   ///////////////////////////////////////////////////////////////////////////////
@@ -80,8 +99,8 @@ export default function TranscriptDetails({
         transcript_title: "",
         transcript_type: "interview",
         topic_tags: [],
-        transcript_model: "",
-        transcript_model_name: "",
+        // transcript_model: "",
+        // transcript_model_name: "",
         transcript_text: "",
         is_active: true,
         is_deleted: false,
@@ -135,9 +154,10 @@ export default function TranscriptDetails({
   ///////////////////////////////////////////////////////////////////////////////
   const loadSelectionData = async () => {
     try {
-      const [loadedDocuments, loadedPrompts] = await Promise.all([
+      const [loadedDocuments, loadedPrompts, loadedModels] = await Promise.all([
         documentsService.getAllDocuments(),
-        promptsService.getAllPrompts()
+        promptsService.getAllPrompts(),
+        modelsService.getAllModels()
       ]);
 
       if (loadedDocuments) {
@@ -149,6 +169,11 @@ export default function TranscriptDetails({
         setPrompts(loadedPrompts
           .filter(p => p.is_active && !p.is_deleted)
           .map(p => ({ id: p.id, title: p.prompt_name })));
+      }
+      if (loadedModels) {
+        setModels(loadedModels
+          .filter(m => m.is_active && !m.is_deleted && m.model_type === 'LLM')
+          .map(m => ({ id: m.id, title: m.model_title })));
       }
     } catch (error) {
       console.error("Error loading selection data:", error);
@@ -167,16 +192,24 @@ export default function TranscriptDetails({
   ///////////////////////////////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     try {
       await onSave(formData as Transcript);
       setHasChanges(false);
     } catch (error) {
       console.error("Error saving transcript:", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   ///////////////////////////////////////////////////////////////////////////////
   // Handle Change
@@ -204,33 +237,103 @@ export default function TranscriptDetails({
   };
 
   ///////////////////////////////////////////////////////////////////////////////
+  // Handle Update Transcript
+  ///////////////////////////////////////////////////////////////////////////////
+  const handleRegenerateTranscript = async () => {
+    if (!transcript || !onRegenerateTranscript) return;
+
+    if (setIsGenerating) {
+      setIsGenerating(true);
+    }
+    setProgress(0);
+    setStatusMessage("Starting transcript update...");
+
+    try {
+      await onRegenerateTranscript(transcript, (progress, message) => {
+        setProgress(progress);
+        setStatusMessage(message);
+      });
+
+      // Refresh the transcript data
+      // const updatedTranscript = await transcriptsService.getTranscriptById(transcript.id);
+      // if (updatedTranscript) {
+      //   setFormData(updatedTranscript);
+      // }
+    } catch (error) {
+      console.error("Error updating transcript:", error);
+      if (toast) {
+        toast({
+          title: "Error",
+          description: "Failed to update transcript",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (setIsGenerating) {
+        setIsGenerating(false);
+      }
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////
   // Render
   ///////////////////////////////////////////////////////////////////////////////
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      {/* Header section: Cancel, Delete, Save buttons */}
+      {/* Header section: Update, Cancel, Delete, Save buttons */}
       {!isReadOnly && (
         <div className="flex items-center justify-between mb-4">
-          {isNew && (
-            <h2 className="text-xl font-semibold">New Transcript</h2>
-          )}
-          <div className="flex gap-2 ml-auto">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            {transcript && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={onDelete}
-              >
-                Delete
-              </Button>
+          <div className="flex gap-2">
+            {isNew && (
+              <h2 className="text-xl font-semibold">New Transcript</h2>
             )}
-            <Button type="submit" disabled={!hasChanges && !isNew}>  
-              {transcript ? "Save Changes" : "Save Transcript"}
-            </Button>
+            {!isNew && transcript && (
+              <div className="space-y-2">
+                <Button 
+                  type="button" 
+                  variant="default"
+                  disabled={ !hasChanges || isGenerating || !formData.doc_id || !formData.prompt_id || !formData.model_id}
+                  onClick={handleRegenerateTranscript}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Regenerating Transcript...
+                    </>
+                  ) : (
+                    "Update Generated Transcript"
+                  )}
+                </Button>
+                {isGenerating && (
+                  <div className="space-y-2">
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-sm text-center text-muted-foreground">
+                      {statusMessage || `Updating transcript... ${Math.round(progress)}%`}
+                    </p>
+                  </div>
+                )}
+            </div>
+            )}
           </div>
+          {!isReadOnly && !isGenerating && (
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              {transcript && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDelete}
+                >
+                  Delete
+                </Button>
+              )}
+              <Button type="submit" disabled={!hasChanges && !isNew}>  
+                {transcript ? "Save Changes" : "Save Transcript"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -316,18 +419,43 @@ export default function TranscriptDetails({
             />
           </div>
         </div>
-
-        <div className="space-y-1">
-            <Label htmlFor="transcript_title" className="text-muted-foreground/70">Title</Label>
-            <Input
-              id="transcript_title"
-              name="transcript_title"
-              placeholder="Enter Transcript Title"
-              value={formData.transcript_title || ""}
-              onChange={handleChange}
-              disabled={isReadOnly}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="text-muted-foreground/70">LLM Model</Label>
+            <SelectDialog
+              title="Select Model"
+              items={models}
+              onSelect={(id) => {
+                setFormData(prev => ({ ...prev, model_id: id }));
+                setHasChanges(true);
+              }}
+              trigger={
+                <Button variant="outline" className="w-full justify-between" disabled={isReadOnly}>
+                  <span className="truncate">
+                    {formData.model_id ? 
+                      models.find(m => m.id === formData.model_id)?.title || "Select Model" :
+                      "Select Model"
+                    }
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              }
             />
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="transcript_title" className="text-muted-foreground/70">Title</Label>
+          <Input
+            id="transcript_title"
+            name="transcript_title"
+            placeholder="Enter Transcript Title"
+            value={formData.transcript_title || ""}
+            onChange={handleChange}
+            disabled={isReadOnly}
+          />
+        </div>
+
         <div className="space-y-1">
           <Label htmlFor="topic_tags" className="text-muted-foreground/70">Topic Tags (#topic/place/people/org/event. Lower case, no spaces, max 30 characters)</Label>
           <Input
@@ -343,33 +471,6 @@ export default function TranscriptDetails({
             }}
             disabled={isReadOnly}
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="transcript_model" className="text-muted-foreground/70">Model</Label>
-            </div>
-            <Input
-              id="transcript_model"
-              name="transcript_model"
-              value={formData.transcript_model || ""}
-              onChange={handleChange}
-              disabled={isReadOnly}
-            />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="transcript_model_name" className="text-muted-foreground/70">Model Name</Label>
-            </div>
-            <Input
-              id="transcript_model_name"
-              name="transcript_model_name"
-              value={formData.transcript_model_name || ""}
-              onChange={handleChange}
-              disabled={isReadOnly}
-            />
-          </div>
         </div>
 
         <div className="space-y-1">

@@ -1,7 +1,8 @@
 // Prompt schema version 0.2.5
 export interface Model {
   id: string; // Unique ID, same as Firestore Document ID
-  model_name: string; // Model Name
+  model_title: string; // Model Title friendly name
+  model_name: string; // Model specific name (e.g. "gpt-4o", "elevenlabs", "openai", "edge", "geminimulti")
   model_type: string; // Model Type: LLM, TTS, STT, etc.
   model_provider: string; // Model Provider: OpenAI, Google, etc.
   model_desc: string; // Model Description
@@ -43,6 +44,7 @@ export interface Model {
 export function convertToModel(data: any): Model {
   return {
     id: data.id,
+    model_title: data.model_title,
     model_name: data.model_name,
     model_desc: data.model_desc,
     model_type: data.model_type,

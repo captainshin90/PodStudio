@@ -1,7 +1,7 @@
 {
   "name": "podcast-studio",
   "private": true,
-  "version": "0.3.4-alpha",
+  "version": "0.3.6-alpha",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"python app.py\" \"vite\"",
@@ -44,6 +44,7 @@
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.51.0",
     "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.5.1",
     "shadcn-ui": "^0.9.3",
     "socket.io-client": "^4.7.4",
     "tailwind-merge": "^2.6.0",

@@ -65,7 +65,7 @@ export default function ModelBrowser({
 
   const filteredModels = models.filter((model) => {
     return (
-      model.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      model.model_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       model.model_desc.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
@@ -183,7 +183,7 @@ export default function ModelBrowser({
             aria-selected={selectedModel?.id === model.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium truncate">{model.model_name}</div>
+            <div className="font-medium truncate">{model.model_title}</div>
             <div className="text-xs opacity-80 mt-0.5 truncate">
               {model.model_type}
             </div>

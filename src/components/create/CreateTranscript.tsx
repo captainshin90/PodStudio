@@ -4,7 +4,7 @@ import { Prompt } from "@/lib/schemas/prompts";
 import { Transcript } from "@/lib/schemas/transcripts";
 import { Model } from "@/lib/schemas/models";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, Play } from "lucide-react";
+import { Loader2, ChevronDown, Play, Clock } from "lucide-react";
 import { io } from "socket.io-client";
 import { documentsService, modelsService, promptsService, transcriptsService } from "@/lib/services/database-service";
 import DocumentDetails from "@/components/documents/DocumentDetails";
@@ -20,6 +20,195 @@ import SelectDialog from "@/components/ui/select-dialog";
 
 
 //////////////////////////////////////////////////////////////////////////////
+// This is a helper function to handle updating an existing transcript
+//////////////////////////////////////////////////////////////////////////////
+export const handleRegenerateTranscript = async (
+  transcript: Transcript,
+  progressCallback?: (progress: number, message: string) => void,
+  toast?: any
+): Promise<void> => {
+  if (!transcript.doc_id || !transcript.prompt_id || !transcript.model_id) {
+    if (toast) {
+      toast({
+        title: "Missing Information",
+        description: "Transcript is missing required information for generation",
+        variant: "destructive",
+      });
+    }
+    return;
+  }
+
+  // Load the required data
+  try {
+    const [document, prompt, model] = await Promise.all([
+      documentsService.getDocumentById(transcript.doc_id),
+      promptsService.getPromptById(transcript.prompt_id),
+      modelsService.getModelById(transcript.model_id)
+    ]);
+
+    if (!document || !prompt || !model) {
+      if (toast) {
+        toast({
+          title: "Error",
+          description: "Failed to load required data for transcript generation",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    // Start the generation process
+    if (progressCallback) {
+      progressCallback(0, "Connecting to server...");
+    }
+
+    const socket = io({
+      path: "/socket.io",
+      reconnection: true,
+      timeout: 10000,
+    });
+
+    const cleanup = () => {
+      console.log("Cleaning up socket connection...");
+      socket.disconnect();
+    };
+
+    // connected to the server, get payload and call the generate_transcript server endpoint
+    socket.on("connect", () => {
+      console.log("Socket connected successfully");
+      if (progressCallback) {
+        progressCallback(0, "Connected to server");
+      }
+
+      // Research shows that COT style prompts perform better than non-COT style prompts
+      // so we're going to extend the prompt with the COT style, verification, instructions, and examples
+      let extended_prompt = prompt.prompt_text;
+      if (prompt.use_chain_of_thought) {
+        extended_prompt = prompt.prompt_text + "\n\n" +
+          "Chain of Thought style: " + prompt.cot_style + "\n\n" +
+          "Chain of Thought verification: " + prompt.cot_verification + "\n\n" +
+          "Chain of Thought instructions: " + prompt.cot_instructions + "\n\n" +
+          "Chain of Thought examples: " + prompt.cot_examples;
+      } 
+      
+      const payload = {
+        transcript_only: true,
+        text: document.doc_extracted_text || "", 
+        urls: [],
+        name: document.doc_name,
+        tagline: document.doc_desc,
+        is_long_form: prompt.is_long_form,
+        word_count: prompt.word_count,
+        conversation_style: prompt.conversation_style,
+        roles_person1: prompt.roles_person1,
+        roles_person2: prompt.roles_person2,
+        dialogue_structure: prompt.dialogue_structure,
+        engagement_techniques: prompt.engagement_techniques,
+        user_instructions: extended_prompt,
+        ending_message: prompt.ending_message,
+        creativity: prompt.creativity,
+        llm_provider: model.model_provider,
+        llm_model_name: model.model_name,
+        secret_key: sessionStorage.getItem("secret_key") || "",
+      };
+
+      // call the generate_podcast server endpoint with the payload
+      socket.emit("generate_podcast", payload);
+    });
+
+    // handle the progress event
+    socket.on("progress", (data: { progress: number; message: string }) => {
+      if (progressCallback) {
+        progressCallback(data.progress, data.message);
+      }
+    });
+
+    // handle the error event
+    socket.on("error", (error: { message: string }) => {
+      if (toast) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      cleanup();
+    });
+
+    // handle the disconnect event
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+      cleanup();
+    });
+  
+    // handle the complete event
+    socket.on("complete", async (data: {transcript: string }) => {
+      // Update the existing transcript with the new text
+      const updatedTranscript: Transcript = {
+        ...transcript,
+        transcript_text: data.transcript || transcript.transcript_text,
+        updated_at: new Date()
+      };
+      
+      try {
+        // Save the updated transcript
+        await transcriptsService.updateTranscript(transcript.id, updatedTranscript);
+        
+        if (toast) {
+          toast({
+            title: "Success",
+            description: "Transcript updated successfully",
+          });
+        }
+
+        // Update progress to 100%
+        if (progressCallback) {
+          progressCallback(100, "Completed generation...");
+        }
+
+        // Return the updated transcript
+        return updatedTranscript;
+      } catch (error) {
+        console.error("Error updating transcript with new text:", error);
+        if (toast) {
+          toast({
+            title: "Error",
+            description: "Failed to update transcript with new text",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        // Always clean up the socket connection
+        cleanup();
+      }
+    });
+
+    // Store the cleanup function for later use
+    const cleanupFn = () => cleanup();
+    
+    // Handle component unmount
+    window.addEventListener('beforeunload', cleanupFn);
+    
+    // Return a promise that resolves when the socket is disconnected
+    return new Promise<void>((resolve) => {
+      socket.on("disconnect", () => {
+        window.removeEventListener('beforeunload', cleanupFn);
+        resolve();
+      });
+    });
+  } catch (error) {
+    console.error("Error updating transcript:", error);
+    if (toast) {
+      toast({
+        title: "Error",
+        description: "Failed to update transcript",
+        variant: "destructive",
+      });
+    }
+  }
+};
+
+//////////////////////////////////////////////////////////////////////////////
 // This is the main component for creating a transcript
 //////////////////////////////////////////////////////////////////////////////
 export default function CreateTranscript() {
@@ -30,16 +219,39 @@ export default function CreateTranscript() {
   const [documents, setDocuments] = useState<Array<{ id: string; title: string }>>([]);
   const [prompts, setPrompts] = useState<Array<{ id: string; title: string }>>([]);
   const [models, setModels] = useState<Array<{ id: string; title: string }>>([]);
+  const [recentTranscripts, setRecentTranscripts] = useState<Transcript[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [generatedTranscript, setGeneratedTranscript] = useState<Transcript | null>(null);
   const [hasGeneratedTranscript, setHasGeneratedTranscript] = useState(false);
   const [sourceType, setSourceType] = useState("text"); // 'urls' or 'text'
+  const [] = useState<{
+    isGenerating: boolean;
+    progress: number;
+    message: string;
+  }>({
+    isGenerating: false,
+    progress: 0,
+    message: "",
+  });
 
   useEffect(() => {
     loadSelectionData();
+    loadRecentTranscripts();
   }, []);
+
+  // This is a helper function to load recent transcripts
+  const loadRecentTranscripts = async () => {
+    try {
+      const transcripts = await transcriptsService.getRecentTranscripts(5);
+      if (transcripts) {       
+        setRecentTranscripts(transcripts as Transcript[]);
+      }
+    } catch (error) {
+      console.error("Error loading recent transcripts:", error);
+    }
+  };
 
   // This is a helper function to load the documents and prompts
   const loadSelectionData = async () => {
@@ -182,6 +394,17 @@ export default function CreateTranscript() {
         console.log("Socket connected successfully");
         setStatusMessage("Connected to server");
 
+        // Research shows that COT style prompts perform better than non-COT style prompts
+        // so we're going to extend the prompt with the COT style, verification, instructions, and examples
+        let extended_prompt = selectedPrompt.prompt_text;
+        if (selectedPrompt.use_chain_of_thought) {
+          extended_prompt = selectedPrompt.prompt_text + "\n\n" +
+            "Chain of Thought style: " + selectedPrompt.cot_style + "\n\n" +
+            "Chain of Thought verification: " + selectedPrompt.cot_verification + "\n\n" +
+            "Chain of Thought instructions: " + selectedPrompt.cot_instructions + "\n\n" +
+            "Chain of Thought examples: " + selectedPrompt.cot_examples;
+        } 
+  
         const payload = {
           transcript_only: true,
           text: sourceType === 'text' ? (selectedDocument.doc_extracted_text || "") : "", 
@@ -195,7 +418,7 @@ export default function CreateTranscript() {
           roles_person2: selectedPrompt.roles_person2,
           dialogue_structure: selectedPrompt.dialogue_structure,
           engagement_techniques: selectedPrompt.engagement_techniques,
-          user_instructions: selectedPrompt.prompt_text,
+          user_instructions: extended_prompt,
           ending_message: selectedPrompt.ending_message,
           creativity: selectedPrompt.creativity,
           llm_provider: selectedModel.model_provider,  // Podcastfy doesn't have llm_provider
@@ -235,11 +458,12 @@ export default function CreateTranscript() {
           id: "transcript_" + nanoid(20),  
           doc_id: selectedDocument.id,
           prompt_id: selectedPrompt.id,
+          model_id: selectedModel.id,
           transcript_title: `${selectedDocument.doc_name} - ${selectedPrompt.prompt_name}`,
           transcript_type: "interview",
           topic_tags: selectedDocument.topic_tags,
-          transcript_model: selectedModel.model_name,
-          transcript_model_name: selectedModel.model_name,
+          // transcript_model: selectedModel.model_name,
+          // transcript_model_name: selectedModel.model_name,
           transcript_text: data.transcript,
           is_active: true,
           is_deleted: false,
@@ -297,6 +521,18 @@ export default function CreateTranscript() {
     setSelectedPrompt(null);
     setSelectedModel(null);
     setHasGeneratedTranscript(false);
+  };
+
+  // This is a helper function to handle transcript selection
+  const handleTranscriptSelect = (transcript: Transcript) => {
+    // Store the selected transcript ID in localStorage
+    localStorage.setItem('selectedTranscriptId', transcript.id);
+    
+    // Dispatch a custom event that the App component can listen for
+    const event = new CustomEvent('switchToTab', { 
+      detail: { tab: 'transcripts' } 
+    });
+    window.dispatchEvent(event);
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -401,6 +637,42 @@ export default function CreateTranscript() {
 
       {/* Right Panel */}
       <div className="w-2/3 p-4 space-y-4 overflow-y-auto">
+        {recentTranscripts.length > 0 && !selectedDocument && !selectedPrompt && !selectedModel && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-lg font-medium text-muted-foreground pl-3">
+              <Clock className="h-5 w-5" />
+              Recent Transcripts
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {recentTranscripts.map((transcript) => (
+                <div
+                  key={transcript.id}
+                  className="p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleTranscriptSelect(transcript)}
+                >
+                  <div className="font-medium truncate">{transcript.transcript_title}</div>
+                  <div className="flex items-center text-sm gap-2 text-muted-foreground truncate mt-1">
+                    <span className="whitespace-nowrap">
+                      {transcript.updated_at 
+                        ? (transcript.updated_at instanceof Date 
+                            ? transcript.updated_at.toLocaleString() 
+                            : typeof transcript.updated_at === 'object' && 'seconds' in transcript.updated_at
+                              ? new Date((transcript.updated_at as any).seconds * 1000).toLocaleString()
+                              : new Date(transcript.updated_at as any).toLocaleString())
+                        : ""}
+                    </span>
+                    <span className="truncate">{transcript.transcript_type}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate mt-1">
+                    {transcript.topic_tags?.join(", ")}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t-8 border-zinc-200 my-4"></div>
+          </div>
+        )}
+
         {generatedTranscript ? (
           <>
             <div className="mt-4">

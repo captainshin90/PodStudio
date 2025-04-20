@@ -17,12 +17,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+//////////////////////////////////////////////////////////////////////////////
+// prompts page component
+//////////////////////////////////////////////////////////////////////////////
 export default function PromptsPage() {
   const [showNewPrompt, setShowNewPrompt] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the save prompt
+  //////////////////////////////////////////////////////////////////////////////
   const handleSave = async (updatedPrompt: Prompt) => {
     try {
       await promptsService.updatePrompt(updatedPrompt.id, updatedPrompt);
@@ -41,6 +47,9 @@ export default function PromptsPage() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the create prompt
+  //////////////////////////////////////////////////////////////////////////////
   const handleCreate = async (newPrompt: Prompt) => {
     try {
       await promptsService.createPrompt(newPrompt.id, newPrompt);
@@ -59,6 +68,9 @@ export default function PromptsPage() {
     }
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // handle the delete prompt
+  //////////////////////////////////////////////////////////////////////////////
   const handleDelete = async () => {
     if (!selectedPrompt?.id) return;
     
@@ -79,21 +91,15 @@ export default function PromptsPage() {
       });
     }
   };
-/*
-  const handleCreatePodcast = async () => {
-    if (!selectedPrompt) return;
-    // TODO: Implement podcast creation logic
-    toast({
-      title: "Coming Soon",
-      description: "Podcast creation feature will be available soon",
-    });
-  };
-*/
+
  
+  //////////////////////////////////////////////////////////////////////////////
+  // return the prompts page component
+  //////////////////////////////////////////////////////////////////////////////
 
   return (
     <div className="container mx-auto py-0 px-0">
-      <h1 className="text-2xl font-bold text-muted-foreground mb-6">LLM Prompts Management</h1>
+      <h1 className="text-2xl font-bold text-muted-foreground mb-6">Prompts Management</h1>
       
       <div className="grid grid-cols-12 gap-6">
         {/* Left Panel - Prompt List */}

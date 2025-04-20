@@ -92,6 +92,7 @@ export default function ModelDetails({
     } else if (isNew) {
       setFormData({
         id: "model_" + nanoid(20),
+        model_title: "",
         model_name: "",
         model_desc: "",
         model_type: "",
@@ -196,6 +197,19 @@ export default function ModelDetails({
               className="flex-1"
             />
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="model_title" className="text-muted-foreground/70">Model Title</Label>
+          <Input
+            id="model_title"
+            name="model_title"
+            placeholder="Enter Model Title"
+            value={formData.model_title || ""}
+            onChange={handleChange}
+            required
+            disabled={isReadOnly}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
