@@ -26,7 +26,7 @@ A modern web application that automatically generates engaging podcast conversat
 
 There's no user authentication, but it asks for an access code. Please post an issue with your email address and I'll send you the code. This is so that I can control my hosting cost.
 
-**Podcast Player**: Try with our Four Freedoms Podcast app: https://fourfreedoms-polished-butterfly-4117.fly.dev/ to listen to the podcasts generated in PodStudio.
+**Podcast Player**: Try with our Four Freedoms Podcast webapp: https://github.com/captainshin90/Four-Freedoms to listen to the podcasts generated in PodStudio.
 
 
 ## Technologies Used
