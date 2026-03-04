@@ -13,11 +13,11 @@ A modern web application that automatically generates engaging podcast conversat
 - **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
 
 ## Screenshots
-<img src="public/screenshots/main1.png" alt="Home" width="600">
+<img src="screenshots/main1.png" alt="Home" width="600">
 
-<img src="public/screenshots/main2.png" alt="Podcast" width="600">
+<img src="screenshots/main2.png" alt="Podcast" width="600">
 
-<img src="public/screenshots/main3.png" alt="Episodes" width="600">
+<img src="screenshots/main3.png" alt="Episodes" width="600">
 
 
 ## Live Demo
