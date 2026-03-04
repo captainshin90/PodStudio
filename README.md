@@ -23,7 +23,7 @@ A modern web application that automatically generates engaging podcast conversat
 ## Live Demo
 [https://podstudio.fly.dev/](https://podstudio.fly.dev/)
 
-There's no user authentication, but it asks for an access code. Please post an issue with your email address and I'll send you the code. This is so that I can control myhosting cost.
+There's no user authentication, but it asks for an access code. Please post an issue with your email address and I'll send you the code. This is so that I can control my hosting cost.
 
 ## Technologies Used
 
