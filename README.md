@@ -2,7 +2,7 @@
 
 A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Powered with [podcastfy.ai](http://podcastfy.ai).
 
-## Features
+## Key Features
 
 - **Custom Podcast Generation**: Generate podcasts from multiple URLs, transcripts, or uploaded documents.
 - **Content Management**: Built-in management for podcasts, transcripts, AI prompts, and documents.
@@ -11,6 +11,14 @@ A modern web application that automatically generates engaging podcast conversat
 - **Provider & Model Management**: GUI to manage API keys and various Generative AI models.
 - **Text-to-Speech**: Support for multiple TTS providers and customizable voices/styles.
 - **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
+
+## Screenshots
+<img src="public/screenshots/main1.png" alt="Home" width="600">
+
+<img src="public/screenshots/main2.png" alt="Podcast" width="600">
+
+<img src="public/screenshots/main3.png" alt="Episodes" width="600">
+
 
 ## Live Demo
 [https://podstudio.fly.dev/](https://podstudio.fly.dev/)
