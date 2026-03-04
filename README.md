@@ -164,4 +164,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## Contact
 
-[EMAIL_ADDRESS] <kshin@kapshin.com>
+[admin@kapshin.com](mailto:admin@kapshin.com)
