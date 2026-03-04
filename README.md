@@ -12,6 +12,7 @@ A modern web application that automatically generates engaging podcast conversat
 - **Text-to-Speech**: Support for multiple TTS providers and customizable voices/styles.
 - **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
 
+
 ## Screenshots
 <img src="screenshots/main1.png" alt="Home" width="600">
 
@@ -24,6 +25,9 @@ A modern web application that automatically generates engaging podcast conversat
 [https://podstudio.fly.dev/](https://podstudio.fly.dev/)
 
 There's no user authentication, but it asks for an access code. Please post an issue with your email address and I'll send you the code. This is so that I can control my hosting cost.
+
+**Podcast Player**: Try with our Four Freedoms Podcast app: https://fourfreedoms-polished-butterfly-4117.fly.dev/ to listen to the podcasts generated in PodStudio.
+
 
 ## Technologies Used
 
