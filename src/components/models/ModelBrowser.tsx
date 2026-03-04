@@ -183,7 +183,7 @@ export default function ModelBrowser({
             aria-selected={selectedModel?.id === model.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium truncate">{model.model_title}</div>
+            <div className="font-medium truncate" title={model.model_title}>{model.model_title}</div>
             <div className="text-xs opacity-80 mt-0.5 truncate">
               {model.model_type}
             </div>

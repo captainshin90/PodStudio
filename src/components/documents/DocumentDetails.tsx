@@ -70,13 +70,14 @@ export default function DocumentDetails({
       setIsEditable(false);
     } else if (isNew) {
       setFormData({
-        id: "document_" + nanoid(20),
+        id: "doc_" + nanoid(20),
         doc_name: "",
         doc_desc: "",
         doc_type: "article" as DocumentType,
         topic_tags: [],
         doc_source_format: "txt" as DocumentSourceFormat,
         doc_source_urls: [],
+        doc_summary: "",
         doc_extracted_text: "",
         is_active: true,
         is_deleted: false,
@@ -326,11 +327,12 @@ export default function DocumentDetails({
         cleanup();
       });
 
-      socket.on("complete", (data: { text: string }) => {
+      socket.on("complete", (data: { summary: string, text_extract: string }) => {
         console.log("Text extraction complete");
         setFormData(prev => ({
           ...prev,
-          doc_extracted_text: data.text.trim()
+          doc_extracted_text: data.text_extract.trim(),
+          doc_summary: data.summary.trim()
         }));
         setHasChanges(true);
         cleanup();
@@ -484,6 +486,49 @@ export default function DocumentDetails({
           />
         </div>
 
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="event_date" className="text-muted-foreground/70">Event Date</Label>
+            <Input
+              id="event_date"
+              name="event_date"
+              type="date"
+              placeholder="Select Event Date"
+              value={formData.event_date ? new Date(formData.event_date).toISOString().split('T')[0] : ""}
+              onChange={(e) => {
+                const date = e.target.value ? new Date(e.target.value) : undefined;
+                setFormData({ ...formData, event_date: date });
+                setHasChanges(true);
+              }}
+              disabled={isReadOnly}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="event_location" className="text-muted-foreground/70">Event Location</Label>
+            <Input
+              id="event_location"
+              name="event_location"
+              placeholder="Enter Event Location"
+              value={formData.event_location || ""}
+              onChange={handleChange}
+              disabled={isReadOnly}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="event_organizer" className="text-muted-foreground/70">Event Organizer</Label>
+            <Input
+              id="event_organizer"
+              name="event_organizer"
+              placeholder="Enter Event Organizer"
+              value={formData.event_organizer || ""}
+              onChange={handleChange}
+              disabled={isReadOnly}
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-5 gap-4">
           <div className="col-span-3 flex items-center gap-2">
             <Label htmlFor="doc_type" className="text-muted-foreground/70 whitespace-nowrap">Document Type:</Label>
@@ -574,6 +619,37 @@ export default function DocumentDetails({
             )}
           </div>
         )}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="doc_summary" className="text-muted-foreground/70">Generated Summary</Label>
+            {!isReadOnly && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="is_editable"
+                  checked={isEditable}
+                  onCheckedChange={setIsEditable}
+                  disabled={isReadOnly}
+                />
+                <Label htmlFor="is_editable" className="text-sm text-muted-foreground/70">Edit</Label>
+              </div>
+            )}
+          </div>
+          <Textarea
+            id="doc_summary"
+            name="doc_summary"
+            value={formData.doc_summary || ""}
+            onChange={handleChange}
+            className={`min-h-[200px] font-mono text-sm ${!isEditable ? "bg-muted text-foreground" : ""}`}
+            disabled={!isEditable}
+            onKeyDown={(e) => {
+              // Prevent form from capturing arrow keys when editing the textarea
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.stopPropagation();
+              }
+            }}
+          />
+        </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">

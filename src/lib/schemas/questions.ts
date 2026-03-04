@@ -1,4 +1,4 @@
-// Question schema version 0.2.5
+// Question schema version 0.3.0
 export interface Question {
   id: string; // Unique ID, same as Firestore Document ID
   podcast_id: string; // Podcast ID

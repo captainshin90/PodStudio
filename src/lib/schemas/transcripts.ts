@@ -1,4 +1,4 @@
-// Transcript schema version 0.2.5
+// Transcript schema version 0.3.0
 export type TranscriptType = 'interview' | 'meeting' | 'article' | 'petition';
 
 export interface Transcript {

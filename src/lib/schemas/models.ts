@@ -1,4 +1,4 @@
-// Prompt schema version 0.2.5
+// Model schema version 0.3.0
 export interface Model {
   id: string; // Unique ID, same as Firestore Document ID
   model_title: string; // Model Title friendly name
@@ -84,7 +84,6 @@ export function convertToModel(data: any): Model {
 }
 
 /* ---------------------------------------------------
-
 These parameters are used to control the behavior of language models (LLMs) and text-to-speech (TTS) models in your application.
 Here's what each parameter does:
 

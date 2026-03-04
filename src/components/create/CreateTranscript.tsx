@@ -244,7 +244,7 @@ export default function CreateTranscript() {
   // This is a helper function to load recent transcripts
   const loadRecentTranscripts = async () => {
     try {
-      const transcripts = await transcriptsService.getRecentTranscripts(5);
+      const transcripts = await transcriptsService.getRecentTranscripts(6);
       if (transcripts) {       
         setRecentTranscripts(transcripts as Transcript[]);
       }
@@ -455,7 +455,7 @@ export default function CreateTranscript() {
       // handle the complete event
       socket.on("complete", async (data: {transcript: string }) => {
         const newTranscript: Transcript = {
-          id: "transcript_" + nanoid(20),  
+          id: "tra_" + nanoid(20),  
           doc_id: selectedDocument.id,
           prompt_id: selectedPrompt.id,
           model_id: selectedModel.id,
@@ -650,7 +650,7 @@ export default function CreateTranscript() {
                   className="p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer"
                   onClick={() => handleTranscriptSelect(transcript)}
                 >
-                  <div className="font-medium truncate">{transcript.transcript_title}</div>
+                  <div className="font-medium truncate" title={transcript.transcript_title}>{transcript.transcript_title}</div>
                   <div className="flex items-center text-sm gap-2 text-muted-foreground truncate mt-1">
                     <span className="whitespace-nowrap">
                       {transcript.updated_at 

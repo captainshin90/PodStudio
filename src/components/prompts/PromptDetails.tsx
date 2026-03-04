@@ -213,7 +213,7 @@ export default function PromptDetails({
       setHasChanges(false);
     } else if (isNew) {
       setFormData({
-        id: "prompt_" + nanoid(20),
+        id: "pro_" + nanoid(20),
         prompt_name: "",
         prompt_desc: "",
         prompt_text: "",

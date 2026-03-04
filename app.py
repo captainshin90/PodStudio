@@ -294,10 +294,16 @@ def handle_extract_text(data):
         if text:
             combined_content += f"\n\n{text}"
 
-        emit('status', "Completed extracting text")
-        emit('complete', {'text': combined_content}, room=request.sid)
+        # Generate a summary of the combined content
+        summary = ""
+        if combined_content:
+            summary = content_extractor.generate_summary(combined_content)  
 
-        return combined_content
+        emit('status', "Completed extracting text")
+        emit('complete', {'text_extract': combined_content, 'summary': summary}, room=request.sid)
+
+        # return combined_content, summary  # why is this needed?
+    
     except Exception as e:
         print(f"\nError in handle_extract_text: {str(e)}")
         print(f"Error type: {type(e)}")

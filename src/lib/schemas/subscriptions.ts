@@ -1,4 +1,4 @@
-// Subscription schema version 0.2.5
+// Subscription schema version 0.3.0
 export interface Subscription {
   id: string; // Unique ID, same as Firestore Document ID
   subscription_type: string; // Subscription Type

@@ -241,7 +241,7 @@ export default function CreatePodcast() {
   // This is a helper function to load recent episodes
   const loadRecentEpisodes = async () => {
     try {
-      const episodes = await episodesService.getRecentEpisodes(5);
+      const episodes = await episodesService.getRecentEpisodes(6);
       if (episodes) {
         setRecentEpisodes(episodes as Episode[]);
       }
@@ -447,18 +447,23 @@ export default function CreatePodcast() {
         cleanup();
       });
     
-      // handle the complete event
+      // find the next available episode number
+      const nextEpisodeNumber = await episodesService.getNextEpisodeNumber(selectedPodcast.id);
+      // update the episode title with the podcast title and episode number
+      const episodeTitle = `Episode ${nextEpisodeNumber ?? 1}: ${selectedPodcast.podcast_title}`;
+
+      // handle the complete event      
       socket.on("complete", async (data: { audioUrl: string; transcript: string }) => {
         const newEpisode: Episode = {
-          id: "episode_" + nanoid(20),  
+          id: "epi_" + nanoid(20),  
           podcast_id: selectedPodcast.id,
           transcript_id: selectedTranscript.id,
           prompt_id: selectedPrompt.id,
           model_id: selectedTtsModel.id,
-          episode_title: `${selectedPodcast.podcast_title} - ${selectedTranscript.transcript_title}`,
-          episode_slug: `${selectedPodcast.podcast_slug}-${selectedTranscript.transcript_title.toLowerCase().replace(/\s+/g, '-')}`,
+          episode_title: episodeTitle,
+          episode_slug: episodeTitle.toLowerCase().replace(/\s+/g, '-'),
           episode_desc: selectedPodcast.podcast_desc,
-          episode_number: 1, // Default to 1, can be updated later
+          episode_number: nextEpisodeNumber ?? 1, // Default to 1, can be updated later
           episode_summary: selectedTranscript.transcript_text.substring(0, 200) + "...",
           content_duration: 0, // Will be updated when audio is processed
           content_transcript: data.transcript || selectedTranscript.transcript_text,
@@ -671,7 +676,7 @@ export default function CreatePodcast() {
                   className="p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer"
                   onClick={() => handleEpisodeSelect(episode)}
                 >
-                  <div className="font-medium truncate">{episode.episode_title}</div>
+                  <div className="font-medium truncate" title={episode.episode_title}>{episode.episode_title}</div>
                   <div className="text-sm text-muted-foreground truncate mt-1">
                     {episode.updated_at 
                     ? (episode.updated_at instanceof Date 

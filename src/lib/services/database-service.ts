@@ -1,5 +1,5 @@
 // lib/services/database-service.ts
-// Database service version 0.2.0
+// Database service version 0.3.0
 // This is the database service for the client side of the application.
 // It is used to interact with the Firestore database.
 // It is also used to interact with the Firebase Auth service.
@@ -711,7 +711,8 @@ export const podcastsService = {
     return databaseService.query('podcasts', [
       { field: 'subscription_type', operator: '==', value: subscriptionType }
     ]);
-  }
+  },
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -775,7 +776,18 @@ export const episodesService = {
       [], 
       'views', 'desc', limit
     );
+  },
+
+  async getNextEpisodeNumber(podcastId: string): Promise<number | null> {
+    // get active episodes for the podcast
+    const episodes = await databaseService.query('episodes', [
+      { field: 'podcast_id', operator: '==', value: podcastId },
+      { field: 'is_active', operator: '==', value: true },
+      { field: 'is_deleted', operator: '==', value: false }]
+      );
+    return episodes ? episodes.length + 1 : 1;
   }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,263 +1,152 @@
-## AI Podcast Generator
+# AI Podcast Studio (PodStudio)
 
-A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Powered by [podcastfy.ai](http://podcastfy.ai).
+A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Built with [podcastfy.ai](http://podcastfy.ai).
 
-### Features
+## Features
 
-- Custom podcast generation from multiple URLs
-- Real-time progress updates using WebSocket
-- Beautiful UI with shadcn/ui components
-- API key management for various AI services
-- Support for multiple text-to-speech providers
+- **Custom Podcast Generation**: Generate podcasts from multiple URLs, transcripts, or uploaded documents.
+- **Content Management**: Built-in management for podcasts, transcripts, AI prompts, and documents.
+- **Real-time Updates**: Real-time progress tracking using WebSocket integration.
+- **Modern UI/UX**: Beautiful user interface built with React, Vite, Tailwind CSS, and standard shadcn/ui components.
+- **Provider & Model Management**: GUI to manage API keys and various Generative AI models.
+- **Text-to-Speech**: Support for multiple TTS providers and customizable voices/styles.
+- **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
 
-### Prerequisites
+## Technologies Used
 
-- Node.js 18+
-- Python 3.11
-- pip
-- bun
-- pyenv
-- Poetry (optional but recommended)
-- Fly.io CLI
+- **Frontend:** React 18, Vite, Tailwind CSS, shadcn/ui, React Router, Firebase Web SDK
+- **Backend:** Python 3.11+, Flask, Socket.IO, podcastfy
+- **Package Managers:** Bun (Frontend), Pip (Backend)
+- **Deployment:** Fly.io
 
-### Development Setup
+## Prerequisites
 
-1. Clone the repository:
+- [Node.js](https://nodejs.org/) 18+
+- [Python](https://www.python.org/) 3.11+
+- [Bun](https://bun.sh/)
+- [Fly.io CLI](https://fly.io/docs/flyctl/install/) (for deployment)
 
+## Development Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/captainshin90/PodStudio.git
+   cd PodStudio
+   ```
+
+2. **Set up Python environment:**
+   ```bash
+   # Create and activate virtual environment
+   python -m venv .venv
+
+   # Activate on Windows:
+   .\.venv\Scripts\activate
+   # Or on Unix/MacOS:
+   source .venv/bin/activate
+
+   # Upgrade pip and install backend dependencies
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+3. **Install Frontend dependencies:**
+   Ensure `bun` is installed globally.
+   ```bash
+   npm install -g bun
+   bun upgrade
+
+   # Install standard dependencies
+   bun install
+   ```
+
+4. **Environment Variables:**
+   Create a `.env` file based on your `.env.example`.
+   ```bash
+   cp .env.example .env
+   ```
+   *Note: Ensure you configure your Firebase credentials, API keys, and environment-specific settings in the `.env` file.*
+
+5. **Start the development servers:**
+   ```bash
+   # Starts both the Vite frontend and the Flask backend concurrently
+   bun dev
+   ```
+   The frontend will be available at `http://localhost:5173`.
+   The backend API will run on `http://127.0.0.1:8080`.
+
+## Debugging
+
+You can debug the frontend and backend separately:
+
+- **Frontend (Vite):**
+  - Run `bun dev:frontend` to start only the Vite server.
+  - Launch your browser/debugger against `http://localhost:5173/`.
+- **Backend (Flask):**
+  - Run the backend manually via your IDE or run `python app.py` (runs on port 8080).
+  - Test the environment health endpoint locally via `http://localhost:8080/api/test-env`.
+
+## Production Build
+
+To build the optimized production frontend:
 ```bash
-git clone https://github.com/giulioco/openpod
-cd openpod
+bun run build
 ```
 
-2. Set up Python environment:
+## Deployment with Fly.io
 
-```bash
-## Already running in a dev.container, so skip pyenv and venv
-# Install Python 3.11.7 with shared libraries enabled
-# env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.7
-## pyenv local 3.11.7
+The project uses [Fly.io](https://fly.io/) for containerized hosting. 
 
-# Create and activate virtual environment
-# (done) python -m venv .venv
-## source .venv/bin/activate  # On Unix/MacOS
-# or
-# (done) .\.venv\Scripts\activate  # On Windows
+1. **Install Fly CLI:**
+   - Windows (PowerShell):
+     ```powershell
+     pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
+     ```
+   - macOS / Linux:
+     ```bash
+     curl -L https://fly.io/install.sh | sh
+     ```
 
-# Upgrade pip
-#x pip install --upgrade pip
-# (done) py -m pip install --upgrade pip
-```
+2. **Login and Setup:**
+   ```bash
+   fly auth login
+   fly launch
+   ```
 
-3. Install dependencies:
+3. **Configure Secrets:**
+   Configure any necessary secure API tokens and environment `.env` keys for your production environment.
+   ```bash
+   # Example: Setting a secret
+   fly secrets set API_TOKEN=your_generated_token
+   # Add your Firebase context and other ENV keys correspondingly
+   ```
 
-```bash
-# Install backend dependencies
-# (done) pip install -r requirements.txt
+4. **Storage Volume:**
+   Provide persistent storage for generated audio and artifacts:
+   ```bash
+   fly volumes create audio_data --size 1
+   ```
 
-# Install bun in venv
-npm install -g bun
-bun upgrade
+5. **Deploy Application:**
+   Deploy the application. The system will automatically build both the React frontend and bundle it with the Flask backend.
+   ```bash
+   fly deploy
+   ```
 
-# Install frontend dependencies
-bun install
-```
+## Project Structure
 
-4. Set up environment variables:
-
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. Start the development servers:
-
-```bash
-bun dev
-```
-
-The application will be available at `http://localhost:5173`
-
-### Deployment with Fly.io
-
-1. Install the Fly CLI:
-
-```bash
-curl -L https://fly.io/install.sh | sh
-```
-
-2. Login to Fly:
-
-```bash
-fly auth login
-```
-
-3. Create a new app:
-
-```bash
-fly launch
-```
-
-4. Set up environment variables:
-
-```bash
-# Generate a secure API token
-openssl rand -hex 32
-
-# Set it in Fly.io
-fly secrets set API_TOKEN=your_generated_token
-```
-
-5. Create a volume for audio files:
-
-```bash
-fly volumes create audio_data --size 1
-```
-
-6. Deploy the application:
-
-```bash
-# Deploy to Fly.io (this will automatically build both frontend and backend)
-fly deploy
-```
-
-Your API will be available at:
-
-- Web UI: `https://your-app.fly.dev`
-- API Endpoint: `https://your-app.fly.dev/api/generate-from-transcript`
-
-Make sure to include your API token in requests:
-
-```bash
-curl -X POST \
-  https://your-app.fly.dev/api/generate-from-transcript \
-  -H 'Authorization: Bearer your_api_token' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "transcript": "Your transcript here",
-    "podcast_name": "My Podcast",
-    "google_key": "your_google_api_key"
-  }'
-```
-
-### Project Structure
-
-```
+```text
 .
-├── src/                  # Frontend source code
-│   ├── components/       # React components
-│   ├── lib/             # Utility functions
-│   └── hooks/           # Custom React hooks
-├── app.py               # Flask backend
-├── requirements.txt     # Python dependencies
-└── fly.toml            # Fly.io configuration
+├── src/                  # Frontend React source code
+│   ├── components/       # shadcn/ui and custom components
+│   ├── pages/            # Application routes
+│   └── lib/              # Utility functions and Firebase config
+├── app.py                # Main Flask backend application core
+├── requirements.txt      # Python backend dependencies
+├── package.json          # Node/Bun dependencies & standard scripts
+├── vite.config.ts        # Vite local development configuration
+├── tailwind.config.js    # Styling framework configuration
+├── Dockerfile            # Container deployment instructions
+└── fly.toml              # Fly.io deployment configuration
 ```
 
-### Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### API Endpoints
-
-#### Generate Podcast from Transcript
-
-A secure endpoint that generates podcasts from existing transcripts. Requires API token authentication.
-
-##### Authentication
-
-1. Generate a secure API token and add it to your `.env` file:
-
-```bash
-# Generate a secure token
-openssl rand -hex 32
-
-# Add to .env
-API_TOKEN=your_generated_token
-```
-
-##### Endpoint Details
-
-- **URL**: `/api/generate-from-transcript`
-- **Method**: `POST`
-- **Auth Required**: Yes (Bearer Token)
-- **Headers**:
-  ```
-  Authorization: Bearer your_api_token
-  Content-Type: application/json
-  ```
-
-##### Request Body
-
-```json
-{
-  "transcript": "Your conversation transcript here",
-  "tts_model": "geminimulti", // optional
-  "creativity": 0.7, // optional
-  "conversation_style": ["casual", "humorous"], // optional
-  "roles_person1": "Host", // optional
-  "roles_person2": "Guest", // optional
-  "dialogue_structure": ["Introduction", "Content", "Conclusion"], // optional
-  "podcast_name": "My Custom Podcast", // optional
-  "podcast_tagline": "", // optional
-  "output_language": "English", // optional
-  "user_instructions": "", // optional
-  "engagement_techniques": [], // optional
-  "ending_message": "Thank you for listening", // optional
-  "google_key": "your_google_api_key" // required for gemini/geminimulti
-}
-```
-
-##### Response
-
-Success Response:
-
-```json
-{
-  "success": true,
-  "audio_url": "/audio/transcript_podcast_abc123.mp3",
-  "transcript": "Processed transcript..." // if available
-}
-```
-
-Error Response:
-
-```json
-{
-  "error": "Error message here"
-}
-```
-
-##### Example Usage
-
-```bash
-curl -X POST \
-  http://your-server/api/generate-from-transcript \
-  -H 'Authorization: Bearer your_api_token' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "transcript": "<Person1> Hi and welcome to the podcast! </Person1>\n<Person2> Thanks for having me! </Person2>\n<Person1> Let'\''s get started with our first topic. </Person1>",
-    "podcast_name": "My Custom Podcast",
-    "google_key": "your_google_api_key"
-  }'
-```
-
-For Windows PowerShell users:
-
-```powershell
-$body = @{
-    transcript = "<Person1> Hi and welcome to the podcast! </Person1>`n<Person2> Thanks for having me! </Person2>`n<Person1> Let's get started with our first topic. </Person1>"
-    podcast_name = "My Custom Podcast"
-    google_key = "your_google_api_key"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post `
-    -Uri "http://your-server/api/generate-from-transcript" `
-    -Headers @{
-        "Authorization" = "Bearer your_api_token"
-        "Content-Type" = "application/json"
-    } `
-    -Body $body
-```

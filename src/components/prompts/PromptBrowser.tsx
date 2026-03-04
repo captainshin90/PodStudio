@@ -189,7 +189,7 @@ export default function PromptBrowser({
             aria-selected={selectedPrompt?.id === prompt.id}
             onFocus={() => setFocusedIndex(index)}
           >
-            <div className="font-medium truncate">{prompt.prompt_name}</div>
+            <div className="font-medium truncate" title={prompt.prompt_name}>{prompt.prompt_name}</div>
             <div className="text-xs opacity-80 mt-0.5 truncate">
               {prompt.prompt_desc}
             </div>

@@ -1,10 +1,12 @@
-// System datatypes schema version 0.2.7
+// System datatypes schema version 0.3.0
 export interface SystemDatatypes {
   id: string; // "datatypes" Unique ID, same as Firestore Document ID
   conversation_styles: string[]; 
   dialogue_structures: string[];
   engagement_techniques: string[];
-  
+  output_types: string[];     // output types: podcast, report, news article, blog, essay, voter guide, rofile, flyer, etc.
+  roles_person1: string[];
+  roles_person2: string[];
   is_active: boolean; // Is Active
   is_deleted: boolean; // Is Deleted - updated by the database service
   created_at: Date; // Created Date and Time - updated by the database service

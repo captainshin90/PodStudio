@@ -1,4 +1,4 @@
-// User schema version 0.2.5
+// User schema version 0.3.0
 export interface User {
   id: string; // Unique ID, same as Firestore Document ID
   login_id: string; // Login ID

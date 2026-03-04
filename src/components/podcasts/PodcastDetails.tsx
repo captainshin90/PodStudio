@@ -64,7 +64,7 @@ export default function PodcastDetails({
       loadEpisodes(podcast.id);
     } else if (isNew) {
       setFormData({
-        id: "podcast_" + nanoid(20),
+        id: "pod_" + nanoid(20),
         podcast_title: "",
         podcast_slug: "",
         podcast_tagline: "",

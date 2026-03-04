@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft, ChevronDown } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
-import { podcastsService, promptsService, transcriptsService, modelsService } from "@/lib/services/database-service";
+import { podcastsService, promptsService, transcriptsService, modelsService, episodesService } from "@/lib/services/database-service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,14 +88,14 @@ export default function EpisodeDetails({
       }
     } else if (isNew) { // new blank episode
       setFormData({
-        id: "episode_" + nanoid(20),
+        id: "epi_" + nanoid(20),
         podcast_id: "",
         transcript_id: "",
         prompt_id: "",
         model_id: "",
         episode_title: "",
         episode_desc: "",
-        episode_number: 1,
+        episode_number: 1,  // find the next available episode number
         episode_summary: "",
         content_duration: 0,
         content_transcript: "",
@@ -448,8 +448,15 @@ export default function EpisodeDetails({
             <SelectDialog
               title="Select Podcast"
               items={podcasts}
-              onSelect={(id) => {
+              onSelect={async (id) => {
                 setFormData(prev => ({ ...prev, podcast_id: id }));
+                // find the next available episode number
+                const nextEpisodeNumber = await episodesService.getNextEpisodeNumber(id);
+                setFormData(prev => ({ ...prev, episode_number: nextEpisodeNumber ?? 1 }));
+                // update episode title with podcast title and episode number
+                setFormData(prev => ({ ...prev, episode_title: `Episode ${nextEpisodeNumber ?? 1}: ${podcasts.find(p => p.id === id)?.title}` }));
+                // update episode slug with podcast slug and episode number
+                setFormData(prev => ({ ...prev, episode_slug: `episode-${nextEpisodeNumber ?? 1}-${podcasts.find(p => p.id === id)?.title.toLowerCase().replace(/\s+/g, '-')}` }));
                 setHasChanges(true);
               }}
               trigger={

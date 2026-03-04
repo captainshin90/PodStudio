@@ -95,7 +95,7 @@ export default function TranscriptDetails({
       }
     } else if (isNew) { // new blank transcript
       setFormData({
-        id: "transcript_" + nanoid(20),
+        id: "tra_" + nanoid(20),
         transcript_title: "",
         transcript_type: "interview",
         topic_tags: [],

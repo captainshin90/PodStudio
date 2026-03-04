@@ -91,7 +91,7 @@ export default function ModelDetails({
       setHasChanges(false);
     } else if (isNew) {
       setFormData({
-        id: "model_" + nanoid(20),
+        id: "mod_" + nanoid(20),
         model_title: "",
         model_name: "",
         model_desc: "",
@@ -102,9 +102,9 @@ export default function ModelDetails({
         top_p: 0.95,
         temperature: 0.7,
         max_tokens: 1000,
-        repetition_penalty: 1.0,
-        frequency_penalty: 0.0,
-        presence_penalty: 0.0,
+        repetition_penalty: 1.2,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.3,
         stop_sequences: [],
         voice_question: providerOptions.find(provider => provider.id === formData.model_provider)?.question || "",
         voice_answer: providerOptions.find(provider => provider.id === formData.model_provider)?.answer || "",
@@ -380,7 +380,7 @@ export default function ModelDetails({
                     <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
-                    <p>Limits the number of tokens considered for each step of text generation to the K most likely ones.</p>
+                    <p>Top-k: Limits the model to consider only the top k most likely next tokens. Helps prevent the model from generating nonsensical text. Lower values make the output more focused, higher values allow more variety.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -407,7 +407,7 @@ export default function ModelDetails({
                     <InfoCircledIcon className="h-4 w-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="bg-zinc-100 text-zinc-900 rounded-lg border-zinc-200 px-3 py-2 text-sm shadow-lg max-w-[25vw]">
-                    <p>Controls diversity by limiting cumulative probability of tokens considered for generation. Lower values make output more focused.</p>
+                    <p>Top-p (also called nucleus sampling): Similar to top-k but uses cumulative probability. Only considers tokens whose cumulative probability exceeds p. Helps maintain coherence while allowing some creativity.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

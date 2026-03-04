@@ -1,6 +1,6 @@
 // import { Podcast } from "@/lib/schemas/podcasts";
 
-  // Episode schema version 0.2.0
+// Episode schema version 0.3.0
 export interface Episode {
   id: string; // Unique ID, same as Firestore Document ID
   podcast_id: string; // Podcast ID
@@ -84,14 +84,13 @@ export function convertToEpisode(data: any): Episode {
 }
 
 
-/*
 // Helper function to convert Episode to PlayerEpisode
 // This function is not used in the project yet
-export function convertToPlayerEpisode(podcast: Podcast, episode: Episode): PlayerEpisode {
+export function convertToPlayerEpisode(episode: Episode): PlayerEpisode {
   return {
-    id: episode.episode_id,
+    id: episode.id,
     title: episode.episode_title,
-    image: episode.content_image || podcast.podcast_image,
+    image: episode.content_image,
     audioUrl: episode.content_url,
     duration: episode.content_duration,
     podcastId: episode.podcast_id,
@@ -100,4 +99,3 @@ export function convertToPlayerEpisode(podcast: Podcast, episode: Episode): Play
     topicTags: episode.topic_tags
   };
 }
-*/
