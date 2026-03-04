@@ -12,6 +12,11 @@ A modern web application that automatically generates engaging podcast conversat
 - **Text-to-Speech**: Support for multiple TTS providers and customizable voices/styles.
 - **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
 
+## Live Demo
+[https://podstudio.fly.dev/](https://podstudio.fly.dev/)
+
+There's no user authentication, but it asks for an access code. Please post an issue with your email address and I'll send you the code. This is so that I can control my hosting cost.
+
 ## Technologies Used
 
 - **Frontend:** React 18, Vite, Tailwind CSS, shadcn/ui, React Router, Firebase Web SDK
@@ -149,4 +154,14 @@ The project uses [Fly.io](https://fly.io/) for containerized hosting.
 └── fly.toml              # Fly.io deployment configuration
 ```
 
+## License
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## Contact
+
+[EMAIL_ADDRESS] <kshin@kapshin.com>
