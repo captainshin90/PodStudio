@@ -1,0 +1,69 @@
+# Use Node.js for frontend build
+FROM node:20-slim as frontend-builder
+
+# Production environment variables (see development environment variables in .env)
+# Vite requires these to be set at build time to create the production build
+# Run-time production environment variables (e.g. LLM API keys) are set in fly.io Secrets console
+ARG VITE_API_BASE_URL=http://localhost:8080
+ARG VITE_SECRET_KEY=
+ARG VITE_FIREBASE_API_KEY=
+ARG VITE_FIREBASE_AUTH_DOMAIN=
+ARG VITE_FIREBASE_PROJECT_ID=
+ARG VITE_FIREBASE_STORAGE_BUCKET=
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID=
+ARG VITE_FIREBASE_APP_ID=
+ARG VITE_FIREBASE_MEASUREMENT_ID=
+ARG VITE_FIREBASE_USE_EMULATOR=false
+ARG VITE_FIRESTORE_DATABASE_ID=
+
+# Install bun
+RUN npm install -g bun
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lockb ./
+
+# Install dependencies
+RUN bun install
+
+# Copy frontend source
+COPY . .
+
+# Build frontend
+RUN bun run build
+
+# Use Python for the main application
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+COPY . .
+
+# Copy built frontend from frontend-builder
+COPY --from=frontend-builder /app/static ./static
+
+# Create necessary directories
+# RUN mkdir -p static/audio static/transcripts data/audio data/transcripts
+RUN mkdir -p public/audio public/transcripts data/audio data/transcripts
+
+# Expose port
+EXPOSE 8080
+
+# Run the application
+CMD ["python", "app.py"]
