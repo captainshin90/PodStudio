@@ -1,16 +1,18 @@
 # AI Podcast Studio (PodStudio)
 
-A modern web application that automatically generates engaging podcast conversations from URLs or news topics using AI. Powered with [podcastfy.ai](http://podcastfy.ai).
+A content management system that generates and manages podcasts from documents, URLs, and transcripts using multiple AI transcription and voice generation models. It allows creation of podcast channels and episodes. 
+
+Based on OpenPod (https://github.com/giulioco/openpod) and Podcastfy (https://github.com/souzatharsis/podcastfy).
 
 ## Key Features
 
 - **Custom Podcast Generation**: Generate podcasts from multiple URLs, transcripts, or uploaded documents.
 - **Content Management**: Built-in management for podcasts, transcripts, AI prompts, and documents.
 - **Real-time Updates**: Real-time progress tracking using WebSocket integration.
-- **Modern UI/UX**: Beautiful user interface built with React, Vite, Tailwind CSS, and standard shadcn/ui components.
+- **Modern UI/UX**: User interface built with React, Vite, Tailwind CSS, and standard shadcn/ui components.
 - **Provider & Model Management**: GUI to manage API keys and various Generative AI models.
 - **Text-to-Speech**: Support for multiple TTS providers and customizable voices/styles.
-- **Firebase Integration**: Secure Authentication, robust Firestore database, and Cloud Storage for artifacts.
+- **Firebase Integration**: Authentication, Firestore database, and Cloud Storage for artifacts.
 
 
 ## Screenshots
